@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -48,7 +49,12 @@ def test_the_bundle_loads_with_the_package_version() -> None:
 def test_the_entry_points_are_installed() -> None:
     (bundle,) = entry_points(group="devkit.bundles", name="spec")
     (command,) = entry_points(group="devkit.commands", name="spec")
-    assert (bundle.value, command.value) == ("devkit_spec", "devkit_spec.cli:cli")
+    (template,) = entry_points(group="devkit.config_template", name="spec")
+    assert (bundle.value, command.value, template.value) == (
+        "devkit_spec",
+        "devkit_spec.cli:cli",
+        "devkit_spec.config:template",
+    )
 
 
 def test_spec_is_not_a_built_in_devkit_command() -> None:
@@ -85,6 +91,18 @@ def test_devkit_sync_deploys_the_default_preset_and_its_rules_run(tmp_path: Path
             name = ref.split(":", 1)[1]
             line = f"[RELATED: {ref} kind=instruction path=.devkit/managed/spec/instructions/{name}.md]"
             assert line in explain.stdout, explain.stdout
+
+
+def test_devkit_config_template_writes_the_spec_tables(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    result = _devkit("config", "template", "-w", str(tmp_path))
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["notices"] == []
+    assert {"tool.spec", "tool.spec.namespaces", "tool.spec.scope"} <= set(payload["added"])
+    text = (tmp_path / ".devkit/config.toml").read_text(encoding="utf-8")
+    assert "# [tool.spec]\n#   worktree = true" in text and "# [[tool.spec.namespaces]]" in text
+    assert tomllib.loads(text) == {"schema": 1}  # every line it wrote is a comment
 
 
 def test_the_docs_skeleton_is_opt_in_and_passes_the_rules(tmp_path: Path) -> None:

@@ -1,7 +1,37 @@
 schema = 1
 
+## devkit project configuration, tracked by Git. A commented key shows its default: uncomment it to change it. Lines
+## starting with ## stay comments; to use a commented table, uncomment its header and the keys you change. `devkit
+## config template` adds the keys and tables that newly installed tools accept; it never changes a line.
+
+## Managed scope: what devkit sync deploys, and for which agents.
+## [presets] selects bundles: <bundle> = "<preset>", an array of presets, or "all"; `devkit add` and `devkit remove`
+## edit it. A bundle that declares auto_select deploys its default preset without an entry; <bundle> = false opts it
+## out. `devkit list` shows every installed bundle, its presets and its selection.
+# agents = ["antigravity", "claude-code", "codex"]  # array of agent names; agents that skills and subagents are projected for; unset: every supported agent, also ones added later; []: none, the managed copies stay
+# guidance_block = true  # boolean; devkit sync manages the DEVKIT block of the root AGENTS.md
+
+## Update policy: how devkit sync takes upstream changes.
+# override_drift = "warn"  # "warn" or "block"; upstream changed a file a project override replaces: "warn" reports it, "block" stops syncs until `devkit override accept`
+
 [presets]
 spec = ["core", "docs-skeleton"]
 
 [worktree]
 pull_request = false
+
+## [tool.spec]: the settings of devkit-spec; devkit passes [tool.*] tables through unread.
+# [tool.spec]
+#   worktree = true  # boolean; route 2 and above (formal specs, proposals) run in a task worktree
+
+## A package of a monorepo with its own Living Spec; one table per package. None by default; the values below are
+## examples.
+# [[tool.spec.namespaces]]
+#   name = "api"  # string; lowercase words joined by -, not 'global'; its Living Spec is docs/packages/<name>/
+#   path = "services/api"  # string; the package's workspace-relative source directory
+
+## The work-scope registry of `devkit spec scope`.
+# [tool.spec.scope]
+#   shared_path = "/srv/devkit-spec-scope"  # example; string, an absolute directory (or one starting with ~); unset: devkit-spec-scope/ in the Git common directory; clones that share the path and the namespace share one registry
+#   namespace = "team"  # example; string of letters, digits, '.', '_' and '-', not starting with '.'; unset: a hash of the Git common directory
+#   timeout = 10  # integer from 1 to 300; seconds one registry command may wait

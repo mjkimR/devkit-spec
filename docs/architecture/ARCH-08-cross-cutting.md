@@ -73,6 +73,9 @@ Libraries never print: modules below `cli` return results and notices or raise `
   | `[[tool.spec.namespaces]]` (`name`, `path`) | Monorepo packages with their own Living Spec under `docs/packages/<name>/` (`CAP-DOCS-namespaces`) |
   | `[tool.spec.scope]` (`shared_path`, `namespace`, `timeout`) | The work-scope registry (`CAP-COLL-work-scope-registry`) |
 
+- `devkit config template` writes these tables into the file as comments at their defaults, from
+  `devkit_spec.config.template` (the `devkit.config_template` entry point `spec`), so a project sees every key
+  without reading this documentation.
 - Agents read the effective policy with `devkit spec policy`, never by parsing the file (`CAP-DLV-project-policy`).
 - A malformed `[tool.spec]` is `SPEC_CONFIG_INVALID`. In a rule run it is not a violation: it fails the run
   (devkit's `RULES_EXECUTION_FAILED`, exit `2`), because no document can be checked against a registry that cannot

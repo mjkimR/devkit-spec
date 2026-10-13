@@ -27,7 +27,8 @@ policy with one command, `devkit spec policy`, before routing, gate and Git deci
 ## 2. Scope & Boundary
 
 - **In-Scope**: `devkit spec policy` (text and JSON), the `[tool.spec]` table and its validation
-  (`devkit_spec.config.read_spec_config`), the defaults the command reports.
+  (`devkit_spec.config.read_spec_config`), the defaults the command reports, and the `[tool.spec]` tables of devkit's
+  commented config template (`devkit_spec.config.template`).
 - **Out-of-Scope**:
   - The meaning of `[[tool.spec.namespaces]]`: `CAP-DOCS-namespaces`.
   - The meaning of `[tool.spec.scope]`: `CAP-COLL-work-scope-registry`. This capability owns their validation only.
@@ -55,6 +56,9 @@ policy with one command, `devkit spec policy`, before routing, gate and Git deci
 6. **Worktree routing**: `worktree = true` means Route 2 and above (formal specs, proposals, bugfix) run in a task
    worktree; Route 1 always stays in the current checkout. An explicit user request naming the checkout overrides it
    for that task only, recorded in the final change report's assumptions.
+7. **Template at the defaults**: `template()` MUST describe every `[tool.spec]` key at the default
+   `read_spec_config` applies (an example for a key unset by default and for the namespaces), so the commented
+   tables `devkit config template` writes read back as the defaults once uncommented.
 
 ## 4. Interfaces & Data Contracts
 
@@ -120,6 +124,11 @@ timeout = 10                # whole seconds per registry command, 1 to 300
 | `tool.spec.scope.namespace` | string | common-dir hash | Letters, digits, `.`, `_`, `-`, not starting with `.`. |
 | `tool.spec.scope.timeout` | integer | `10` | Whole seconds from 1 to 300 (a boolean is rejected). |
 
+`devkit config template` writes the `[tool.spec]` tables into `.devkit/config.toml` as comments, from
+`devkit_spec.config.template`, the `devkit.config_template` entry point `spec`: every key at its default, an example
+for `shared_path`, `namespace` and the namespaces, uncommented in place to change a value. devkit adds only the
+tables the file does not mention yet and never changes a line.
+
 `direction = "auto"` lets G2 fire only for a new choice outside the approved scope, for `direct-delivery`, `bugfix`
 and `incubated-delivery` alike. `collect-feedback = "off"` makes the delivery workflows skip the feedback sweep; the
 executor reports it as skipped.
@@ -130,6 +139,7 @@ executor reports it as skipped.
 from devkit_spec.config import read_spec_config
 
 config = read_spec_config(root)  # SpecConfig(worktree, namespaces: tuple[Namespace, ...], scope: ScopeConfig)
+tables = template()               # list[devkit.core.TemplateTable]: [tool.spec], its namespaces and scope tables
 ```
 
 `Namespace` has `name`, `path` and `docs` (`docs/packages/<name>`); `ScopeConfig` has `shared_path` (`Path` or

@@ -40,7 +40,9 @@ export GIT_CONFIG_VALUE_0="https://github.com/"
 uv sync --locked
 ```
 
-A project opts out of the bundle with `[presets] spec = false` in `.devkit/config.toml`.
+A project opts out of the bundle with `[presets] spec = false` in `.devkit/config.toml`. `uv run devkit config
+template` writes every key the file accepts as a comment at its default, devkit-spec's `[tool.spec]` tables
+included; uncomment a key to change it.
 
 ## Development
 

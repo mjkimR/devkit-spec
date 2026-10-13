@@ -18,6 +18,9 @@ shared_path = "/srv/scope" # absolute; default: devkit-spec-scope/ in the Git co
 namespace = "team"         # default: a hash of the Git common directory
 timeout = 10               # seconds per registry command, 1 to 300
 ```
+
+``template`` is the ``devkit.config_template`` extension: ``devkit config template`` writes these tables into
+``.devkit/config.toml`` as comments, each key at the default ``read_spec_config`` applies.
 """
 
 from __future__ import annotations
@@ -26,7 +29,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from devkit.core import is_safe_relpath, read_project_config
+from devkit.core import TemplateKey, TemplateTable, is_safe_relpath, read_project_config
 
 from devkit_spec.errors import SpecConfigError
 
@@ -69,6 +72,65 @@ class SpecConfig:
     worktree: bool = True
     namespaces: tuple[Namespace, ...] = field(default=())
     scope: ScopeConfig = field(default=ScopeConfig())
+
+
+def template() -> list[TemplateTable]:
+    """``[tool.spec]`` and its tables for devkit's commented config template, at ``read_spec_config``'s defaults."""
+    defaults = SpecConfig()
+    low, high = SCOPE_TIMEOUT_RANGE
+    return [
+        TemplateTable(
+            (
+                TemplateKey(
+                    "worktree", defaults.worktree, "route 2 and above (formal specs, proposals) run in a task worktree"
+                ),
+            ),
+        ),
+        TemplateTable(
+            (
+                TemplateKey(
+                    "name",
+                    help=f"lowercase words joined by -, not {GLOBAL!r}; its Living Spec is {PACKAGES_DIR}/<name>/",
+                    kind="string",
+                    example="api",
+                ),
+                TemplateKey(
+                    "path",
+                    help="the package's workspace-relative source directory",
+                    kind="string",
+                    example="services/api",
+                ),
+            ),
+            path=("namespaces",),
+            help="A package of a monorepo with its own Living Spec; one table per package.",
+            array=True,
+        ),
+        TemplateTable(
+            (
+                TemplateKey(
+                    "shared_path",
+                    help="unset: devkit-spec-scope/ in the Git common directory; clones that share the path and the"
+                    " namespace share one registry",
+                    kind="string, an absolute directory (or one starting with ~)",
+                    example="/srv/devkit-spec-scope",
+                ),
+                TemplateKey(
+                    "namespace",
+                    help="unset: a hash of the Git common directory",
+                    kind="string of letters, digits, '.', '_' and '-', not starting with '.'",
+                    example="team",
+                ),
+                TemplateKey(
+                    "timeout",
+                    defaults.scope.timeout,
+                    "seconds one registry command may wait",
+                    kind=f"integer from {low} to {high}",
+                ),
+            ),
+            path=("scope",),
+            help="The work-scope registry of `devkit spec scope`.",
+        ),
+    ]
 
 
 def read_spec_config(root: Path) -> SpecConfig:
