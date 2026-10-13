@@ -39,9 +39,9 @@ dev = [
 
 [tool.uv.sources]
 # devkit comes from its GitHub main (no package index hosts it; the PyPI name belongs to another project).
-# These sources also apply when a consumer installs devkit-spec from Git.
+# These sources also apply when a consumer installs devkit-spec from Git. devkit's own sources bring devkit-advisory
+# and, for the search extra, the released model wheel; declaring either here again would conflict with them.
 devkit = { git = "https://github.com/mjkimR/devkit.git", subdirectory = "packages/devkit" }
-devkit-embed = { git = "https://github.com/mjkimR/devkit.git", subdirectory = "packages/devkit-embed" }
 
 [build-system]
 requires = ["hatchling"]

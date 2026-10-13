@@ -11,9 +11,9 @@ How a contributor (person or AI coding agent) gets a working devkit-spec checkou
 
 ## 2. Clone Both Repositories
 
-devkit comes from its GitHub main: `pyproject.toml` takes `devkit` and `devkit-embed` from
-`https://github.com/mjkimR/devkit.git` as Git sources (`subdirectory = "packages/devkit"`, `"packages/devkit-embed"`),
-and `uv.lock` pins the commit. `uv lock --upgrade-package devkit` moves to the latest main. To try a devkit change
+devkit comes from its GitHub main: `pyproject.toml` takes `devkit` from `https://github.com/mjkimR/devkit.git` as a
+Git source (`subdirectory = "packages/devkit"`), and `uv.lock` pins the commit. devkit's own sources bring
+`devkit-advisory` from the same commit and the `devkit-embed` model wheel from a devkit release. `uv lock --upgrade-package devkit` moves to the latest main. To try a devkit change
 before it is pushed, keep a devkit checkout at `../devkit` and run the command through `just local-devkit <command>`
 (for example `just local-devkit pytest`), which overlays that checkout as an editable install for one run.
 
@@ -31,7 +31,7 @@ Every recipe runs `uv run --no-active ...`, so an activated virtual environment 
 `devkit spec search` ranks lexically unless devkit's search extra is installed. To work on hybrid or dense ranking:
 
 ```bash
-uv sync --no-active --extra search    # devkit[search]: numpy, tokenizers, devkit-embed
+uv sync --no-active --extra search    # devkit[search]: numpy, tokenizers, the devkit-embed model wheel
 ```
 
 ## 4. Check the Installation

@@ -139,7 +139,7 @@ executor reports it as skipped.
 from devkit_spec.config import read_spec_config
 
 config = read_spec_config(root)  # SpecConfig(worktree, namespaces: tuple[Namespace, ...], scope: ScopeConfig)
-tables = template()               # list[devkit.core.TemplateTable]: [tool.spec], its namespaces and scope tables
+tables = template()  # list[devkit.core.TemplateTable]: [tool.spec], its namespaces and scope tables
 ```
 
 `Namespace` has `name`, `path` and `docs` (`docs/packages/<name>`); `ScopeConfig` has `shared_path` (`Path` or

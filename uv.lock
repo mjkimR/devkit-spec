@@ -135,7 +135,7 @@ wheels = [
 [[package]]
 name = "devkit"
 version = "0.1.0"
-source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit#e6a174482cb4df1f6effeb75768ea09d11936559" }
+source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit#bb010b810c26847845c61031bedc9c1fd0218c2d" }
 dependencies = [
     { name = "click" },
     { name = "devkit-advisory" },
@@ -153,12 +153,15 @@ search = [
 [[package]]
 name = "devkit-advisory"
 version = "0.1.0"
-source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit-advisory#e6a174482cb4df1f6effeb75768ea09d11936559" }
+source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit-advisory#bb010b810c26847845c61031bedc9c1fd0218c2d" }
 
 [[package]]
 name = "devkit-embed"
 version = "0.1.0"
-source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit-embed#e6a174482cb4df1f6effeb75768ea09d11936559" }
+source = { url = "https://github.com/mjkimR/devkit/releases/download/v0.1.0/devkit_embed-0.1.0-py3-none-any.whl" }
+wheels = [
+    { url = "https://github.com/mjkimR/devkit/releases/download/v0.1.0/devkit_embed-0.1.0-py3-none-any.whl", hash = "sha256:2b8534b60d85e36c2027e2c0d13d110289fa877b9c0b2639b8c4daedbe461f38" },
+]
 
 [[package]]
 name = "devkit-spec"

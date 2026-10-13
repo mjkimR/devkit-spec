@@ -75,8 +75,9 @@ flowchart TD
 
 ## 3. Development Environment
 
-`pyproject.toml` takes `devkit` and `devkit-embed` from `https://github.com/mjkimR/devkit.git` as Git sources
-(`[tool.uv.sources]`, subdirectories `packages/devkit` and `packages/devkit-embed`), pinned to a commit in `uv.lock`;
+`pyproject.toml` takes `devkit` from `https://github.com/mjkimR/devkit.git` as a Git source (`[tool.uv.sources]`,
+subdirectory `packages/devkit`), pinned to a commit in `uv.lock`; devkit's own sources bring `devkit-advisory` and, for
+the search extra, the `devkit-embed` model wheel from a devkit release;
 a contributor runs `just init` (`uv sync --no-active`). An unpushed devkit change is tried with
 `just local-devkit <command>`, which overlays a checkout at `../devkit` for one run. The repository consumes its own `spec` bundle through the
 editable install (`.devkit/config.toml`: `spec = ["core", "docs-skeleton"]`). Details: [Local setup](../development/setup.md),
