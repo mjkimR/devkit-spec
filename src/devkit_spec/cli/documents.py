@@ -287,7 +287,9 @@ class _RefGroup:
 @click.option("--status", "-s", default=None, help="Comma-separated statuses to keep (case-insensitive)")
 @click.option("--area", "-a", default=None, help="Keep documents whose frontmatter area contains this text")
 @click.option("--query", "query", default=None, help="Keep documents whose ID or title contains this text")
-@click.option("--history", is_flag=True, help="Include the files of completed spec bundles")
+@click.option(
+    "--history", is_flag=True, help="Include the files of completed spec bundles (their feedback is always included)"
+)
 @click.option(
     "--where",
     "where_items",

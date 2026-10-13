@@ -4,7 +4,8 @@
 reference without a new target, and a file that cannot be read or written, become ``Unresolved`` entries.
 
 Every Markdown file under ``docs/`` and ``specs/`` is scanned except the proposal itself, directories starting with
-``.``, symbolic links and the files of completed spec bundles, which record the proposal as it was.
+``.``, symbolic links and the files of completed spec bundles, which record the proposal as it was (their
+feedback aside, which stays current).
 """
 
 from __future__ import annotations
@@ -89,6 +90,9 @@ class RewriteReport:
     unresolved: list[Unresolved] = field(default_factory=list)
 
 
+FEEDBACK_DIRECTORY = "feedback"
+
+
 def completed_bundles(index: DocumentIndex) -> set[str]:
     """Absolute directories of the spec bundles whose ``spec.md`` has ``status: completed``."""
     found = set()
@@ -100,7 +104,11 @@ def completed_bundles(index: DocumentIndex) -> set[str]:
 
 
 def markdown_files(root: Path, plan: RelocationPlan, skip: set[str]) -> list[str]:
-    """Absolute paths of the Markdown files to scan, sorted."""
+    """Absolute paths of the Markdown files to scan, sorted.
+
+    ``skip`` holds bundle directories whose files are work history (``completed_bundles``); their ``feedback/``
+    directory is scanned all the same, since feedback stays current until a hygiene session settles it.
+    """
     files: list[str] = []
     for name in SOURCE_DIRECTORIES:
         base = root / name
@@ -113,8 +121,10 @@ def markdown_files(root: Path, plan: RelocationPlan, skip: set[str]) -> list[str
                 if not d.startswith(".")
                 and not os.path.islink(os.path.join(current, d))
                 and not plan.contains(os.path.join(current, d))
-                and os.path.join(current, d) not in skip
+                and (current not in skip or d == FEEDBACK_DIRECTORY)
             ]
+            if current in skip:
+                continue
             for filename in filenames:
                 path = os.path.join(current, filename)
                 if filename.endswith(".md") and path != plan.proposal and not os.path.islink(path):

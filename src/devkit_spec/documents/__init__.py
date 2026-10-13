@@ -6,7 +6,13 @@ workspace index (``DocumentIndex``). Contract: ``CAP-DOCS-document-model`` (``do
 """
 
 from devkit_spec.documents.ids import ID_PATTERN, PREFIXES, Kind, is_id, kind_of
-from devkit_spec.documents.index import SOURCE_DIRECTORIES, DocumentIndex, in_source_directory, is_document_file
+from devkit_spec.documents.index import (
+    SOURCE_DIRECTORIES,
+    DocumentIndex,
+    in_feedback,
+    in_source_directory,
+    is_document_file,
+)
 from devkit_spec.documents.markdown import VisibleLine, visible_lines
 from devkit_spec.documents.model import Document, Issue, Reference
 from devkit_spec.documents.parse import parse_document
@@ -22,6 +28,7 @@ __all__ = [
     "Kind",
     "Reference",
     "VisibleLine",
+    "in_feedback",
     "in_source_directory",
     "is_document_file",
     "is_id",

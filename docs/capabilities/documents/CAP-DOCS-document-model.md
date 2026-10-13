@@ -28,7 +28,7 @@ lookup commands (`CAP-DOCS-document-lookup`), document search (`CAP-DOCS-documen
   - The ID grammar and the kind each prefix names.
   - The reference forms (frontmatter relation fields, prose ID spans and brackets) and what prose excludes.
   - The `proposal` provenance field.
-  - Historical documents (files of completed spec bundles).
+  - Historical documents (files of completed spec bundles, their feedback aside).
   - The `summary` field as data of the model.
   - The index: loading, invalid files, ID resolution, incoming and outgoing references, in-place rewriting.
 - **Out-of-Scope** (Non-Goals):
@@ -61,7 +61,9 @@ lookup commands (`CAP-DOCS-document-lookup`), document search (`CAP-DOCS-documen
    and is the main signal of document search (`CAP-DOCS-document-search`). Titles and bodies MAY use any language.
 7. **Historical documents**: The files of a spec bundle (`specs/<YYYY-MM>/<bundle>/...`) whose `spec.md` has
    `status: completed` are historical: work history kept in place. Browsing and search MUST hide them unless
-   `--history` is passed; the rules check them only when they are named as explicit targets.
+   `--history` is passed; the rules check them only when they are named as explicit targets. The bundle's
+   `feedback/` directory is the exception: a feedback file stays `open` until a feedback-hygiene session settles it,
+   so it MUST stay current whatever the bundle's status (`SPEC-open-feedback-and-progress`).
 
 ### 3.2 IDs and Kinds
 
@@ -128,7 +130,7 @@ The table order is the kind order: `devkit spec list` sorts by it. Living Spec d
 | --- | --- | --- |
 | `id` | string | The document ID. |
 | `reconcile_id` | string | The ID of a reconcile record (used when `id` is absent). |
-| `status` | string | Lifecycle status; `completed` on a `spec.md` makes its bundle historical. |
+| `status` | string | Lifecycle status; `completed` on a `spec.md` makes its bundle historical, its feedback aside. |
 | `title` | string | Display title (any language). |
 | `summary` | string | One or two English sentences; embedded by search. |
 | `area` | string | Area of a capability or story (its directory). |
@@ -161,7 +163,7 @@ index = DocumentIndex.load(root)  # documents, by_id, problems (SPEC_DOCUMENT_IN
 document = index.resolve("CAP-CORE-search")  # UnresolvedIdError, DuplicateIdError
 index.outgoing(document)  # {target ID: [Reference, ...]}
 index.incoming(document.id)  # {source ID: [Reference, ...]}
-index.is_historical(document)  # a file of a completed spec bundle
+index.is_historical(document)  # a file of a completed spec bundle outside its feedback/
 ```
 
 `parse_document(path, text)` reads one document (`None` without a well-formed ID); `visible_lines` is the prose

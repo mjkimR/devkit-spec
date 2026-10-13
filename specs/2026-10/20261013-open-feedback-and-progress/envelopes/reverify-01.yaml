@@ -1,0 +1,25 @@
+kind: reverify
+stage: review-refine
+created_at: '2026-10-13T06:18:58Z'
+status: completed
+review: review-01.yaml
+summary: Handoff rewrite scans feedback of completed bundles; guide uses the generic configuration sentence; feedback is defined by the bundle feedback/ directory everywhere (in_feedback)
+findings:
+- issue: Proposal handoff still skips completed bundles whole, feedback included, so a stale PROP- reference in now-current feedback becomes a RULE-document-reference error
+  evidence: src/devkit_spec/proposals/rewrite.py:92
+  failure_condition: A completed bundle's feedback references PROP-new; after `proposal handoff new`, `devkit rules check` reports the feedback file
+  suggested_action: Skip only the historical files of completed bundles in the handoff rewrite
+  resolution: resolved
+- issue: The guide advises a permanent phase override, which devkit treats as temporary (RULES_PROMOTION_READY)
+  evidence: src/devkit_spec/bundle/rules/spec_progress/guide.md:37
+  failure_condition: A project following the advice gets a promotion notice on every hygiene run
+  suggested_action: Use the generic configuration sentence; keep the severity override example
+  resolution: resolved
+- issue: A Living Spec document was edited outside every task boundary
+  evidence: docs/capabilities/documents/CAP-DOCS-document-lookup.md:113
+  failure_condition: The edit is unexplained and line 80 still describes --history as covering every file of completed bundles
+  suggested_action: Leave it to the reconcile stage together with line 80
+  resolution: waived
+  waiver: 'Living Spec edits belong to the reconcile stage: CAP-DOCS-document-lookup is a reconcile target there, line 80 included'
+checks:
+  tests: PASS just ci

@@ -22,7 +22,7 @@ escapes are skipped, link labels and targets are not.
 Fields are read line by line as written (a top-level ``id:`` / ``area:`` line), so a header YAML rejects is still
 checked. The fix sets the ``id`` / ``reconcile_id`` and ``area`` lines (inserting a missing one) and the heading
 token, never moves a file, never renames a duplicate slug and never rewrites a reference; it skips completed spec
-bundles (within the targets, when the run names any).
+bundles, their feedback aside (within the targets, when the run names any).
 
 A namespace docs root (``docs/packages/<name>/``, registered in ``[[tool.spec.namespaces]]``) holds Living Spec
 documents under the same conventions: ``docs/packages/<name>/capabilities/<area>/CAP-<AREA>-<slug>.md`` is checked as
@@ -43,7 +43,7 @@ from devkit.rules import Phase, RuleContext, Severity, Violation
 from devkit.rules.rules import BaseRule
 
 from devkit_spec.config import Namespace
-from devkit_spec.documents import DocumentIndex, Kind, VisibleLine, visible_lines
+from devkit_spec.documents import DocumentIndex, Kind, VisibleLine, in_feedback, visible_lines
 from devkit_spec.namespaces import docs_roots, living_path
 from devkit_spec.rules import FIX_COMMAND, document_index, explicitly_targeted, namespaces
 
@@ -257,6 +257,11 @@ def _completed_bundles(index: DocumentIndex) -> set[str]:
     return {"/".join(d.path.split("/")[:3]) for d in index.documents if index.is_historical(d)}
 
 
+def _historical(path: str, completed: set[str]) -> bool:
+    """Whether ``path`` is work history: a file of a completed bundle other than its feedback (``CAP-DOCS-document-model``)."""
+    return "/".join(path.split("/")[:3]) in completed and not in_feedback(path)
+
+
 def _block(text: str) -> FrontmatterBlock | None:
     """The frontmatter block; an unclosed one counts as none."""
     try:
@@ -357,7 +362,7 @@ class IdConventionRule(BaseRule):
         def reportable(path: str) -> bool:
             if not ctx.is_file_targeted(path):
                 return False
-            return "/".join(path.split("/")[:3]) not in completed or explicitly_targeted(ctx, path)
+            return not _historical(path, completed) or explicitly_targeted(ctx, path)
 
         def add(
             path: str, line: int, message: str, remediation: str, *, column: int = 0, fixable: bool = False
@@ -466,7 +471,7 @@ class IdConventionRule(BaseRule):
         changed: list[str] = []
         for target in _targets(ctx):
             path = target.path
-            if target.path_issue or not ctx.is_file_targeted(path) or "/".join(path.split("/")[:3]) in completed:
+            if target.path_issue or not ctx.is_file_targeted(path) or _historical(path, completed):
                 continue
             text = ctx.cache.read_text_strict(path)
             if text is None:

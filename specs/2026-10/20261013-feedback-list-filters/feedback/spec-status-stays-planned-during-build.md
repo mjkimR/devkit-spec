@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: noise
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-13
 ---
 
@@ -30,3 +30,5 @@ created_at: 2026-10-13
 [WORKFLOW: direct-delivery unit=specs/2026-10/20261013-feedback-list-filters status=planned bound=yes]
 [DONE: intent direction specify build-verify review-refine]
 ```
+
+- **Disposition**: `SPEC-open-feedback-and-progress`: `RULE-spec-progress` (warning, fixable) moves a draft or planned spec with a checked task to in-progress

@@ -1,0 +1,6 @@
+request: gate:integration
+kind: approve
+action: accept
+workflow: direct-delivery
+stage: integration-approval
+at: '2026-10-13T06:27:57Z'

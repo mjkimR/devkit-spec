@@ -77,7 +77,8 @@ resolve` maps IDs to paths, `devkit spec refs` follows the references of one doc
      a scalar's text, `true`/`false` for a boolean, the ISO 8601 form of a date or timestamp, any scalar element of a
      list. A missing field, `null` or a mapping never matches. Each `--where` must match. An item without `=`, field
      or value MUST fail with `ARGUMENT_INVALID` (exit `2`, nothing on stdout).
-   - `--history`: include historical documents (files of completed spec bundles); hidden by default.
+   - `--history`: include historical documents (files of completed spec bundles, their feedback aside, which is
+     always current); hidden by default.
    - `--file PATH`: documents whose frontmatter `entrypoints` overlap the workspace-relative path: an entry equal to
      it, under it, or a directory containing it (whole path segments, case-sensitive; `CAP-TRACE-code-entrypoints`).
      The path need not exist, so a deleted file still finds its documents; an invalid path matches nothing. Only
@@ -110,7 +111,7 @@ devkit spec refs CAP-CORE-search --direction in       # what references it
 devkit spec list story --status active --area core    # browse
 devkit spec list capability --file src/engine/        # documents owning a code path
 devkit spec list spec --history --all-namespaces      # completed bundles too, every package
-devkit spec list feedback --status open --where severity=critical --history -n 0   # open critical feedback
+devkit spec list feedback --status open --where severity=critical -n 0   # open critical feedback
 ```
 
 ### 4.2 Text Output

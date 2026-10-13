@@ -184,7 +184,7 @@ IDs are numbered `AC-<count + 1>` in order.
 
 Every Markdown file under `docs/` and `specs/` is scanned, except the proposal itself, directories starting with `.`,
 symbolic links and the files of completed spec bundles (`spec.md` with `status: completed`), which record the
-proposal as it was.
+proposal as it was; their `feedback/` is scanned, since feedback stays current.
 
 - **Relative Markdown links** (inline links and images outside code, devkit's `extract_links`) that resolve into the
   proposal are pointed at the new locations: `proposal.md` (or the single file) to `spec.md`, `target-docs.md` to its

@@ -58,6 +58,12 @@ id = "spec-lifecycle"
 kind = "rule"
 source = "rules/spec_lifecycle"
 
+# A spec whose tasks have started is marked in-progress (warning).
+[[assets]]
+id = "spec-progress"
+kind = "rule"
+source = "rules/spec_progress"
+
 # Entry router: classify intent, choose the route and drive the workflow.
 [[assets]]
 id = "spec"
@@ -239,6 +245,7 @@ assets = [
     "traceability-link",
     "task-coverage",
     "spec-lifecycle",
+    "spec-progress",
     "reconcile-contract",
     "document-summary",
     "code-entrypoints",

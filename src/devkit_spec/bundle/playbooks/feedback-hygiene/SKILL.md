@@ -23,16 +23,16 @@ drafts, bundle fixes, proposals, specs) ready for review.
 
 - The user asked for this playbook. Destinations are the user's decisions; this playbook drafts and asks.
 - A clean working tree (`git status`), or an isolated branch or task worktree.
-- `uv run devkit spec list feedback --status open --history -n 0` lists at least one item; otherwise report an
+- `uv run devkit spec list feedback --status open -n 0` lists at least one item; otherwise report an
   empty backlog and stop.
 
 ## Step 1: Collect
 
 ```bash
-uv run devkit spec list feedback --status open --history -n 0
+uv run devkit spec list feedback --status open -n 0
 ```
 
-`--history` includes completed spec bundles; `--query <text>` narrows by ID or title. Each line carries `severity`,
+Feedback of completed spec bundles is included; `--query <text>` narrows by ID or title. Each line carries `severity`,
 `scope` and `target`, critical items first. A scope or severity the user names narrows the selection with
 `--where scope=<scope>` or `--where severity=<a>,<b>`; otherwise take every open item. Read each selected file's
 remaining frontmatter (`kind`, `category`, `recurring`, `origin`) in Step 2.
@@ -76,6 +76,6 @@ for an `s-lane` fix, or the report location for a forward. A dismissal states it
 ## Completion conditions
 
 - Every item selected in Step 1 has `status` `promoted`, `dismissed` or `forwarded` and one disposition line;
-  `uv run devkit spec list feedback --status open --history -n 0` lists none of them.
+  `uv run devkit spec list feedback --status open -n 0` lists none of them.
 - Every promotion's draft exists and was reviewed by the user; nothing was promoted without approval.
 - `uv run devkit rules check` exits `0`; the status updates and drafts are proposed as one commit.

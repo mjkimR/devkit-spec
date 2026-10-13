@@ -47,6 +47,12 @@ def test_kinds_history_and_limit(docs: Path) -> None:
     assert _ids(docs, "search", kinds={Kind.STORY, Kind.CAPABILITY}) == ["CAP-CORE-search"]
     assert "SPEC-done" not in _ids(docs, "search work")
     assert "SPEC-done" in _ids(docs, "search work", history=True)
+
+
+def test_feedback_of_a_completed_bundle_is_found_without_history(docs: Path, write: Write) -> None:
+    # AC-02: feedback stays current after its bundle completes.
+    write("specs/2026-10/20261001-done/feedback/slow.md", _doc("FB-slow", "Zanzibar sync blocks", status="open"))
+    assert "FB-slow" in _ids(docs, "zanzibar")
     assert len(_ids(docs, "documents search", limit=1)) == 1
 
 

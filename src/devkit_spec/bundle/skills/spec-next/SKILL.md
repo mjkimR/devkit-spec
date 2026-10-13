@@ -49,7 +49,7 @@ Run `devkit spec list proposal`:
 - Is there an accepted proposal ready for `devkit spec proposal handoff <slug>`?
 
 ### Step 4: Check Open Feedback
-Run `devkit spec list feedback --status open --history --where severity=critical` for the critical items, and the same without `--where` for the count of the rest (`--history`: feedback in completed bundles stays open); feedback lines carry `severity`, `scope` and `target`.
+Run `devkit spec list feedback --status open --where severity=critical` for the critical items, and the same without `--where` for the count of the rest; feedback lines carry `severity`, `scope` and `target`.
 
 ---
 

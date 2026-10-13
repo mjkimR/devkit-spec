@@ -36,7 +36,7 @@ _STATUS_LINE = re.compile(r"^status:[ \t]*[^\r\n]*", re.MULTILINE)
 
 
 @dataclass(frozen=True, slots=True)
-class _Bundle:
+class Bundle:
     """The lifecycle files of one spec bundle (workspace-relative paths) and what they say."""
 
     spec: str
@@ -74,7 +74,7 @@ class SpecLifecycleRule(BaseRule):
 
     def check(self, ctx: RuleContext) -> list[Violation]:
         found: list[Violation] = []
-        for bundle in _bundles(ctx):
+        for bundle in bundles(ctx):
             finding = _evaluate(ctx, bundle)
             if finding is not None:
                 found.append(
@@ -91,21 +91,22 @@ class SpecLifecycleRule(BaseRule):
 
     def fix(self, ctx: RuleContext) -> list[str]:
         changed: list[str] = []
-        for bundle in _bundles(ctx):
+        for bundle in bundles(ctx):
             finding = _evaluate(ctx, bundle)
             if finding is None or not finding.fixable:
                 continue
             text = ctx.cache.read_text_strict(bundle.spec)
-            updated = _completed(text) if text is not None else None
+            updated = with_status(text, COMPLETED) if text is not None else None
             if updated is not None and updated != text:
                 ctx.cache.write_text(bundle.spec, updated, dry_run=ctx.dry_run)
                 changed.append(bundle.spec)
         return changed
 
 
-def _bundles(ctx: RuleContext) -> list[_Bundle]:
+def bundles(ctx: RuleContext) -> list[Bundle]:
+    """Every spec bundle of the workspace (each ``spec.md`` under ``specs/``), with its statuses and task counts."""
     root = ctx.workspace_root
-    bundles: list[_Bundle] = []
+    found: list[Bundle] = []
     for path in ctx.cache.find_files(root / "specs", extensions=(".md",)):
         if path.name != "spec.md":
             continue
@@ -115,8 +116,8 @@ def _bundles(ctx: RuleContext) -> list[_Bundle]:
         has_reconcile = _read(ctx, reconcile) is not None
         tasks_text = _read(ctx, tasks)
         done, total = count_tasks(tasks_text) if tasks_text is not None else (0, 0)
-        bundles.append(
-            _Bundle(
+        found.append(
+            Bundle(
                 spec=spec,
                 reconcile=reconcile,
                 tasks=tasks,
@@ -127,19 +128,15 @@ def _bundles(ctx: RuleContext) -> list[_Bundle]:
                 done_tasks=done,
             )
         )
-    return bundles
+    return found
 
 
-def _evaluate(ctx: RuleContext, bundle: _Bundle) -> _Finding | None:
+def _evaluate(ctx: RuleContext, bundle: Bundle) -> _Finding | None:
     """The bundle's violation, placed on a file the run targets; ``None`` when consistent or not targeted."""
-    spec_targeted = ctx.is_file_targeted(bundle.spec)
-    if spec_targeted:
-        file = bundle.spec
-    else:
-        named = [path for path in (bundle.reconcile, bundle.tasks) if explicitly_targeted(ctx, path)]
-        if not named:
-            return None
-        file = named[0]
+    file = placement(ctx, bundle, (bundle.reconcile, bundle.tasks))
+    if file is None:
+        return None
+    spec_targeted = file == bundle.spec
     if bundle.spec_status == COMPLETED:
         if not bundle.has_reconcile:
             return _Finding(
@@ -158,8 +155,8 @@ def _evaluate(ctx: RuleContext, bundle: _Bundle) -> _Finding | None:
                 fixable=False,
             )
         return None
-    if bundle.has_reconcile and bundle.reconcile_status == RESOLVED and bundle.done_tasks > 0 and not bundle.open_tasks:
-        fixable = spec_targeted and _has_status_line(ctx, bundle.spec)
+    if stale(bundle):
+        fixable = spec_targeted and has_status_line(ctx, bundle.spec)
         return _Finding(
             file,
             f"Spec status '{bundle.spec_status}' of {bundle.spec} is stale:"
@@ -189,18 +186,33 @@ def _status(ctx: RuleContext, path: str) -> str:
     return str(value).strip().lower()
 
 
-def _has_status_line(ctx: RuleContext, path: str) -> bool:
+def placement(ctx: RuleContext, bundle: Bundle, others: tuple[str, ...]) -> str | None:
+    """The file a bundle's violation lands on: its ``spec.md`` when targeted, else the first of ``others`` the run
+    names explicitly; ``None`` when the run targets none of them."""
+    if ctx.is_file_targeted(bundle.spec):
+        return bundle.spec
+    return next((path for path in others if explicitly_targeted(ctx, path)), None)
+
+
+def stale(bundle: Bundle) -> bool:
+    """Every task checked (at least one) and ``reconcile.md`` resolved: the spec is due ``completed``."""
+    return (
+        bundle.has_reconcile and bundle.reconcile_status == RESOLVED and bundle.done_tasks > 0 and not bundle.open_tasks
+    )
+
+
+def has_status_line(ctx: RuleContext, path: str) -> bool:
     text = _read(ctx, path)
-    return text is not None and _completed(text) is not None
+    return text is not None and with_status(text, COMPLETED) is not None
 
 
-def _completed(text: str) -> str | None:
-    """``text`` with its frontmatter ``status:`` line set to ``completed``; ``None`` when there is no such line."""
+def with_status(text: str, status: str) -> str | None:
+    """``text`` with its frontmatter ``status:`` line set to ``status``; ``None`` when there is no such line."""
     try:
         block = locate(text)
     except FrontmatterError:
         return None
     if block is None or not _STATUS_LINE.search(block.header):
         return None
-    header = _STATUS_LINE.sub("status: completed", block.header)
+    header = _STATUS_LINE.sub(f"status: {status}", block.header)
     return text[: block.header_start] + header + text[block.header_end :]

@@ -62,10 +62,13 @@ def test_files_of_completed_spec_bundles_are_historical(workspace: Path, write: 
     write("specs/2026-10/20261001-done/plan.md", _doc("PLAN-done"))
     write("specs/2026-10/20261002-open/spec.md", _doc("SPEC-open", status="draft"))
     write("specs/2026-10/feedback/20261003-x.md", _doc("FB-x"))
+    write("specs/2026-10/20261001-done/feedback/y.md", _doc("FB-y", status="open"))
     index = DocumentIndex.load(workspace)
+    # Feedback has its own lifecycle: a completed bundle's feedback stays current.
     assert {document.id: index.is_historical(document) for document in index.documents} == {
         "SPEC-done": True,
         "PLAN-done": True,
         "SPEC-open": False,
         "FB-x": False,
+        "FB-y": False,
     }

@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-13
 ---
 
@@ -38,3 +38,5 @@ $ devkit spec list feedback --status open -n 0
 $ devkit spec list feedback --status open --history -n 0
 ... [PAGE: total=9 offset=0 limit=0 count=9 next=-]
 ```
+
+- **Disposition**: `SPEC-open-feedback-and-progress`: feedback of completed bundles stays current (specrig parity); the assets no longer pass `--history`

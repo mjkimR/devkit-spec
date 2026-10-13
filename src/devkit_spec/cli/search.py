@@ -36,7 +36,9 @@ from devkit_spec.search import DEFAULT_LIMIT, DEFAULT_MIN_SIMILARITY, search_doc
     type=click.Choice([str(kind) for kind in Kind]),
     help="Only this kind (repeatable)",
 )
-@click.option("--history", is_flag=True, help="Include the files of completed spec bundles")
+@click.option(
+    "--history", is_flag=True, help="Include the files of completed spec bundles (their feedback is always included)"
+)
 @NAMESPACE
 @ALL_NAMESPACES
 @click.option(

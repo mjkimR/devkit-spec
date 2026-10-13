@@ -422,3 +422,18 @@ def test_malformed_namespace_config_fails_the_run(tmp_path: Path) -> None:
     result = evaluate_rules(RuleContext(workspace_root=tmp_path), [RULE])
     assert [error.code for error in result.errors] == ["RULES_EXECUTION_FAILED"]
     assert "tool.spec.namespaces[0]" in str(result.errors[0])
+
+
+def test_feedback_of_a_completed_bundle_is_checked_like_current_documents(tmp_path: Path) -> None:
+    # Feedback stays current after its bundle completes; the bundle's other files are history.
+    base = "specs/2026-10/20261005-done"
+    write_files(
+        tmp_path,
+        {
+            f"{base}/spec.md": "---\nid: SPEC-done\nstatus: completed\n---\n\n# [SPEC-done] D\n",
+            f"{base}/plan.md": "---\nid: PLAN-other\nspec: SPEC-done\n---\n\n# Plan\n",
+            f"{base}/feedback/wrong-id.md": "---\nid: FB-other\nstatus: open\n---\n\n# [FB-wrong-id] bad\n",
+        },
+    )
+    flagged = {v.file for v in check(RULE, tmp_path)}
+    assert f"{base}/feedback/wrong-id.md" in flagged and f"{base}/plan.md" not in flagged

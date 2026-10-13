@@ -69,10 +69,18 @@ def _files(root: Path) -> Iterable[Path]:
                     yield path
 
 
+def in_feedback(path: str) -> bool:
+    """Whether the workspace-relative ``path`` is in a spec bundle's ``feedback/`` directory
+    (``specs/<YYYY-MM>/<bundle>/feedback/...``): feedback stays current when its bundle completes."""
+    parts = path.split("/")
+    return len(parts) > 4 and parts[0] == "specs" and parts[3] == "feedback"
+
+
 @dataclass
 class DocumentIndex:
     """``documents`` in path order, ``by_id`` every document declaring an ID, ``problems`` the files left out,
-    ``historical`` the paths of the files of completed spec bundles (work history, no longer current)."""
+    ``historical`` the paths of the files of completed spec bundles (work history, no longer current), feedback
+    aside: a feedback file stays current until a hygiene session settles it, whatever its bundle's status."""
 
     root: Path
     documents: list[Document] = field(default_factory=list)
@@ -109,7 +117,7 @@ class DocumentIndex:
         for document in index.documents:
             bundle = _spec_bundle(document.path)
             spec = specs.get(f"{bundle}/spec.md") if bundle else None
-            if spec is not None and spec.status == COMPLETED:
+            if spec is not None and spec.status == COMPLETED and not in_feedback(document.path):
                 index.historical.add(document.path)
         return index
 

@@ -1,7 +1,7 @@
 ---
 id: CAP-GOV-spec-rules
 title: Spec Governance Rules
-summary: Defines the nine governance rules the spec bundle ships for devkit rules (document references, ID conventions, frontmatter format, traceability links, task coverage, spec lifecycle, reconcile records, code entrypoints, summaries), their shared targeting and snapshot behavior, fixes and layout.
+summary: Defines the ten governance rules the spec bundle ships for devkit rules (references, IDs, frontmatter, traceability, task coverage, spec lifecycle and progress, reconcile records, entrypoints, summaries), their shared targeting and snapshot behavior, fixes and layout.
 area: governance
 status: active
 stories:
@@ -17,7 +17,7 @@ created_at: 2026-10-13
 
 ## 1. Summary
 
-The `spec` bundle ships nine deterministic rules that keep the Living Spec and the feature specs consistent. `devkit
+The `spec` bundle ships ten deterministic rules that keep the Living Spec and the feature specs consistent. `devkit
 sync` deploys them with the bundle's `core` preset, and devkit's rule engine runs them beside its own rules:
 `devkit rules check` (whole workspace or named targets), `check --staged` (the commit gate), `check --ci --base <ref>`
 and `devkit rules fix`. This capability is the catalog and the contract summary of each rule; the full guide of a rule
@@ -41,7 +41,8 @@ and `devkit rules fix`. This capability is the catalog and the contract summary 
 
 ### 3.1 Catalog
 
-Every rule is phase `linter`, severity `error`, and is deployed by the `core` preset.
+Every rule is phase `linter` and is deployed by the `core` preset; every rule is severity `error` except
+`RULE-spec-progress` (`warning`), a progress hint that never blocks a commit.
 
 | Rule | Checks | Fix |
 | --- | --- | --- |
@@ -51,6 +52,7 @@ Every rule is phase `linter`, severity `error`, and is deployed by the `core` pr
 | `RULE-traceability-link` | A story's `capabilities` and a capability's `stories` link both ways. | Appends the missing reverse ID. |
 | `RULE-task-coverage` | Acceptance-criterion IDs of a spec and the task references of its `tasks.md` cover each other. | none |
 | `RULE-spec-lifecycle` | A spec's `status`, its task checklist and its `reconcile.md` status agree. | Sets `status: completed` on a stale `spec.md`. |
+| `RULE-spec-progress` | A `draft` or `planned` spec with a checked task is marked `in-progress`. | Sets `status: in-progress`. |
 | `RULE-reconcile-contract` | A `reconcile.md` is well formed; in a snapshot run its `modified` targets changed in the diff. | none |
 | `RULE-code-entrypoints` | Every `entrypoints` path of a capability or story is a valid, existing workspace path. | none |
 | `RULE-document-summary` | Searchable documents carry a short English `summary`. | none |
@@ -63,7 +65,7 @@ Every rule is phase `linter`, severity `error`, and is deployed by the `core` pr
    checks the files it changes, `devkit rules check` without targets the whole workspace. A rule whose relation spans
    several files (task coverage, lifecycle, traceability, entrypoints) states below where it reports when only one
    side is targeted.
-3. **History**: files of completed spec bundles are work history: checked only when named as explicit targets, never
+3. **History**: files of completed spec bundles, their `feedback/` aside, are work history: checked only when named as explicit targets, never
    rewritten by a fix. `RULE-spec-lifecycle` is the exception: its conditions concern completed bundles, so it checks
    them in every run.
 4. **Materials**: `docs/materials/` (and any `/materials/` directory, including `docs/packages/<name>/materials/`)
@@ -187,7 +189,18 @@ In a spec bundle the `status` of `spec.md`, the checklist of `tasks.md` and the 
 - **Fix**: sets `status: completed` by rewriting only the top-level `status:` line of a targeted `spec.md`; a
   `spec.md` without a `status:` line is fixed by hand.
 
-### 3.9 `RULE-reconcile-contract`
+### 3.9 `RULE-spec-progress`
+
+A spec's `status` says where its work is; nothing else moves it to `in-progress`. devkit gives each rule one severity,
+so this hint is a rule of its own (`SPEC-open-feedback-and-progress`).
+
+- SHOULD report (severity `warning`): `spec.md` `draft` or `planned` (trimmed, case-insensitive) while at least one
+  task of `tasks.md` is checked. A bundle in `RULE-spec-lifecycle`'s stale state (every task checked, `reconcile.md`
+  `resolved`) is left to that rule, so the two fixes never disagree.
+- Targeting and placement are `RULE-spec-lifecycle`'s, with `tasks.md` as the only other file.
+- **Fix**: sets `status: in-progress` by rewriting only the top-level `status:` line of a targeted `spec.md`.
+
+### 3.10 `RULE-reconcile-contract`
 
 `reconcile.md` records how a change was reconciled into the Living Spec (written by the `spec-sync` skill).
 
@@ -200,14 +213,14 @@ In a spec bundle the `status` of `spec.md`, the checklist of `tasks.md` and the 
   whose frontmatter is unchanged from the base is not rechecked. A plain `devkit rules check` checks the form only.
 - Every targeted record of a current bundle; a completed bundle's record only when explicitly targeted. Not fixable.
 
-### 3.10 `RULE-code-entrypoints`
+### 3.11 `RULE-code-entrypoints`
 
 Every `entrypoints` item of a capability or story (`docs/` and namespace docs roots) MUST be a string, a literal
 workspace-relative path, and an existing file or directory inside the workspace. In a snapshot run it also reports
 every current document that declares a path the diff deletes. Not fixable. The full contract is
 `CAP-TRACE-code-entrypoints`.
 
-### 3.11 `RULE-document-summary`
+### 3.12 `RULE-document-summary`
 
 `summary` is the main signal of `devkit spec search` (`CAP-DOCS-document-search`).
 

@@ -77,4 +77,4 @@ For a single observation, one line:
 
 ## 5. Sweep (stage or user request)
 
-For a workflow stage sweep (`collect-feedback`, or S-Lane's `report-session`) or an explicit user-requested session sweep, read the [sweep procedure](references/sweep.md). Requested sweeps ignore the stage switch (`[workflow.stages] collect-feedback = "off"`) and write no envelope. Deduplication covers the full open backlog: `devkit spec list feedback --status open --history -n 0`.
+For a workflow stage sweep (`collect-feedback`, or S-Lane's `report-session`) or an explicit user-requested session sweep, read the [sweep procedure](references/sweep.md). Requested sweeps ignore the stage switch (`[workflow.stages] collect-feedback = "off"`) and write no envelope. Deduplication covers the full open backlog: `devkit spec list feedback --status open -n 0`.

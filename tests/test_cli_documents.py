@@ -80,6 +80,14 @@ def test_refs_of_an_unknown_id(docs: Path) -> None:
     assert result.exit_code == 2 and "(SPEC_ID_UNRESOLVED)" in result.stderr
 
 
+def test_feedback_of_a_completed_bundle_is_listed_without_history(docs: Path, write: Write) -> None:
+    # AC-01: the bundle's other files stay hidden.
+    write("specs/2026-10/20261001-done/feedback/x.md", _doc("FB-x", status="open"))
+    payload = json.loads(_spec("list", "feedback", "--status", "open", "--format", "json", workspace=docs).stdout)
+    assert [(d["id"], d["historical"]) for d in payload["documents"]] == [("FB-x", False)]
+    assert "SPEC-done" not in _spec("list", "spec", workspace=docs).stdout
+
+
 def test_list_hides_history_and_counts_tasks(docs: Path) -> None:
     result = _spec("list", "spec", workspace=docs)
     assert result.stdout.splitlines() == [

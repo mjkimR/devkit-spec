@@ -20,7 +20,7 @@ term's contract, the last column names it. Search synonyms for these terms live 
 | **Provenance** | The `proposal` field of a spec: the proposal it was handed off from; history, not a reference. | `CAP-DOCS-document-model` |
 | **Traceability link** | The bidirectional `stories:` / `capabilities:` link between a capability and a story. | `CAP-GOV-spec-rules` |
 | **Namespace** | A monorepo package registered in `[[tool.spec.namespaces]]` with its own Living Spec under `docs/packages/<name>/` (its docs root). Narrows browsing; IDs stay repository-wide. `global` holds everything else. | `CAP-DOCS-namespaces` |
-| **Historical document** | A file of a spec bundle whose `spec.md` is `status: completed`: work history, hidden from listings unless `--history` and checked by most rules only when explicitly targeted. | `CAP-DOCS-document-lookup` |
+| **Historical document** | A file of a spec bundle whose `spec.md` is `status: completed`, outside its `feedback/`: work history, hidden from listings unless `--history` and checked by most rules only when explicitly targeted. | `CAP-DOCS-document-lookup` |
 | **Glossary expansion** | Adding a term's whole synonym cluster from `docs/glossary.yaml` to a search query that contains any of its words. | `CAP-DOCS-document-search` |
 | **Pinning** | A search query equal to a document's ID, path or file name puts that document first (`score=-`). | `CAP-DOCS-document-search` |
 

@@ -347,13 +347,19 @@ def test_leaves_completed_bundles_alone(workspace: Path, write: Write) -> None:
     write("specs/2026-09/20260901-done/reconcile.md", "---\nreconcile_id: REC-done\n---\n" + refs)
     write("specs/2026-09/20260902-active/spec.md", "---\nid: SPEC-active\nstatus: in-progress\n---\n")
     write("specs/2026-09/20260902-active/plan.md", "---\nid: PLAN-active\n---\n" + refs)
+    # Feedback stays current after its bundle completes, so its references move with the handoff.
+    write("specs/2026-09/20260901-done/feedback/x.md", "---\nid: FB-x\nstatus: open\n---\nSee [PROP-history].\n")
 
     result = handoff_proposal(workspace, "history", today=TODAY)
 
     assert refs in (workspace / "specs/2026-09/20260901-done/reconcile.md").read_text(encoding="utf-8")
+    feedback = (workspace / "specs/2026-09/20260901-done/feedback/x.md").read_text(encoding="utf-8")
+    assert "SPEC-history" in feedback and "PROP-history" not in feedback
     plan = (workspace / "specs/2026-09/20260902-active/plan.md").read_text(encoding="utf-8")
     assert "`SPEC-history`" in plan and "PROP-history" not in plan
-    assert not any("20260901-done" in path for path in result.rewritten_files)
+    assert [path for path in result.rewritten_files if "20260901-done" in path] == [
+        "specs/2026-09/20260901-done/feedback/x.md"
+    ]
 
 
 def _frontmatter_keys(text: str) -> list[str]:

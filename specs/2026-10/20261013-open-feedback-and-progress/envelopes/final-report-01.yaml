@@ -1,0 +1,17 @@
+kind: final-report
+stage: final-change-report
+created_at: '2026-10-13T06:21:35Z'
+status: completed
+summary: Feedback of completed bundles stays current (index, id-convention, handoff rewrite); RULE-spec-progress (warning) moves started specs to in-progress; assets list feedback without --history; Living Spec reconciled
+findings: []
+assumptions:
+- Nothing committed before G3; diff_scope has no head sha
+- Warning severity is a separate rule because devkit stamps each violation with its rule's severity (user decision)
+- Living Spec draft written in the main session
+checks:
+  tests: PASS just ci; devkit rules test 14/14
+  build: PASS uv build
+  lint: PASS ruff, pyright, devkit rules check
+diff_scope:
+  base: bf565a7b08a8a02c97985666cc03f45da472dc0a
+  head: ''
