@@ -133,9 +133,9 @@ wheels = [
 ]
 
 [[package]]
-name = "devkit"
+name = "devkit-agt"
 version = "0.1.0"
-source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit#bb010b810c26847845c61031bedc9c1fd0218c2d" }
+source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit#0c82c55c21f0768941a9d7656f310d7b52c9c69f" }
 dependencies = [
     { name = "click" },
     { name = "devkit-advisory" },
@@ -153,7 +153,7 @@ search = [
 [[package]]
 name = "devkit-advisory"
 version = "0.1.0"
-source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit-advisory#bb010b810c26847845c61031bedc9c1fd0218c2d" }
+source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit-advisory#0c82c55c21f0768941a9d7656f310d7b52c9c69f" }
 
 [[package]]
 name = "devkit-embed"
@@ -169,12 +169,12 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
-    { name = "devkit" },
+    { name = "devkit-agt" },
 ]
 
 [package.optional-dependencies]
 search = [
-    { name = "devkit", extra = ["search"] },
+    { name = "devkit-agt", extra = ["search"] },
 ]
 
 [package.dev-dependencies]
@@ -188,8 +188,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1.7" },
-    { name = "devkit", git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit" },
-    { name = "devkit", extras = ["search"], marker = "extra == 'search'", git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit" },
+    { name = "devkit-agt", git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit" },
+    { name = "devkit-agt", extras = ["search"], marker = "extra == 'search'", git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit" },
 ]
 provides-extras = ["search"]
 

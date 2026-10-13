@@ -6,12 +6,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "click>=8.1.7",
-    "devkit>=0.1,<0.2",
+    "devkit-agt>=0.1,<0.2",
 ]
 
 [project.optional-dependencies]
 # Dense and hybrid `devkit spec search`: devkit's search extra (numpy, tokenizers, the embedding model).
-search = ["devkit[search]"]
+search = ["devkit-agt[search]"]
 
 # The bundle: deployed by `devkit sync` (auto_select).
 [project.entry-points."devkit.bundles"]
@@ -41,7 +41,7 @@ dev = [
 # devkit comes from its GitHub main (no package index hosts it; the PyPI name belongs to another project).
 # These sources also apply when a consumer installs devkit-spec from Git. devkit's own sources bring devkit-advisory
 # and, for the search extra, the released model wheel; declaring either here again would conflict with them.
-devkit = { git = "https://github.com/mjkimR/devkit.git", subdirectory = "packages/devkit" }
+devkit-agt = { git = "https://github.com/mjkimR/devkit.git", subdirectory = "packages/devkit" }
 
 [build-system]
 requires = ["hatchling"]

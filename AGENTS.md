@@ -18,7 +18,7 @@ Every command follows devkit's output contract, because an AI coding agent is it
 
 ## Compatibility
 
-No external consumers exist yet. Breaking changes to the bundle, the commands and the APIs may be made in place, without migrations or deprecation shims. devkit is pinned to a minor range (`devkit>=0.1,<0.2`) and moves with it.
+No external consumers exist yet. Breaking changes to the bundle, the commands and the APIs may be made in place, without migrations or deprecation shims. devkit is pinned to a minor range (`devkit-agt>=0.1,<0.2`) and moves with it.
 
 ## Verification
 
