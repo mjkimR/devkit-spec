@@ -1,0 +1,1 @@
+- Before any development work, run `uv run devkit get-context spec` once per agent context and follow it. Start work with `/sr <intent>`; `/sr-next` orients. `docs/` is the current-state Living Spec, `specs/` holds feature specs.

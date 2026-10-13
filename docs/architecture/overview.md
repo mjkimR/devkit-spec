@@ -43,12 +43,12 @@ Where each specrig component goes. "devkit" means the capability already exists 
 | `worktree start\|finish\|status` | devkit worktree | |
 | Scope registry and journal (`scope`), proposal cleanup on finish | `devkit spec scope` | Attached to the worktree lifecycle through `devkit.worktree`'s `before_remove`. |
 | `git.worktree` route policy | `spec` bundle guidance | Which routes run in a worktree. |
-| `config show`, `.specrig/config.yml` | `.devkit/config.toml` | Approvals map to `[workflow]`, `pull_request` and branch cleanup to `[worktree]`; SDD-only keys go to a `[spec]` table. |
+| `config show`, `.specrig/config.yml` | `devkit spec policy`, `.devkit/config.toml` | Approvals map to `[workflow.approvals]` (gates `intent`, `direction`, `integration`), the feedback sweep to `[workflow.stages]`, `pull_request` and branch cleanup to `[worktree]`; SDD-only keys (`git.worktree`) go to `[tool.spec]`. [Policy](../policy.md). |
 | `list`, `resolve`, `refs` (document catalog) | `devkit spec list\|resolve\|refs` | |
 | `search` (BM25, go-potion dense, hybrid) | `devkit spec search` on devkit.search | devkit-spec keeps the search policy: scopes, namespaces, exact-ID pinning, glossary. |
-| `proposal new\|padr\|handoff` | `devkit spec proposal` | Handoff builds on devkit workflow's handoff. |
+| `proposal new\|padr\|handoff` | `devkit spec proposal`, `devkit spec new` | Handoff is its own cross-layout move (devkit's `devkit workflow handoff` rebinds a unit in place); `devkit spec new` creates a spec bundle without a proposal. [Proposals](../proposals/overview.md). |
 | `entrypoints derive` | `devkit spec entrypoints` | |
-| `list feedback`, feedback capture | `devkit spec` (undecided) | |
+| `list feedback`, feedback capture | `devkit spec list feedback`, the `sr-feedback` skill | Feedback documents are indexed like any document; specrig's scope, severity and kind filters are not ported. |
 | `list playbooks`, `playbook new` | devkit `devkit playbook search` | Authoring a playbook needs no command. |
 | `cache`, `serve`, `sync`, `reading` | dropped | Derived-data cache, the removed web viewer, and two commands specrig never implemented. |
 | Skills `sr`, `sr-*` | `spec` bundle, `kind = "skill"` | Rewritten against devkit and `devkit spec` commands. |
@@ -86,3 +86,8 @@ package; the deployed file stays a stable one-liner.
 - [Documents overview](../documents/overview.md) and [reference](../documents/reference.md): the document model and
   `devkit spec resolve|refs|list`.
 - [Rules reference](../rules/reference.md): the rules the bundle ships.
+- [Workflows overview](../workflows/overview.md): the four delivery workflows, their gates and the role contracts.
+- [Document search](../search.md): `devkit spec search` and its policy.
+- [Project policy](../policy.md): `devkit spec policy` and `[tool.spec]`.
+- [Proposals overview](../proposals/overview.md) and [reference](../proposals/reference.md): proposals, PADRs and
+  handoff (`devkit spec proposal`), and new spec bundles (`devkit spec new`).

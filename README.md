@@ -14,8 +14,10 @@ and gate engines, document search, task worktrees and the Agent Advisory Protoco
 CLI it replaces; [the architecture overview](docs/architecture/overview.md) maps each specrig component to its new
 home.
 
-Status: porting. Done: the document model with `devkit spec resolve|refs|list`, the spec rules, the
-contract-authoring instruction and the document templates. Next: workflows, skills and the docs skeleton.
+Status: porting. Done: the document model (`devkit spec resolve|refs|list|search`), the six spec rules, the four
+delivery workflows with their role contracts, proposals and spec bundles (`devkit spec proposal new|padr|handoff`,
+`devkit spec new`), `devkit spec policy`, the constitution, instructions, templates and 13 `sr*` skills. Not yet:
+namespaces, the scope registry, entrypoints, the feedback hygiene playbook and the docs skeleton.
 
 ## Use in a project
 

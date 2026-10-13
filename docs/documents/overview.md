@@ -37,5 +37,5 @@ Every reference keeps its field, 1-based line and column, and the character offs
 
 ## 3. Not Yet Ported
 
-- **Namespaces** (specrig `workspace.namespaces`): package documents under `docs/packages/<name>/` narrowing `list` and search by the current directory. They will move to a `[spec]` table of `.devkit/config.toml`.
+- **Namespaces** (specrig `workspace.namespaces`): package documents under `docs/packages/<name>/` narrowing `list` and search by the current directory. They will move to the `[tool.spec]` table of `.devkit/config.toml`.
 - Per-kind listing extras of specrig (`--with-story`, `--with-cap`, `--file`, proposal priority and size, feedback filters).

@@ -6,7 +6,7 @@ created_at: YYYY-MM-DD
 target_area: capabilities/<area>/      # Target capability area on graduation (e.g., capabilities/governance/)
 priority: high                        # critical | high | medium | low (estimated priority)
 size: M                               # S | M | L | XL (estimated scope: S=single fix, M=1-2 sessions, L=complex module, XL=major overhaul)
-# workflow: WF-bugfix                 # Optional workflow following handoff (default: WF-direct-delivery)
+# handoff_workflow: bugfix   # workflow after handoff (default: direct-delivery)
 ---
 
 # [PROP-<slug>] Proposal Title

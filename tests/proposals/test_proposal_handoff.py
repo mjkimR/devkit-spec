@@ -1,0 +1,503 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+from conftest import Write
+from devkit.core.frontmatter import parse
+from proposals.support import INCUBATED, MONTH, STAMP, TODAY, WORKFLOW, accept, spec_dir, write_workflow
+
+from devkit_spec.errors import (
+    ProposalHandoffError,
+    ProposalNotApprovedError,
+    ProposalNotFoundError,
+    ProposalSlugConflictError,
+    ProposalTargetExistsError,
+    ProposalWorkflowError,
+)
+from devkit_spec.proposals import SKELETON_MARKER, HandoffResult, create_padr, create_proposal, handoff_proposal
+
+SPEC = f"specs/{MONTH}/{STAMP}"
+
+
+def _new(
+    root: Path, slug: str, *, title: str | None = None, target_area: str | None = None, with_target_docs: bool = False
+) -> Path:
+    """A scaffolded bundle; returns its proposal.md."""
+    created = create_proposal(
+        root, slug, title=title, target_area=target_area, with_target_docs=with_target_docs, today=TODAY
+    )
+    return root / created.path
+
+
+def _codes(result: HandoffResult) -> list[str]:
+    return [notice.code for notice in result.notices]
+
+
+def test_lifecycle(workspace: Path) -> None:
+    proposal = _new(
+        workspace,
+        "fast-engine",
+        title="Fast Rule Engine",
+        target_area="capabilities/governance/",
+        with_target_docs=True,
+    )
+    create_padr(workspace, "fast-engine", "Use Go AST Parser")
+    create_padr(workspace, "fast-engine", "Parallel File Worker Pool")
+    with pytest.raises(ProposalNotApprovedError) as raised:
+        handoff_proposal(workspace, "fast-engine", today=TODAY)
+    assert raised.value.advisory.mode == "INTERACTION"
+    (proposal.parent / "materials/survey.md").write_text("# Survey Report\nResearch content", encoding="utf-8")
+    accept(proposal)
+    with proposal.open("a", encoding="utf-8") as handle:
+        handle.write("\n\n## Complex Section\nHere is some `inline code` and:\n```yaml\nfoo: bar\n```\n")
+    blueprint = (proposal.parent / "target-docs.md").read_text(encoding="utf-8")
+
+    result = handoff_proposal(workspace, "PROP-fast-engine", today=TODAY)
+
+    target = spec_dir(workspace, "fast-engine")
+    assert (result.proposal, result.spec, result.dir) == ("PROP-fast-engine", "SPEC-fast-engine", f"{SPEC}-fast-engine")
+    spec = (target / "spec.md").read_text(encoding="utf-8")
+    assert spec.startswith("---\nid: SPEC-fast-engine\n")
+    assert "# [SPEC-fast-engine] Fast Rule Engine" in spec
+    assert "### [AC-01] <scenario>" in spec and "[AC-02]" not in spec
+    assert "### 1. Background & Hypothesis" in spec
+    assert "## 5. Carried Proposal Notes" in spec
+    assert "### Complex Section\n\nHere is some `inline code` and:\n```yaml\nfoo: bar\n```" in spec
+    assert f"- **Preserved Materials**: `docs/materials/{MONTH}/{STAMP}-fast-engine`" in spec
+    tasks = (target / "tasks.md").read_text(encoding="utf-8")
+    assert "  - _Requirements: AC-01_" in tasks
+    assert "  - **_Boundary**: capabilities/governance/" in tasks
+    plan = (target / "plan.md").read_text(encoding="utf-8")
+    assert "Target Docs Blueprint: `PROP-fast-engine-target`" in plan
+
+    # The blueprint is kept verbatim apart from its provenance.
+    assert result.target_docs == f"{SPEC}-fast-engine/target-docs.md"
+    assert (target / "target-docs.md").read_text(encoding="utf-8") == blueprint.replace(
+        "proposal: PROP-fast-engine", "proposal: SPEC-fast-engine", 1
+    )
+
+    assert [(d.id, d.padr) for d in result.decisions] == [
+        ("ADR-parallel-file-worker-pool", "PADR-parallel-file-worker-pool"),
+        ("ADR-use-go-ast-parser", "PADR-use-go-ast-parser"),
+    ]
+    adr = (workspace / f"docs/decisions/{MONTH}/{STAMP}-use-go-ast-parser.md").read_text(encoding="utf-8")
+    assert "id: ADR-use-go-ast-parser\n" in adr
+    assert "# [ADR-use-go-ast-parser] " in adr
+    assert "\nstatus: accepted\n" in adr
+    assert "\n- **Status**: Accepted\n" in adr
+    assert "proposal: SPEC-fast-engine" in adr
+    assert "PADR-" not in adr and "Draft" not in adr
+
+    assert result.materials == f"docs/materials/{MONTH}/{STAMP}-fast-engine"
+    assert (workspace / f"docs/materials/{MONTH}/{STAMP}-fast-engine/survey.md").is_file()
+    assert not proposal.parent.exists()
+    assert result.workflow is None
+    assert _codes(result) == ["SPEC_PROPOSAL_UNBOUND", "SPEC_PROPOSAL_REFS_REWRITTEN"]
+
+
+def test_without_target_docs(workspace: Path) -> None:
+    accept(_new(workspace, "lean-idea", title="Lean Idea"))
+    result = handoff_proposal(workspace, "lean-idea", today=TODAY)
+    target = spec_dir(workspace, "lean-idea")
+    assert result.target_docs is None and not (target / "target-docs.md").exists()
+    assert "Target Docs Blueprint" not in (target / "plan.md").read_text(encoding="utf-8")
+    assert result.materials is None and result.decisions == []
+    assert not (workspace / "docs/proposals/PROP-lean-idea").exists()
+
+
+def test_direction_chosen_approves_a_draft_or_reviewing_proposal(workspace: Path) -> None:
+    _new(workspace, "chosen")
+    result = handoff_proposal(workspace, "chosen", direction_chosen=True, today=TODAY)
+    assert result.spec == "SPEC-chosen"
+    proposal = _new(workspace, "rejected")
+    proposal.write_text(proposal.read_text(encoding="utf-8").replace("status: draft", "status: rejected"), "utf-8")
+    with pytest.raises(ProposalNotApprovedError):
+        handoff_proposal(workspace, "rejected", direction_chosen=True, today=TODAY)
+
+
+def test_unknown_proposal(workspace: Path) -> None:
+    with pytest.raises(ProposalNotFoundError):
+        handoff_proposal(workspace, "nothing", today=TODAY)
+
+
+def test_rewrites_links_into_the_bundle(workspace: Path, write: Write) -> None:
+    proposal = _new(workspace, "linked", title="Linked Proposal", with_target_docs=True)
+    bundle = proposal.parent
+    create_padr(workspace, "linked", "Pick Engine")
+    write("docs/capabilities/lifecycle/CAP-X.md", "# cap\n")
+    write(
+        "docs/proposals/PROP-linked/materials/survey.md",
+        "# Survey\n"
+        "[back](../proposal.md) [padr](../decisions/PADR-pick-engine.md#sec) [cap](../../../capabilities/lifecycle/CAP-X.md)\n"
+        "[dirlink](../) [sibling](./notes.md)\n",
+    )
+    write("docs/proposals/PROP-linked/materials/notes.md", "# notes\n")
+    other = _new(workspace, "other", title="Other")
+    other.write_text(
+        "# Other\n"
+        "See [prop](../PROP-linked/proposal.md), [blueprint](../PROP-linked/target-docs.md), "
+        "[padr](../PROP-linked/decisions/PADR-pick-engine.md), [mat](../PROP-linked/materials/survey.md), "
+        "[dir](../PROP-linked/).\n"
+        "Ambiguous: [decisions](../PROP-linked/decisions/) and [missing](../PROP-linked/materials/absent/x.md).\n"
+        "Keep: [ext](https://example.com/PROP-linked/proposal.md) [anchor](#top) [abs](/docs/proposals/PROP-linked/proposal.md)\n"
+        "```md\n[code](../PROP-linked/proposal.md)\n```\n",
+        encoding="utf-8",
+    )
+    write("specs/note.md", "[p](../docs/proposals/PROP-linked/proposal.md)\n")
+    accept(proposal)
+
+    result = handoff_proposal(workspace, "linked", today=TODAY)
+
+    spec_rel = f"{SPEC}-linked"
+    mat_rel = f"docs/materials/{MONTH}/{STAMP}-linked"
+    assert set(result.rewritten_files) == {
+        f"{mat_rel}/survey.md",
+        "docs/proposals/PROP-other/proposal.md",
+        "specs/note.md",
+        f"docs/decisions/{MONTH}/{STAMP}-pick-engine.md",
+        f"{spec_rel}/target-docs.md",
+    }
+    assert [u.to_dict() for u in result.unresolved] == [
+        {
+            "path": "docs/proposals/PROP-other/proposal.md",
+            "line": 3,
+            "kind": "link",
+            "target": "../PROP-linked/decisions/",
+            "reason": "unmapped",
+        }
+    ]
+    assert "SPEC_PROPOSAL_LINK_UNRESOLVED" in _codes(result)
+
+    got = other.read_text(encoding="utf-8")
+    assert f"[prop](../../../{spec_rel}/spec.md)" in got
+    assert f"[blueprint](../../../{spec_rel}/target-docs.md)" in got
+    assert f"[padr](../../decisions/{MONTH}/{STAMP}-pick-engine.md)" in got
+    assert f"[mat](../../materials/{MONTH}/{STAMP}-linked/survey.md)" in got
+    assert f"[dir](../../../{spec_rel})" in got
+    assert "[decisions](../PROP-linked/decisions/)" in got
+    # A link into the moved materials keeps pointing into them, as broken as before.
+    assert f"[missing](../../materials/{MONTH}/{STAMP}-linked/absent/x.md)" in got
+    assert (
+        "[ext](https://example.com/PROP-linked/proposal.md) [anchor](#top) [abs](/docs/proposals/PROP-linked/proposal.md)"
+        in got
+    )
+    assert "```md\n[code](../PROP-linked/proposal.md)\n```" in got
+
+    material = (workspace / mat_rel / "survey.md").read_text(encoding="utf-8")
+    assert f"[back](../../../../{spec_rel}/spec.md)" in material
+    assert f"[padr](../../../decisions/{MONTH}/{STAMP}-pick-engine.md#sec)" in material
+    assert "[cap](../../../capabilities/lifecycle/CAP-X.md)" in material
+    assert f"[dirlink](../../../../{spec_rel})" in material
+    assert "[sibling](./notes.md)" in material
+    assert (workspace / "specs/note.md").read_text(encoding="utf-8") == f"[p]({MONTH}/{STAMP}-linked/spec.md)\n"
+    rewritten = {(r.path, r.line, r.old): r.new for r in result.rewritten if r.kind == "link"}
+    assert (
+        rewritten[("specs/note.md", 1, "../docs/proposals/PROP-linked/proposal.md")]
+        == f"{MONTH}/{STAMP}-linked/spec.md"
+    )
+    assert not bundle.exists()
+
+
+def test_carries_the_proposal_body(workspace: Path, write: Write) -> None:
+    write("docs/capabilities/lifecycle/CAP-X.md", "# cap\n")
+    write(
+        "docs/proposals/PROP-carry/proposal.md",
+        """---
+id: PROP-carry
+title: Carry Me
+status: accepted
+created_at: 2026-10-06
+target_area: capabilities/lifecycle/
+milestone: "v0.5: First"
+boundaries:
+  owns:
+    - src/scaffold/
+    - capabilities/lifecycle/
+  excludes:
+    - docs/decisions/
+---
+
+# [PROP-carry] Carry Me
+
+Intro paragraph before any H2 with a link to [CAP-X](../../capabilities/lifecycle/CAP-X.md).
+
+## Origin and Reason for Handoff
+
+Why this exists. See also [notes](materials/notes.md).
+
+### Detail heading
+
+Nested detail.
+
+---
+
+## Remaining Scope
+
+1. Do the thing.
+
+## Expected Acceptance Checks
+
+- **Given** a bundle, **When** handoff runs, **Then** the body is carried.
+- **Given** nothing, **When** handoff runs, **Then** a placeholder exists.
+
+## Non-Goals
+
+1. **Scope Excluded**: Parsing meaning.
+   - **Rationale**: Deterministic only.
+
+## Resume Conditions and Dependencies
+
+- Needs nothing.
+""",
+    )
+    write("docs/proposals/PROP-carry/materials/notes.md", "# notes\n")
+    write(
+        "docs/proposals/PROP-carry/target-docs.md",
+        "---\nid: PROP-carry-target\ntitle: t\nstatus: draft\n---\n\n# blueprint\n\n[cap](../../capabilities/lifecycle/CAP-X.md)\n",
+    )
+
+    result = handoff_proposal(workspace, "carry", today=TODAY)
+
+    spec = (spec_dir(workspace, "carry") / "spec.md").read_text(encoding="utf-8")
+    assert "## 1. Problem Statement & Motivation\n\nHanded off from proposal PROP-carry on 2026-10-13." in spec
+    assert "milestone: 'v0.5: First'\n" in spec
+    assert (
+        "Intro paragraph before any H2 with a link to [CAP-X](../../../docs/capabilities/lifecycle/CAP-X.md)." in spec
+    )
+    assert (
+        "### Origin and Reason for Handoff\n\nWhy this exists. See also "
+        f"[notes](../../../docs/materials/{MONTH}/{STAMP}-carry/notes.md).\n\n#### Detail heading"
+    ) in spec
+    assert "## 3. Non-Goals\n\n1. **Scope Excluded**: Parsing meaning." in spec
+    assert "### Non-Goals" not in spec
+    assert (
+        "## 4. Acceptance Criteria & Behavioral Contracts\n\n"
+        "### Scenario 1 [AC-01]: Carried from proposal\n- **Given** a bundle"
+    ) in spec
+    assert "\n### Scenario 2 [AC-02]: Carried from proposal\n- **Given** nothing" in spec
+    assert "### Expected Acceptance Checks" not in spec
+    assert "### Remaining Scope\n\n1. Do the thing." in spec
+    assert "### Resume Conditions and Dependencies\n\n- Needs nothing." in spec
+    assert "\n---\n\n## Remaining Scope" not in spec
+
+    plan = (spec_dir(workspace, "carry") / "plan.md").read_text(encoding="utf-8")
+    assert (
+        "### Planned Boundaries:\n- `src/scaffold/`\n- `capabilities/lifecycle/`\n\n"
+        "### Excluded Boundaries:\n- `docs/decisions/`\n"
+    ) in plan
+    tasks = (spec_dir(workspace, "carry") / "tasks.md").read_text(encoding="utf-8")
+    assert "  - **_Boundary**: src/scaffold/, capabilities/lifecycle/\n  - _Requirements: AC-01, AC-02_" in tasks
+    blueprint = (spec_dir(workspace, "carry") / "target-docs.md").read_text(encoding="utf-8")
+    assert "[cap](../../../docs/capabilities/lifecycle/CAP-X.md)" in blueprint
+    assert f"{SPEC}-carry/spec.md" in result.rewritten_files
+    assert f"{SPEC}-carry/target-docs.md" in result.rewritten_files
+    assert result.unresolved == []
+
+
+def test_rewrites_id_references_and_provenance(workspace: Path, write: Write) -> None:
+    proposal = _new(workspace, "ref-test", title="Test", with_target_docs=True)
+    create_padr(workspace, "ref-test", "Choose parser")
+    accept(proposal)
+    with proposal.open("a", encoding="utf-8") as handle:
+        handle.write("\n[PADR-choose-parser]\n")
+    write(
+        "docs/consumer.md",
+        "---\nid: US-consumer\nspec: SPEC-other\n---\n[PROP-ref-test] [PADR-choose-parser]\n"
+        "Historical PROP-ref-test and `[PROP-ref-test]`\n```\n[PADR-choose-parser]\n```\n",
+    )
+    write("docs/README.md", "# Docs\n[PROP-ref-test]\n")
+
+    result = handoff_proposal(workspace, "ref-test", today=TODAY)
+
+    assert result.unresolved == []
+    consumer = (workspace / "docs/consumer.md").read_text(encoding="utf-8")
+    assert "`SPEC-ref-test` `ADR-choose-parser`" in consumer
+    assert "Historical PROP-ref-test and `[PROP-ref-test]`" in consumer
+    assert "```\n[PADR-choose-parser]\n```" in consumer
+    assert "`SPEC-ref-test`" in (workspace / "docs/README.md").read_text(encoding="utf-8")
+    adr = (workspace / result.decisions[0].path).read_text(encoding="utf-8")
+    assert "proposal: SPEC-ref-test" in adr
+    assert "spec: SPEC-ref-test" in (spec_dir(workspace, "ref-test") / "plan.md").read_text(encoding="utf-8")
+    ids = {(r.path, r.line, r.old, r.new) for r in result.rewritten if r.kind == "id"}
+    assert ("docs/consumer.md", 5, "PROP-ref-test", "SPEC-ref-test") in ids
+    assert ("docs/consumer.md", 5, "PADR-choose-parser", "ADR-choose-parser") in ids
+    assert ("docs/README.md", 2, "PROP-ref-test", "SPEC-ref-test") in ids
+    assert not any(path == "docs/consumer.md" and line in (6, 8) for path, line, _, _ in ids)
+    assert "SPEC_PROPOSAL_REFS_REWRITTEN" in _codes(result)
+
+
+def test_reports_references_to_documents_nothing_replaced(workspace: Path, write: Write) -> None:
+    proposal = _new(workspace, "relative")
+    accept(proposal)
+    write("docs/proposals/PROP-relative/decisions/unpromoted.md", "---\nid: PADR-unpromoted\n---\n")
+    write("docs/README.md", "[PROP-relative] [PADR-unpromoted]\n")
+    result = handoff_proposal(workspace, "relative", today=TODAY)
+    readme = (workspace / "docs/README.md").read_text(encoding="utf-8")
+    assert "`SPEC-relative`" in readme and "[PADR-unpromoted]" in readme
+    assert [u.to_dict() for u in result.unresolved] == [
+        {"path": "docs/README.md", "line": 1, "kind": "id", "target": "PADR-unpromoted", "reason": "removed"}
+    ]
+
+
+def test_leaves_completed_bundles_alone(workspace: Path, write: Write) -> None:
+    accept(_new(workspace, "history"))
+    refs = "See [PROP-history] and [the proposal](../../../docs/proposals/PROP-history/proposal.md).\n"
+    write("specs/2026-09/20260901-done/spec.md", "---\nid: SPEC-done\nstatus: completed\n---\n")
+    write("specs/2026-09/20260901-done/reconcile.md", "---\nreconcile_id: REC-done\n---\n" + refs)
+    write("specs/2026-09/20260902-active/spec.md", "---\nid: SPEC-active\nstatus: in-progress\n---\n")
+    write("specs/2026-09/20260902-active/plan.md", "---\nid: PLAN-active\n---\n" + refs)
+
+    result = handoff_proposal(workspace, "history", today=TODAY)
+
+    assert refs in (workspace / "specs/2026-09/20260901-done/reconcile.md").read_text(encoding="utf-8")
+    plan = (workspace / "specs/2026-09/20260902-active/plan.md").read_text(encoding="utf-8")
+    assert "`SPEC-history`" in plan and "PROP-history" not in plan
+    assert not any("20260901-done" in path for path in result.rewritten_files)
+
+
+def _frontmatter_keys(text: str) -> list[str]:
+    data = parse(text).data
+    assert data is not None
+    return list(data)
+
+
+def test_marks_skeletons(workspace: Path) -> None:
+    write_workflow(workspace, "direct-delivery")
+    accept(_new(workspace, "marked"))
+    result = handoff_proposal(workspace, "marked", today=TODAY)
+    target = spec_dir(workspace, "marked")
+    for name in ("spec.md", "plan.md", "tasks.md"):
+        text = (target / name).read_text(encoding="utf-8")
+        lines = text.split("\n")
+        closing = lines.index("---", 1)
+        assert lines[closing + 1] == SKELETON_MARKER, name
+        assert text.count(SKELETON_MARKER) == 1, name
+    spec = (target / "spec.md").read_text(encoding="utf-8")
+    assert "\nworkflow: direct-delivery\nworkflow_hash: sha256:" in spec
+    assert "## 3. Non-Goals\n\n1. **Scope Excluded**: <what this change will not do>\n" in spec
+    assert "### [AC-01] <scenario>\n- **Given** <precondition>\n" in spec
+    assert _frontmatter_keys((target / "tasks.md").read_text(encoding="utf-8")) == ["id", "spec", "plan"]
+    assert _frontmatter_keys((target / "plan.md").read_text(encoding="utf-8")) == ["id", "spec"]
+    assert result.workflow == "direct-delivery"
+    assert result.next_command == f"devkit workflow next --unit {SPEC}-marked"
+
+
+def test_binds_the_proposal_workflow(workspace: Path) -> None:
+    write_workflow(workspace, "direct-delivery")
+    write_workflow(workspace, "bugfix")
+    accept(_new(workspace, "defect"), "\nhandoff_workflow: bugfix")
+    result = handoff_proposal(workspace, "defect", today=TODAY)
+    spec = (spec_dir(workspace, "defect") / "spec.md").read_text(encoding="utf-8")
+    assert "\nworkflow: bugfix\nworkflow_hash: sha256:" in spec
+    assert spec.startswith("---\nid: SPEC-defect\n")
+    assert parse(spec).data["kind"] == "bugfix"  # type: ignore[index]
+    # bugfix writes plan.md and tasks.md later; the scope they would carry lands in spec.md's notes.
+    assert sorted(path.name for path in spec_dir(workspace, "defect").iterdir()) == ["spec.md"]
+    assert (
+        "## 5. Carried Proposal Notes" in spec
+        and "### Target Area & Boundaries\n\n- Target Area: capabilities/<area>/\n"
+        "- Planned Boundaries: `capabilities/<area>/`\n- Excluded Boundaries: `docs/decisions/`\n"
+        in spec
+    )
+    assert "### [AC-01] <scenario>" in spec
+    assert result.workflow == "bugfix" and "SPEC_PROPOSAL_UNBOUND" not in _codes(result)
+
+
+@pytest.mark.parametrize("definition", [None, WORKFLOW.format(id="bugfix").replace("schema_version: 1", "")])
+def test_an_unbindable_proposal_workflow_writes_nothing(workspace: Path, definition: str | None) -> None:
+    write_workflow(workspace, "direct-delivery")
+    if definition is not None:
+        write_workflow(workspace, "bugfix", definition)
+    proposal = _new(workspace, "defect")
+    accept(proposal, "\nhandoff_workflow: bugfix")
+    with pytest.raises(ProposalWorkflowError) as raised:
+        handoff_proposal(workspace, "defect", today=TODAY)
+    assert "bugfix" in raised.value.message
+    assert proposal.is_file()
+    assert not (workspace / "specs").exists()
+
+
+def test_the_proposal_units_own_binding_is_not_carried(workspace: Path) -> None:
+    write_workflow(workspace, "direct-delivery")
+    write_workflow(workspace, "incubated-delivery", INCUBATED)
+    proposal = _new(workspace, "unit")
+    assert "workflow: incubated-delivery" in proposal.read_text(encoding="utf-8")
+    accept(proposal)
+    result = handoff_proposal(workspace, "unit", today=TODAY)
+    assert result.workflow == "direct-delivery"
+    spec = parse((spec_dir(workspace, "unit") / "spec.md").read_text(encoding="utf-8")).data
+    assert spec is not None and spec["workflow"] == "direct-delivery" and "kind" not in spec
+
+
+def test_without_the_default_workflow_the_spec_stays_unbound(workspace: Path) -> None:
+    accept(_new(workspace, "unbound"))
+    result = handoff_proposal(workspace, "unbound", today=TODAY)
+    assert "workflow_hash" not in (spec_dir(workspace, "unbound") / "spec.md").read_text(encoding="utf-8")
+    assert result.workflow is None and result.next_command is None
+    assert "SPEC_PROPOSAL_UNBOUND" in _codes(result)
+
+
+def test_refuses_a_slug_a_spec_already_uses(workspace: Path, write: Write) -> None:
+    write("specs/2026-09/20260901-demo/spec.md", "---\nid: SPEC-demo\nstatus: completed\n---\n")
+    proposal = write(
+        "docs/proposals/PROP-demo/proposal.md",
+        "---\nid: PROP-demo\ntitle: Demo\nstatus: accepted\n---\n# [PROP-demo] Demo\n",
+    )
+    with pytest.raises(ProposalSlugConflictError):
+        handoff_proposal(workspace, "demo", today=TODAY)
+    assert proposal.is_file()
+    assert [p.name for p in (workspace / "specs").iterdir()] == ["2026-09"]
+
+
+def test_refuses_to_overwrite_and_writes_nothing(workspace: Path, write: Write) -> None:
+    proposal = _new(workspace, "clash")
+    create_padr(workspace, "clash", "Taken")
+    write("docs/proposals/PROP-clash/materials/a.md", "# a\n")
+    accept(proposal)
+    existing = write(f"docs/decisions/{MONTH}/{STAMP}-taken.md", "keep\n")
+    with pytest.raises(ProposalTargetExistsError) as raised:
+        handoff_proposal(workspace, "clash", today=TODAY)
+    assert raised.value.target_files == (f"docs/decisions/{MONTH}/{STAMP}-taken.md",)
+    assert existing.read_text(encoding="utf-8") == "keep\n"
+    assert proposal.is_file() and (proposal.parent / "materials/a.md").is_file()
+    assert not (workspace / "specs").exists()
+
+
+def test_refuses_an_adr_id_another_document_declares(workspace: Path, write: Write) -> None:
+    proposal = _new(workspace, "twice")
+    create_padr(workspace, "twice", "Same")
+    accept(proposal)
+    write("docs/decisions/2026-01/20260101-same.md", "---\nid: ADR-same\n---\n")
+    with pytest.raises(ProposalTargetExistsError):
+        handoff_proposal(workspace, "twice", today=TODAY)
+    assert proposal.is_file()
+
+
+def test_a_failed_write_is_rolled_back(workspace: Path, write: Write) -> None:
+    proposal = _new(workspace, "fails")
+    create_padr(workspace, "fails", "Decision")
+    write("docs/proposals/PROP-fails/materials/a.md", "# a\n")
+    accept(proposal)
+    write("docs/decisions", "not a directory\n")  # the ADR cannot be written
+    with pytest.raises(ProposalHandoffError):
+        handoff_proposal(workspace, "fails", today=TODAY)
+    assert not (workspace / "specs" / MONTH).exists()
+    assert proposal.is_file() and (proposal.parent / "materials/a.md").is_file()
+    assert (proposal.parent / "decisions/PADR-decision.md").is_file()
+
+
+def test_single_file_proposal(workspace: Path, write: Write) -> None:
+    write(
+        "docs/proposals/PROP-single.md",
+        "---\nid: PROP-single\ntitle: Single\nstatus: accepted\ntarget_area: capabilities/x/\n---\n\n"
+        "# [PROP-single] Single\n\n## Background\n\nNot carried.\n",
+    )
+    write("docs/stories/US-a.md", "---\nid: US-a\n---\n[PROP-single] [s](../proposals/PROP-single.md)\n")
+    result = handoff_proposal(workspace, "single", today=TODAY)
+    spec = (spec_dir(workspace, "single") / "spec.md").read_text(encoding="utf-8")
+    assert "Not carried." not in spec and "## 5. Carried Proposal Notes" not in spec
+    story = (workspace / "docs/stories/US-a.md").read_text(encoding="utf-8")
+    assert f"`SPEC-single` [s](../../{SPEC}-single/spec.md)" in story
+    assert not (workspace / "docs/proposals/PROP-single.md").exists()
+    assert result.decisions == [] and result.materials is None

@@ -10,6 +10,18 @@ id = "contract-authoring"
 kind = "instruction"
 source = "instructions/contract-authoring.md"
 
+# Current-state writing, history placement, completed specs, traceability and ID references.
+[[assets]]
+id = "living-spec-writing"
+kind = "instruction"
+source = "instructions/living-spec-writing.md"
+
+# The AGENTS.md line that sends every session to the spec bundle's context before development work.
+[[assets]]
+id = "spec-pointer"
+kind = "guidance"
+source = "guidance/spec-pointer.md"
+
 # Documents reference each other by exact, resolvable full IDs.
 [[assets]]
 id = "document-reference"
@@ -46,15 +58,137 @@ id = "spec-lifecycle"
 kind = "rule"
 source = "rules/spec_lifecycle"
 
+# Entry router: classify intent, choose the route and drive the workflow.
+[[assets]]
+id = "sr"
+kind = "skill"
+source = "skills/sr"
+
+# Orient in work under way: diagnose the stage and the next action.
+[[assets]]
+id = "sr-next"
+kind = "skill"
+source = "skills/sr-next"
+
+# Write spec.md: requirements, non-goals and acceptance criteria.
+[[assets]]
+id = "sr-spec"
+kind = "skill"
+source = "skills/sr-spec"
+
+# Write plan.md: design, interfaces and verification plan.
+[[assets]]
+id = "sr-plan"
+kind = "skill"
+source = "skills/sr-plan"
+
+# Write tasks.md: tasks covering every acceptance criterion.
+[[assets]]
+id = "sr-tasks"
+kind = "skill"
+source = "skills/sr-tasks"
+
+# Verify the change against the spec, tests and checks before completion.
+[[assets]]
+id = "sr-review"
+kind = "skill"
+source = "skills/sr-review"
+
+# Reconcile the change into the Living Spec and resolve reconcile.md.
+[[assets]]
+id = "sr-sync"
+kind = "skill"
+source = "skills/sr-sync"
+
+# Integrate an approved change: conflicts, docs reflection, merge and cleanup.
+[[assets]]
+id = "sr-integrate"
+kind = "skill"
+source = "skills/sr-integrate"
+
+# Delegate a stage to a role contract and record its envelope.
+[[assets]]
+id = "sr-delegate"
+kind = "skill"
+source = "skills/sr-delegate"
+
+# Challenge a direction before it is chosen.
+[[assets]]
+id = "sr-challenge"
+kind = "skill"
+source = "skills/sr-challenge"
+
+# Scout prior art and evidence for a proposal.
+[[assets]]
+id = "sr-scout"
+kind = "skill"
+source = "skills/sr-scout"
+
+# Author or tune a project rule for devkit rules.
+[[assets]]
+id = "sr-rule"
+kind = "skill"
+source = "skills/sr-rule"
+
+# Record and sweep feedback observations.
+[[assets]]
+id = "sr-feedback"
+kind = "skill"
+source = "skills/sr-feedback"
+
 # Starting points for new documents, read by path (.devkit/managed/spec/templates/<kind>.md).
 [[assets]]
 id = "templates"
 kind = "document"
 source = "templates"
 
+# Delivery workflows: routed stage schemas with the intent, direction and integration gates.
+[[assets]]
+id = "s-lane"
+kind = "workflow"
+source = "workflows/s-lane.md"
+
+[[assets]]
+id = "direct-delivery"
+kind = "workflow"
+source = "workflows/direct-delivery.md"
+
+[[assets]]
+id = "bugfix"
+kind = "workflow"
+source = "workflows/bugfix.md"
+
+[[assets]]
+id = "incubated-delivery"
+kind = "workflow"
+source = "workflows/incubated-delivery.md"
+
+# Optional support roles the workflows delegate to: host-neutral contracts, projected per agent.
+[[assets]]
+id = "challenger"
+kind = "subagent"
+source = "subagents/challenger.md"
+
+[[assets]]
+id = "reconciler"
+kind = "subagent"
+source = "subagents/reconciler.md"
+
+[[assets]]
+id = "reviewer"
+kind = "subagent"
+source = "subagents/reviewer.md"
+
+[[assets]]
+id = "scout"
+kind = "subagent"
+source = "subagents/scout.md"
+
 [presets.core]
 assets = [
     "contract-authoring",
+    "living-spec-writing",
+    "spec-pointer",
     "document-reference",
     "id-convention",
     "spec-format",
@@ -62,4 +196,25 @@ assets = [
     "task-coverage",
     "spec-lifecycle",
     "templates",
+    "sr",
+    "sr-next",
+    "sr-spec",
+    "sr-plan",
+    "sr-tasks",
+    "sr-review",
+    "sr-sync",
+    "sr-integrate",
+    "sr-delegate",
+    "sr-challenge",
+    "sr-scout",
+    "sr-rule",
+    "sr-feedback",
+    "s-lane",
+    "direct-delivery",
+    "bugfix",
+    "incubated-delivery",
+    "challenger",
+    "reconciler",
+    "reviewer",
+    "scout",
 ]

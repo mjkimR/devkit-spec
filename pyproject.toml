@@ -9,6 +9,10 @@ dependencies = [
     "devkit>=0.1,<0.2",
 ]
 
+[project.optional-dependencies]
+# Dense and hybrid `devkit spec search`: devkit's search extra (numpy, tokenizers, the embedding model).
+search = ["devkit[search]"]
+
 # The bundle: deployed by `devkit sync` (auto_select).
 [project.entry-points."devkit.bundles"]
 spec = "devkit_spec"
@@ -28,6 +32,7 @@ dev = [
 [tool.uv.sources]
 # devkit is developed next to this repository (../devkit); CI clones it there too.
 devkit = { path = "../devkit/packages/devkit", editable = true }
+devkit-embed = { path = "../devkit/packages/devkit-embed", editable = true }
 
 [build-system]
 requires = ["hatchling"]

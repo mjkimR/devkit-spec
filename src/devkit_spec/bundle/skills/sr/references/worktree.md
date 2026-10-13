@@ -1,0 +1,29 @@
+# Worktree procedure (`GIT_POLICY worktree=yes`)
+
+Read this before formal work when `devkit spec policy` prints `[GIT_POLICY: worktree=yes ...]` (`[tool.spec] worktree`). Every Route 2, Route 3 and bugfix task then runs in its own worktree from the first step to the cleanup after merge. Route 1 (S-Lane) stays in the current checkout. A request that names the checkout ("on main", "in the current branch", "in this worktree") overrides the policy for that task only; record the deviation and the request wording in the final change report's assumptions. `worktree=no` means the current checkout and no steps below.
+
+`devkit worktree` performs the deterministic steps; the session only changes directory. `<base>` is the checkout the request arrived in; `<slug>` is the proposal or spec slug. The worktree is always `<parent of base>/<base name>-wt-<slug>` on branch `<slug>`, created from the base HEAD; the base working tree is never touched. A new worktree runs the `[worktree] setup` command (`GIT_POLICY setup=`) and `devkit sync`, so the managed files and the commit gate work there; a `WORKTREE_SETUP_FAILED` or `WORKTREE_SYNC_FAILED` warning names the `[FIX]` command to rerun before any work.
+
+## 1. Start (in `<base>`, before any bundle or edit)
+
+- Route 3: draft and commit the proposal bundle (`docs/proposals/PROP-<slug>/`) in the base first; it may remain `draft` or `reviewing`. The worktree branches from the base HEAD, so an uncommitted proposal is not in it. After G2 (the user's choice under `direction` `ask`, or policy delegation under `auto`; report which), run `devkit worktree start <slug>`, run the printed `[NEXT_CMD: cd <path>]`, then hand off **inside** the worktree: `devkit spec proposal handoff <slug>` for an `accepted` proposal, or with `--direction-chosen` when the user chose a `draft` or `reviewing` proposal's direction. The handoff never infers approval. The base keeps the proposal until the merge. Route 4 keeps the team's `accepted` record and uses the same path.
+- Route 2 / bugfix: `devkit worktree start <slug>`, run the printed `cd`, then `devkit spec new <slug>` (`--workflow bugfix` for a defect), which creates and binds `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/`.
+- Guards: `start` inside a linked worktree stops with `WORKTREE_NESTED`. The slug's path taken by another branch, holding uncommitted changes or deleted without `git worktree prune` is `WORKTREE_CONFLICT`; an existing branch named after the slug is `WORKTREE_BRANCH_EXISTS`. None of these change anything; resolve them with the user or choose another slug. A clean worktree already on the slug's branch is reused (`created=no`).
+
+## 2. Work (in the worktree)
+
+- Run the stages as usual (`sr-spec`, `sr-plan`, `sr-tasks`, build, `sr-review`, `sr-sync`), checking each stage boundary with `devkit workflow next --unit <dir>`.
+- Commits happen on `<slug>` in this worktree (`git commit`; the commit gate runs there). Nothing is pushed or merged before G3.
+
+## 3. Integrate and finish (after G3, in `<base>`)
+
+- `pull_request=no`: `devkit worktree finish <slug> --merge`. It fetches the base branch's upstream, fast-forwards the base onto `<slug>`, pushes the base branch to its upstream (never forced), removes the worktree and deletes the branch when `delete_branch=yes`. The `[WORKTREE_FINISHED: ... push=...]` field says what happened to the push: `pushed`; `no-upstream` (the base branch tracks no remote; nothing was pushed, say so in the report); `rejected` (`WORKTREE_PUSH_REJECTED`: the upstream moved on; its `[FIX]` integrates it, then pushes); or `failed` (`WORKTREE_PUSH_FAILED`, whose `[FIX]` is the push to rerun once the cause, such as auth, network or a refused update, is resolved with the user). The cleanup finishes either way. Then run `devkit rules check --ci --base <merge-base>` on the result and declare the runner checks yourself, since no CI runner exists without a PR: `devkit workflow next --unit <dir> --given lint-ci-clean --given merged`.
+- `pull_request=yes`: push `<slug>`, open the PR and let it merge there; after the merge is confirmed run `devkit worktree finish <slug>` (no `--merge`; `--merge` is refused with `WORKTREE_PR_POLICY`). The merge test is an ancestor test, so a PR merged by squash or rebase stays `WORKTREE_UNMERGED`: remove that worktree and branch only with the user's authorization.
+- Each refusal names its cause and leaves earlier steps done, so the same command resumes once it is resolved: `WORKTREE_BASE_DIRTY` (commit or stash in the base), `WORKTREE_BASE_DETACHED` (check out the base branch), `WORKTREE_BASE_BEHIND` (`git pull --ff-only` in the base), `WORKTREE_MERGE_NOT_FF` (integrate the base into the branch first, `sr-integrate` Step 1), `WORKTREE_UNMERGED` (merge first), `WORKTREE_BRANCH_UNPUSHED` (push the branch to its upstream), `WORKTREE_DIRTY` (commit or discard in the worktree; nothing is ever removed by force), `WORKTREE_LOCKED` (unlock only once the user agrees). `WORKTREE_RUN_FROM_BASE` means `cd <base>` first. A refusal after a change still prints the partial `[WORKTREE_FINISHED: ...]` line.
+
+## Leftovers
+
+A worktree or branch abandoned by an earlier session shows up in `devkit worktree status` (from the base or any worktree; it changes nothing). Each worktree is one `[WORKTREE: <path> branch= head= role= merged= dirty= prunable=]` line; a local branch no worktree checks out and the base HEAD does not contain is a `[BRANCH: <name> head= merged=no]` line. Report them in `/sr-next`.
+
+- A linked worktree with `merged=yes dirty=no` (including one with no commits yet): `devkit worktree finish <slug>` cleans it.
+- `merged=no`, `dirty=yes`, `dirty=-` (unreadable), `prunable=yes` or a `[BRANCH]` line: remove only with the user's authorization, never with `-D` or `--force`. A prunable worktree's directory is already gone; `git worktree prune` forgets it.
