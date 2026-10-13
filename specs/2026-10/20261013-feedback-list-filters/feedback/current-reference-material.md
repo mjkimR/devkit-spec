@@ -1,0 +1,32 @@
+---
+id: FB-current-reference-material
+title: "A material used as a current map conflicts with materials being history"
+scope: repo
+kind: question
+category: instruction-conflict
+target: "MAT-specrig-port-map"
+skill: spec-sync
+agent: claude-code
+origin: agent
+severity: noise
+recurring: false
+status: open
+created_at: 2026-10-13
+---
+
+# [FB-current-reference-material] A material used as a current map conflicts with materials being history
+
+## 1. Friction / Question (friction, question)
+
+- **Context**: Reconciling a change that ports a specrig feature the port map marked as not ported
+- **Expectation**: living-spec-writing places dated materials with history, which suggests they are not rewritten
+- **Actual**: AGENTS.md cites the port map as the record of where each specrig component went, so its row was wrong after this change
+- **Workaround (or Interpretation Chosen)**: Rewrote the row in place and listed the material as a reconcile target
+- **Suggestion**: Decide whether the port map is current-state (move it out of materials) or history (stop citing it as current)
+
+## Evidence
+
+```text
+living-spec-writing: Change history belongs in Git, append-only ADRs ... and dated `docs/materials/`.
+AGENTS.md: [`MAT-specrig-port-map`] records where each of its components went.
+```

@@ -1,0 +1,14 @@
+kind: reverify
+stage: review-refine
+created_at: '2026-10-13T05:39:58Z'
+status: completed
+review: review-02.yaml
+summary: spec-next and envelope.md use --status open --history; AC-08 updated; just ci passed
+findings:
+- issue: spec-next and envelope.md list open feedback without --history, so feedback recorded in the just-completed bundle is hidden
+  evidence: src/devkit_spec/bundle/skills/spec/references/envelope.md:55
+  failure_condition: After living-spec-draft completes the spec, collect-feedback records feedback in the bundle; `list feedback --status open` returns total=0 while --history returns 9
+  suggested_action: Add --history to both commands and to AC-08
+  resolution: resolved
+checks:
+  tests: PASS just ci (497 passed, rules 0 violations)

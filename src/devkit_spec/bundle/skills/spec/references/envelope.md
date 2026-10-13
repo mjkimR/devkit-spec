@@ -52,7 +52,7 @@ devkit workflow envelope new --unit <dir> --kind final-report --stage final-chan
 
 Changed paths come from `git diff --name-only <base>..<head>`; docs impact and reconcile state live in `reconcile.md`; the review result is the latest review envelope. Do not repeat them. Record assumptions the user should see with `--assume`.
 
-When open feedback marked `severity: critical` exists (`devkit spec list feedback --status open`, then each item's `severity`), including items the `collect-feedback` sweep just recorded, list them in the report presented to the user, one line each: `FB-<slug> → <target>`, nothing else. The summary stays in the feedback file; the line exists so the person deciding G3 sees that a feedback hygiene pass is due.
+When open feedback marked `severity: critical` exists (`devkit spec list feedback --status open --history --where severity=critical`), including items the `collect-feedback` sweep just recorded, list them in the report presented to the user, one line each: `FB-<slug> → <target>`, nothing else. The summary stays in the feedback file; the line exists so the person deciding G3 sees that a feedback hygiene pass is due.
 
 ## 4. Integration result (after `spec-integrate`)
 

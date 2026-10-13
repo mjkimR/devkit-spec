@@ -1,0 +1,18 @@
+kind: final-report
+stage: final-change-report
+created_at: '2026-10-13T05:40:18Z'
+status: completed
+summary: devkit spec list gains --where, feedback severity order and severity/scope/target fields; four bundle assets select feedback through it; CAP-DOCS-document-lookup reconciled
+findings: []
+assumptions:
+- 'Nothing is committed yet: the commit on branch feedback-list-filters waits for the G3 answer, so diff_scope has no head sha'
+- Integration is local (finish --merge) at the user's request; base policy set to pull_request = false in 1049fe6 (S-Lane) before integration
+- Living Spec draft done in the main session, not delegated to the reconciler (one capability affected)
+- '.devkit/installation.json: the commit stages only this change''s asset hashes; the worktree also carries devkit-instruction hashes from the uncommitted local devkit'
+checks:
+  tests: 'PASS just test: 497 passed; devkit rules test 13/13'
+  build: PASS uv build (sdist + py3-none-any wheel)
+  lint: PASS just lint-check, just check (pyright 0), devkit rules check 0 violations
+diff_scope:
+  base: ad58cc679c3cf34b45322f11d18a763a7bd78ad1
+  head: ''

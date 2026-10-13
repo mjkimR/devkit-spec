@@ -6,8 +6,10 @@ Text output (paths are relative to the workspace root):
   are errors after the lines that did resolve.
 - ``refs``: ``[REF: <id> path= status= fields= count=]`` per referenced (``--direction out``) or referencing
   (``--direction in``) document, in ID order; ``path=-`` is a reference to an ID no document declares.
-- ``list``: ``[DOCUMENT: <id> kind= status= path= tasks= title=]`` per document in kind, then ID order; ``tasks``
-  is ``<checked>/<total>`` of a spec's ``tasks.md``.
+- ``list``: ``[DOCUMENT: <id> kind= status= path= tasks= title=]`` per document in kind, then ID order (feedback by
+  severity first); ``tasks`` is ``<checked>/<total>`` of a spec's ``tasks.md``. Feedback lines add ``severity=``,
+  ``scope=`` and ``target=`` after ``tasks=``. ``--where FIELD=A,B`` keeps documents whose frontmatter ``FIELD``
+  is one of the values.
 
 ``refs`` and ``list`` end with ``[PAGE: total= offset= limit= count= next=]`` and, when more items follow,
 ``[NEXT_CMD: ...]`` for the next page. Files that could not be indexed are ``SPEC_DOCUMENT_INVALID`` warnings.
@@ -17,6 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 import click
@@ -44,6 +47,22 @@ WORKSPACE = workspace_option()
 LIMIT = click.option("--limit", "-n", type=int, default=20, show_default=True, help="Items per page; 0 for all")
 OFFSET = click.option("--offset", type=int, default=0, show_default=True, help="Items to skip")
 _KIND_ORDER = {kind: position for position, kind in enumerate(Kind)}
+# Feedback ``severity`` values from the most to the least urgent; any other value, or none, ranks after them.
+SEVERITY_ORDER = ("critical", "blocked", "workaround", "noise")
+# The feedback frontmatter fields ``list`` prints on feedback lines and records.
+FEEDBACK_FIELDS = ("severity", "scope", "target")
+
+
+@dataclass(frozen=True)
+class WhereItem:
+    """One ``--where FIELD=A,B`` item: the frontmatter field, its accepted values lower-cased, the text given."""
+
+    field: str
+    values: frozenset[str]
+    given: str
+
+
+Where = tuple[WhereItem, ...]
 
 
 NAMESPACE = click.option(
@@ -89,6 +108,59 @@ def _check_page(limit: int, offset: int) -> None:
             target_files=["--limit", "--offset"],
             fix="Pass --limit 0 or more (0 returns every item) and --offset 0 or more",
         )
+
+
+def _where(given: tuple[str, ...]) -> Where:
+    """Parse ``--where FIELD=A,B`` items; a missing ``=``, field or value is an ``ARGUMENT_INVALID``."""
+    parsed: list[WhereItem] = []
+    for item in given:
+        field, equals, listed = item.partition("=")
+        values = frozenset(part.strip().lower() for part in listed.split(",") if part.strip())
+        if not equals or not field.strip() or not values:
+            raise ArgumentError(
+                f"--where {item}: expected FIELD=VALUE[,VALUE...]",
+                target_files=["--where"],
+                fix="Pass --where with a frontmatter field and at least one value, e.g. --where severity=critical",
+            )
+        parsed.append(WhereItem(field.strip(), values, item))
+    return tuple(parsed)
+
+
+def _field_values(value: object) -> set[str]:
+    """The lower-cased texts a parsed frontmatter value matches: a scalar its text (a boolean ``true``/``false``, a
+    date or timestamp its ISO 8601 form), a list the texts of its scalar elements; a mapping or ``null`` nothing."""
+    if isinstance(value, list):
+        return {text for element in value if not isinstance(element, list) for text in _field_values(element)}
+    if value is None or isinstance(value, dict):
+        return set()
+    if isinstance(value, bool):
+        return {"true" if value else "false"}
+    if isinstance(value, date):
+        return {value.isoformat().lower()}
+    return {str(value).strip().lower()}
+
+
+def _matches(document: Document, where: Where) -> bool:
+    return all(_field_values(document.frontmatter.get(item.field)) & item.values for item in where)
+
+
+def _severity_rank(document: Document) -> int:
+    """The position of a feedback document's ``severity`` in ``SEVERITY_ORDER``; ``0`` for other kinds."""
+    if document.kind is not Kind.FEEDBACK:
+        return 0
+    severity = _text(document.frontmatter.get("severity")).lower()
+    return SEVERITY_ORDER.index(severity) if severity in SEVERITY_ORDER else len(SEVERITY_ORDER)
+
+
+def _feedback_fields(document: Document) -> dict[str, str | None]:
+    """``severity``, ``scope`` and ``target`` of a feedback document (``None`` when absent); empty for other kinds."""
+    if document.kind is not Kind.FEEDBACK:
+        return {}
+    return {name: _text(document.frontmatter.get(name)) or None for name in FEEDBACK_FIELDS}
+
+
+def _text(value: object) -> str:
+    return str(value).strip() if value is not None and not isinstance(value, (list, dict)) else ""
 
 
 def _paging_args(workspace_root: str | None, limit: int) -> list[str]:
@@ -217,6 +289,14 @@ class _RefGroup:
 @click.option("--query", "query", default=None, help="Keep documents whose ID or title contains this text")
 @click.option("--history", is_flag=True, help="Include the files of completed spec bundles")
 @click.option(
+    "--where",
+    "where_items",
+    multiple=True,
+    metavar="FIELD=VALUE[,VALUE...]",
+    help="Keep documents whose frontmatter FIELD is one of the values (case-insensitive; a list field when one "
+    "element is); repeat to require several fields",
+)
+@click.option(
     "--file",
     "file",
     default=None,
@@ -235,6 +315,7 @@ def list_cmd(
     area: str | None,
     query: str | None,
     history: bool,
+    where_items: tuple[str, ...],
     file: str | None,
     namespace: str | None,
     all_namespaces: bool,
@@ -245,11 +326,14 @@ def list_cmd(
 ) -> None:
     """List documents of the given KINDs (default: all), current ones only unless --history.
 
-    --file finds the documents that own a code path through their ``entrypoints``. KIND is one of: capability, story, architecture, decision, proposal, proposal-decision, spec, plan, tasks,
-    reconcile, feedback, material. In a workspace with namespaces, the namespace of the current directory (plus the
+    --file finds the documents that own a code path through their ``entrypoints``; --where filters by any
+    frontmatter field, such as a feedback document's severity or scope. Feedback is ordered by severity. KIND is one
+    of: capability, story, architecture, decision, proposal, proposal-decision, spec, plan, tasks, reconcile,
+    feedback, material. In a workspace with namespaces, the namespace of the current directory (plus the
     global documents) is shown unless --namespace or --all-namespaces says otherwise.
     """
     _check_page(limit, offset)
+    where = _where(where_items)
     index = _load(workspace_root)
     scope = NamespaceScope.of(index, namespace, all_namespaces)
     statuses = {part.strip().lower() for part in status.split(",") if part.strip()} if status else set()
@@ -262,10 +346,13 @@ def list_cmd(
         and (not statuses or document.status.lower() in statuses)
         and (not area or area.lower() in document.area.lower())
         and (not query or query.lower() in document.id.lower() or query.lower() in document.title.lower())
+        and _matches(document, where)
         and scope.accepts(document)
         and (file is None or _overlaps(document, file))
     ]
-    selected.sort(key=lambda document: (_KIND_ORDER[document.kind], document.id, document.path))
+    selected.sort(
+        key=lambda document: (_KIND_ORDER[document.kind], _severity_rank(document), document.id, document.path)
+    )
     shown = page(selected, offset, limit)
     tasks = {document.path: _tasks(index.root, document) for document in shown}
     if is_json(output_format):
@@ -282,6 +369,7 @@ def list_cmd(
                         "historical": index.is_historical(document),
                         "tasks": tasks[document.path],
                     }
+                    | _feedback_fields(document)
                     for document in shown
                 ],
                 "notices": [notice.to_dict() for notice in index.problems],
@@ -297,6 +385,7 @@ def list_cmd(
                     status=document.status,
                     path=document.path,
                     tasks=tasks[document.path],
+                    **_feedback_fields(document),
                     **scope.fields(document),
                     title=document.title,
                 )
@@ -306,6 +395,8 @@ def list_cmd(
             if given is not None:
                 args += [flag, given]
         args += ["--history"] if history else []
+        for item in where:
+            args += ["--where", item.given]
         args += scope.args(namespace, all_namespaces)
         echo_page(len(selected), offset, limit, len(shown), [*args, *_paging_args(workspace_root, limit)])
     _finish(index.problems)

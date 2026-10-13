@@ -1,0 +1,9 @@
+request: return:build-verify
+kind: return
+action: accept
+workflow: direct-delivery
+stage: build-verify
+note: spec-next and envelope.md list open feedback without --history; feedback recorded
+  in a completed bundle is hidden
+by: claude-code
+at: '2026-10-13T05:38:58Z'

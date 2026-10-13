@@ -1,0 +1,40 @@
+kind: review
+stage: review-refine
+created_at: '2026-10-13T05:35:31Z'
+status: completed
+summary: AC-01..AC-07 met; AC-08 not met for spec-next; 5 findings
+findings:
+- issue: spec-next names no --where command, which AC-08 requires; it lists all open feedback and relies on the severity order
+  evidence: src/devkit_spec/bundle/skills/spec-next/SKILL.md:52
+  failure_condition: AC-08 Then and the plan's rg check fail for spec-next
+  suggested_action: Name devkit spec list feedback --status open --where severity=critical for the critical check
+  resolution: open
+- issue: spec-feedback references/sweep.md still reads severity and target from each listed file
+  evidence: src/devkit_spec/bundle/skills/spec-feedback/references/sweep.md:22
+  failure_condition: A requested sweep opens every feedback file to count critical items
+  suggested_action: Point the sweep at the list's severity and target fields and --where severity=critical, or record follow-up feedback
+  resolution: open
+- issue: installation.json carries hash changes of devkit's own instructions, synced against the uncommitted local devkit
+  evidence: .devkit/installation.json:784
+  failure_condition: Committing as-is adds unrelated drift to this unit's commit
+  suggested_action: Keep only this change's asset hashes, or state the resync
+  resolution: open
+- issue: --where compares str() of the parsed YAML value, not the written text; datetimes print with a space
+  evidence: src/devkit_spec/cli/documents.py:137
+  failure_condition: 'at: 2026-10-13T05:25:43Z does not match --where at=2026-10-13T05:25:43Z'
+  suggested_action: Normalize dates and datetimes with isoformat() and state the parsed-value contract in the capability
+  resolution: open
+- issue: The AC-06 test does not assert the text form of absent feedback fields
+  evidence: tests/test_cli_documents.py:216
+  failure_condition: A regression printing absent fields as anything but - still passes
+  suggested_action: Assert the full FB-f line
+  resolution: open
+assumptions:
+- 'Reviewer run as a general-purpose subagent carrying the reviewer contract (emulated): the session root is devkit, so .claude/agents/reviewer.md of devkit-spec was not loaded'
+- diff_scope head is the uncommitted working tree; nothing is committed before G3
+checks:
+  tests: PASS pytest 497 passed
+  lint: PASS ruff, pyright, devkit rules check
+diff_scope:
+  base: ad58cc679c3cf34b45322f11d18a763a7bd78ad1
+  head: ''

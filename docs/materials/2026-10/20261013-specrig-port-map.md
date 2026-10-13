@@ -39,7 +39,7 @@ created_at: 2026-10-13
 | `search` (BM25, go-potion dense, hybrid) | `devkit spec search` on `devkit.search` | devkit-spec keeps the search policy: scopes, namespaces, exact-ID pinning, glossary. |
 | `proposal new`, `padr`, `handoff` | `devkit spec proposal`, `devkit spec new` | Handoff is its own cross-layout move (`ADR-handoff-workflow-key`); `devkit spec new` creates a spec bundle without a proposal. |
 | `entrypoints derive` | `devkit spec entrypoints derive` | |
-| `list feedback`, feedback capture | `devkit spec list feedback`, the `spec-feedback` skill | Feedback documents are indexed like any document; specrig's scope, severity and kind filters are not ported. |
+| `list feedback`, feedback capture | `devkit spec list feedback`, the `spec-feedback` skill | Feedback documents are indexed like any document; `list --where` filters by `severity`, `scope` or `kind`, and feedback is ordered by severity (`SPEC-feedback-list-filters`). |
 | `list playbooks`, `playbook new` | devkit `devkit playbook search` | Authoring a playbook needs no command. |
 | `cache`, `serve`, `sync`, `reading` | dropped | The derived-data cache, the removed web viewer, and two commands specrig never implemented. |
 

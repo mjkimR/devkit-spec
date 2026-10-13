@@ -1,7 +1,7 @@
 ---
 id: CAP-DOCS-document-lookup
 title: Document Lookup
-summary: Defines the devkit spec resolve, refs and list commands that map IDs to paths, follow incoming and outgoing references, and browse documents by kind, status, area, text, history, namespace or owned code path, with paging and JSON output.
+summary: "Defines the devkit spec resolve, refs and list commands that map IDs to paths, follow incoming and outgoing references, and browse documents by kind, status, area, text, any frontmatter field, history, namespace or owned code path, with feedback ordered by severity, paging and JSON output."
 area: documents
 status: active
 stories:
@@ -27,9 +27,14 @@ resolve` maps IDs to paths, `devkit spec refs` follows the references of one doc
 - **Out-of-Scope** (Non-Goals):
   - Ranking by meaning: `CAP-DOCS-document-search`.
   - Namespace semantics (membership, default selection): `CAP-DOCS-namespaces`; this capability only applies them.
-  - Per-kind listing extras: filters by linked story or capability (`--with-story`, `--with-cap`), proposal priority
-    and size, and feedback filters. Scope Excluded: `list` filters only by the generic fields below. When to
-    Reconsider: when agents repeatedly combine `refs` and `list` by hand for one of these questions.
+  - Per-kind listing extras: filters by linked story or capability (`--with-story`, `--with-cap`) and a `--sort`
+    option. Scope Excluded: `list` filters by the generic fields and `--where` below; proposal priority and size,
+    feedback severity, scope and kind are `--where` fields. When to Reconsider: when agents repeatedly combine
+    `refs` and `list` by hand for one of these questions.
+  - Feedback defaults (`SPEC-feedback-list-filters`): `list` never applies a status or severity filter of its own to
+    one kind; every selection is an explicit filter, so `list feedback` and `list feedback spec` select alike and no
+    item is hidden without a trace.
+  - Comparison operators, substring or pattern matching in `--where`: it matches whole values.
   - Validating references: `RULE-document-reference` (`CAP-GOV-spec-rules`).
 
 ## 3. Business Rules & Policies
@@ -67,6 +72,11 @@ resolve` maps IDs to paths, `devkit spec refs` follows the references of one doc
    - `--status/-s a,b`: comma-separated statuses, compared case-insensitively.
    - `--area/-a TEXT`: case-insensitive substring of the frontmatter `area`.
    - `--query TEXT`: case-insensitive substring of the ID or the title.
+   - `--where FIELD=VALUE[,VALUE...]` (repeatable): documents whose frontmatter `FIELD` holds one of the values. The
+     field name is case-sensitive; values are compared case-insensitively after trimming against the parsed value:
+     a scalar's text, `true`/`false` for a boolean, the ISO 8601 form of a date or timestamp, any scalar element of a
+     list. A missing field, `null` or a mapping never matches. Each `--where` must match. An item without `=`, field
+     or value MUST fail with `ARGUMENT_INVALID` (exit `2`, nothing on stdout).
    - `--history`: include historical documents (files of completed spec bundles); hidden by default.
    - `--file PATH`: documents whose frontmatter `entrypoints` overlap the workspace-relative path: an entry equal to
      it, under it, or a directory containing it (whole path segments, case-sensitive; `CAP-TRACE-code-entrypoints`).
@@ -74,10 +84,11 @@ resolve` maps IDs to paths, `devkit spec refs` follows the references of one doc
      capabilities and stories declare `entrypoints`.
    - `--namespace NAME` / `--all-namespaces`: the namespace selection (`CAP-DOCS-namespaces`). Default: the namespace
      of the current directory plus the global documents.
-3. **Order**: kind order (the table of `CAP-DOCS-document-model`), then ID, then path.
+3. **Order**: kind order (the table of `CAP-DOCS-document-model`), then, for feedback, `severity` (`critical`,
+   `blocked`, `workaround`, `noise`, then any other or missing value, case-insensitive), then ID, then path.
 4. **Line fields**: `kind`, `status`, `path`, `tasks` (`<checked>/<total>` of the `tasks.md` beside a spec, counted
-   as devkit counts checklist items; `-` for other kinds or without `tasks.md`), `namespace` (only in a workspace that
-   registers namespaces), `title`.
+   as devkit counts checklist items; `-` for other kinds or without `tasks.md`), on feedback lines only `severity`,
+   `scope` and `target` (`-` when absent), `namespace` (only in a workspace that registers namespaces), `title`.
 
 ### 3.5 Paging (`refs`, `list`)
 
@@ -86,7 +97,7 @@ resolve` maps IDs to paths, `devkit spec refs` follows the references of one doc
 2. The output ends with `[PAGE: total= offset= limit= count= next=]`; `next` is the offset of the next page, `-` on
    the last one.
 3. When more items follow, `[NEXT_CMD: devkit spec ...]` repeats the command with every given filter, `-w` when it
-   was given, `--limit` and the next `--offset`.
+   was given, `--limit` and the next `--offset`; each `--where` is repeated as given, in order.
 
 ## 4. Interfaces & Data Contracts
 
@@ -99,6 +110,7 @@ devkit spec refs CAP-CORE-search --direction in       # what references it
 devkit spec list story --status active --area core    # browse
 devkit spec list capability --file src/engine/        # documents owning a code path
 devkit spec list spec --history --all-namespaces      # completed bundles too, every package
+devkit spec list feedback --status open --where severity=critical --history -n 0   # open critical feedback
 ```
 
 ### 4.2 Text Output
@@ -108,12 +120,14 @@ devkit spec list spec --history --all-namespaces      # completed bundles too, e
 [REF: US-find-docs path=docs/stories/core/US-find-docs.md status=active fields=body,stories count=2]
 [REF: US-removed path=- status=- fields=body count=1]
 [DOCUMENT: SPEC-search kind=spec status=draft path=specs/2026-10/20261002-search/spec.md tasks=1/2 title="Search"]
+[DOCUMENT: FB-slow-sync kind=feedback status=open path=specs/2026-10/feedback/20261013-slow-sync.md tasks=- severity=critical scope=bundle target="devkit sync" title="Sync blocks"]
 [PAGE: total=42 offset=0 limit=20 count=20 next=20]
 [NEXT_CMD: devkit spec list spec --limit 20 --offset 20]
 ```
 
 `resolve` prints `[DOCUMENT: <id> kind= status= path=]`; `list` prints
-`[DOCUMENT: <id> kind= status= path= tasks= namespace= title=]`, `namespace=` only with registered namespaces. Values follow devkit's sentinel conventions: `-` for empty, `yes`/`no` for booleans, a JSON
+`[DOCUMENT: <id> kind= status= path= tasks= severity= scope= target= namespace= title=]`, `severity=`, `scope=` and
+`target=` only on feedback lines, `namespace=` only with registered namespaces. Values follow devkit's sentinel conventions: `-` for empty, `yes`/`no` for booleans, a JSON
 string when the value holds spaces, quotes or brackets.
 
 ### 4.3 JSON Keys (`--format json`)
@@ -122,7 +136,7 @@ string when the value holds spaces, quotes or brackets.
 | --- | --- |
 | `resolve` | `documents` (document records: `id`, `kind`, `path`, `status`, `title`, `area`, `summary`), `errors` (advisory objects), `notices` |
 | `refs` | `id`, `direction`, `total`, `offset`, `limit`, `items` (`id`, `path`, `status`, `references`: `target`, `source`, `path`, `field`, `line`, `column`, `bracket`), `notices`; `path` and `status` are `null` for an ID no single document declares |
-| `list` | `total`, `offset`, `limit`, `namespace` (the selection, `null` for every namespace), `documents` (document records plus `namespace`, `historical`, `tasks`), `notices` |
+| `list` | `total`, `offset`, `limit`, `namespace` (the selection, `null` for every namespace), `documents` (document records plus `namespace`, `historical`, `tasks`; feedback records also `severity`, `scope`, `target`, `null` when absent), `notices` |
 
 ### 4.4 Exit Codes
 
@@ -135,5 +149,5 @@ string when the value holds spaces, quotes or brackets.
 | `SPEC_ID_UNRESOLVED` | `ERROR` (`INPUT_ERROR`) | `UnresolvedIdError` | No document declares the ID. |
 | `SPEC_ID_DUPLICATE` | `ERROR` (`MAINTENANCE`) | `DuplicateIdError` | More than one document declares the ID; `[TARGET]` lists them. |
 | `SPEC_DOCUMENT_INVALID` | `WARNING` | `DocumentInvalidWarning` | A file under `docs/` or `specs/` cannot be read or has malformed frontmatter; it is left out. |
-| `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit.core.ArgumentError` | A negative `--limit` or `--offset`; an unknown `--namespace`, or `--namespace` combined with `--all-namespaces`. |
+| `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit.core.ArgumentError` | A negative `--limit` or `--offset`; a `--where` item without `=`, field or value; an unknown `--namespace`, or `--namespace` combined with `--all-namespaces`. |
 | `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit_spec.errors.SpecConfigError` | `list`: a malformed `[tool.spec]` table, namespaces included (`CAP-DLV-project-policy`). |

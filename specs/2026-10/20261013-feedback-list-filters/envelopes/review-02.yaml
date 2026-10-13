@@ -1,0 +1,15 @@
+kind: review
+stage: review-refine
+created_at: '2026-10-13T05:39:58Z'
+status: completed
+summary: 'Post-review defect found while recording feedback: critical-feedback commands miss completed bundles'
+findings:
+- issue: spec-next and envelope.md list open feedback without --history, so feedback recorded in the just-completed bundle is hidden
+  evidence: src/devkit_spec/bundle/skills/spec/references/envelope.md:55
+  failure_condition: After living-spec-draft completes the spec, collect-feedback records feedback in the bundle; `list feedback --status open` returns total=0 while --history returns 9
+  suggested_action: Add --history to both commands and to AC-08
+  resolution: open
+checks: {}
+diff_scope:
+  base: ad58cc679c3cf34b45322f11d18a763a7bd78ad1
+  head: ''

@@ -137,3 +137,103 @@ def test_list_by_entrypoint_overlap(workspace: Path, write: Write) -> None:
     assert ids("src/app") == ["CAP-CORE-a", "US-b"]
     assert ids("src/cli.py") == ["CAP-CORE-a"]
     assert ids("src/other.py") == []
+
+
+def _feedback(write: Write, name: str, **fields: str) -> None:
+    write(f"specs/2026-10/feedback/20261013-{name}.md", _doc(f"FB-{name}", status="open", title=name, **fields))
+
+
+@pytest.fixture
+def feedback(workspace: Path, write: Write) -> Path:
+    write(
+        "docs/capabilities/core/CAP-CORE-a.md",
+        _doc("CAP-CORE-a", status="open", stories="[US-x, US-y]"),
+    )
+    _feedback(write, "a", severity="critical", scope="bundle", target='"devkit spec list"', recurring="true")
+    _feedback(write, "b", severity="blocked", scope="repo", created_at="2026-10-13", at="2026-10-13T05:25:43Z")
+    _feedback(write, "c", severity="noise", scope="bundle")
+    _feedback(write, "d", severity="Critical", scope="repo")
+    _feedback(write, "e", severity="workaround")
+    _feedback(write, "f")
+    return workspace
+
+
+def _ids(workspace: Path, *args: str) -> list[str]:
+    result = _spec("list", *args, "--format", "json", workspace=workspace)
+    assert result.exit_code == 0, result.output
+    return [d["id"] for d in json.loads(result.stdout)["documents"]]
+
+
+def test_where_keeps_documents_whose_field_is_one_of_the_values(feedback: Path) -> None:
+    # AC-01: values compare case-insensitively after trimming.
+    assert _ids(feedback, "feedback", "--where", "severity=critical, BLOCKED") == ["FB-a", "FB-d", "FB-b"]
+
+
+def test_where_items_and_other_filters_combine_with_and(feedback: Path) -> None:
+    # AC-02: a document without the field (the capability) never matches.
+    assert _ids(feedback, "--where", "severity=critical", "--where", "scope=bundle", "--status", "open") == ["FB-a"]
+
+
+def test_where_matches_booleans_and_list_elements(feedback: Path) -> None:
+    # AC-03
+    assert _ids(feedback, "--where", "recurring=true") == ["FB-a"]
+    assert _ids(feedback, "--where", "stories=US-y") == ["CAP-CORE-a"]
+    assert _ids(feedback, "--where", "recurring=false") == []
+    assert _ids(feedback, "--where", "created_at=2026-10-13", "--where", "at=2026-10-13T05:25:43+00:00") == ["FB-b"]
+
+
+@pytest.mark.parametrize("item", ["severity", "=critical", "severity=", "severity=,", " =x"])
+def test_malformed_where_is_an_argument_error(feedback: Path, item: str) -> None:
+    # AC-04
+    result = _spec("list", "--where", item, workspace=feedback)
+    assert result.exit_code == 2 and result.stdout == ""
+    assert "(ARGUMENT_INVALID)" in result.stderr and f"--where {item}:" in result.stderr
+
+
+def test_feedback_is_ordered_by_severity_within_its_kind(feedback: Path) -> None:
+    # AC-05: critical, blocked, workaround, noise, then any other or missing value; ties by ID.
+    assert _ids(feedback) == ["CAP-CORE-a", "FB-a", "FB-d", "FB-b", "FB-e", "FB-c", "FB-f"]
+
+
+def test_feedback_lines_and_records_carry_severity_scope_and_target(feedback: Path) -> None:
+    # AC-06
+    lines = _spec("list", "--where", "scope=bundle", "--where", "severity=critical", workspace=feedback).stdout
+    assert lines.splitlines()[0] == (
+        "[DOCUMENT: FB-a kind=feedback status=open path=specs/2026-10/feedback/20261013-a.md tasks=- "
+        'severity=critical scope=bundle target="devkit spec list" title=a]'
+    )
+    capability = _spec("list", "capability", workspace=feedback).stdout.splitlines()[0]
+    assert "severity=" not in capability and "scope=" not in capability and "target=" not in capability
+    records = {
+        d["id"]: d for d in json.loads(_spec("list", "--format", "json", workspace=feedback).stdout)["documents"]
+    }
+    assert (records["FB-a"]["severity"], records["FB-a"]["scope"], records["FB-a"]["target"]) == (
+        "critical",
+        "bundle",
+        "devkit spec list",
+    )
+    assert (records["FB-f"]["severity"], records["FB-f"]["scope"], records["FB-f"]["target"]) == (None, None, None)
+    assert "severity" not in records["CAP-CORE-a"]
+    assert (
+        "[DOCUMENT: FB-f kind=feedback status=open path=specs/2026-10/feedback/20261013-f.md tasks=- "
+        "severity=- scope=- target=- title=f]"
+    ) in _spec("list", "feedback", workspace=feedback).stdout.splitlines()
+
+
+def test_next_page_command_repeats_every_where(feedback: Path) -> None:
+    # AC-07
+    result = _spec(
+        "list",
+        "feedback",
+        "--where",
+        "severity=critical,blocked",
+        "--where",
+        "scope=repo",
+        "--limit",
+        "1",
+        workspace=feedback,
+    )
+    assert result.stdout.splitlines()[-1] == (
+        "[NEXT_CMD: devkit spec list feedback --where severity=critical,blocked --where scope=repo "
+        f"-w {feedback} --limit 1 --offset 1]"
+    )

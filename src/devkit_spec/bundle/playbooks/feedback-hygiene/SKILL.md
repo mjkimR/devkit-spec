@@ -32,10 +32,10 @@ drafts, bundle fixes, proposals, specs) ready for review.
 uv run devkit spec list feedback --status open --history -n 0
 ```
 
-`--history` includes completed spec bundles; `--query <text>` narrows by ID or title. The list has no severity or
-scope filter: read each file's frontmatter (`scope`, `kind`, `category`, `target`, `severity`, `recurring`,
-`origin`). A scope or severity the user names narrows the selection; otherwise take every open item, `critical`
-first.
+`--history` includes completed spec bundles; `--query <text>` narrows by ID or title. Each line carries `severity`,
+`scope` and `target`, critical items first. A scope or severity the user names narrows the selection with
+`--where scope=<scope>` or `--where severity=<a>,<b>`; otherwise take every open item. Read each selected file's
+remaining frontmatter (`kind`, `category`, `recurring`, `origin`) in Step 2.
 
 ## Step 2: Group and order
 

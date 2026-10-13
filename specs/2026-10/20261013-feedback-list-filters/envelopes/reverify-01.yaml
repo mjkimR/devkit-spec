@@ -1,0 +1,35 @@
+kind: reverify
+stage: review-refine
+created_at: '2026-10-13T05:36:33Z'
+status: completed
+review: review-01.yaml
+summary: 'All 5 findings fixed: spec-next and sweep.md use --where (AC-08 now names four assets), installation.json keeps only this change''s hashes, dates compare in ISO form (AC-03 reworded), full FB-f line asserted'
+findings:
+- issue: spec-next names no --where command, which AC-08 requires; it lists all open feedback and relies on the severity order
+  evidence: src/devkit_spec/bundle/skills/spec-next/SKILL.md:52
+  failure_condition: AC-08 Then and the plan's rg check fail for spec-next
+  suggested_action: Name devkit spec list feedback --status open --where severity=critical for the critical check
+  resolution: resolved
+- issue: spec-feedback references/sweep.md still reads severity and target from each listed file
+  evidence: src/devkit_spec/bundle/skills/spec-feedback/references/sweep.md:22
+  failure_condition: A requested sweep opens every feedback file to count critical items
+  suggested_action: Point the sweep at the list's severity and target fields and --where severity=critical, or record follow-up feedback
+  resolution: resolved
+- issue: installation.json carries hash changes of devkit's own instructions, synced against the uncommitted local devkit
+  evidence: .devkit/installation.json:784
+  failure_condition: Committing as-is adds unrelated drift to this unit's commit
+  suggested_action: Keep only this change's asset hashes, or state the resync
+  resolution: resolved
+- issue: --where compares str() of the parsed YAML value, not the written text; datetimes print with a space
+  evidence: src/devkit_spec/cli/documents.py:137
+  failure_condition: 'at: 2026-10-13T05:25:43Z does not match --where at=2026-10-13T05:25:43Z'
+  suggested_action: Normalize dates and datetimes with isoformat() and state the parsed-value contract in the capability
+  resolution: resolved
+- issue: The AC-06 test does not assert the text form of absent feedback fields
+  evidence: tests/test_cli_documents.py:216
+  failure_condition: A regression printing absent fields as anything but - still passes
+  suggested_action: Assert the full FB-f line
+  resolution: resolved
+checks:
+  tests: PASS pytest 497 passed
+  lint: PASS ruff, pyright, devkit rules check
