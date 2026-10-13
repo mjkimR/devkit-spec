@@ -96,6 +96,33 @@ def test_parse_boundaries_keeps_globs_and_strips_only_wrapping_bold() -> None:
     assert [(task.index, task.values) for task in before] == [(0, ["src/x"]), (1, [])]
 
 
+def test_indented_continuation_lines_join_the_boundary() -> None:
+    # AC-01: the value continues on lines indented deeper than its label line.
+    wrapped = "- [ ] t\n  - **_Boundary**: src/a.py,\n    src/b.py,\n    src/c.py\n  - _Requirements: AC-01_\n"
+    assert [task.values for task in parse_boundaries(wrapped)] == [["src/a.py", "src/b.py", "src/c.py"]]
+
+
+def test_a_boundary_ends_at_a_list_item_blank_line_fence_or_shallower_line() -> None:
+    # AC-02
+    text = (
+        "- [ ] one\n  - _Boundary: src/a.py\n    - _Requirements: AC-01_\n"
+        "- [ ] two\n  - _Boundary: src/b.py\n\n    src/not-b.py\n"
+        "- [ ] three\n  - _Boundary: src/c.py\n  src/not-c.py\n"
+        "- [ ] four\n  - _Boundary: src/d.py\n    ```\n    src/not-d.py\n    ```\n"
+        "- [ ] five\n  - _Boundary: src/e.py\n    1. step one\n"
+        "- [ ] six\n  - _Boundary: src/f.py,\n    _Boundary: src/g.py\n"
+    )
+    # A deeper _Boundary line opens a boundary of its own (same task), never a continuation.
+    assert [task.values for task in parse_boundaries(text)] == [
+        ["src/a.py"],
+        ["src/b.py"],
+        ["src/c.py"],
+        ["src/d.py"],
+        ["src/e.py"],
+        ["src/f.py", "src/g.py"],
+    ]
+
+
 @pytest.mark.parametrize(
     ("raw", "reason"),
     [

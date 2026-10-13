@@ -1,0 +1,23 @@
+kind: review
+stage: review-refine
+created_at: '2026-10-13T06:19:10Z'
+status: completed
+summary: AC-01..AC-04 met; 2 low-severity findings
+findings:
+- issue: A wrapped line without a trailing comma merges two paths into one entry, and the skill does not say entries stay comma-separated; it also names only a shallower line as an end
+  evidence: src/devkit_spec/bundle/skills/spec-tasks/SKILL.md:23
+  failure_condition: '`_Boundary: src/a.py` then `    src/b.py` yields the entry `src/a.py src/b.py`, accepted as a path'
+  suggested_action: State that entries stay comma-separated across lines and that any line not indented deeper ends the value
+  resolution: open
+- issue: Ordered list items and deeper _Boundary label lines are swallowed as continuation
+  evidence: src/devkit_spec/entrypoints/bundle.py:28
+  failure_condition: '`_Boundary: a` then `    1. step one` yields `a 1. step one`; a deeper `_Boundary: b` becomes an entry'
+  suggested_action: Treat ordered markers as list items and end the continuation at a _Boundary label line; test both
+  resolution: open
+assumptions:
+- Reviewer run as a general-purpose subagent carrying the reviewer contract (emulated)
+checks:
+  tests: PASS 189 targeted tests
+diff_scope:
+  base: bf565a7b08a8a02c97985666cc03f45da472dc0a
+  head: ''

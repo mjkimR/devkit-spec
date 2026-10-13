@@ -1,0 +1,16 @@
+kind: final-report
+stage: final-change-report
+created_at: '2026-10-13T06:22:07Z'
+status: completed
+summary: _Boundary values continue on lines indented deeper than the label; derive and the scope registry read every wrapped path; spec-tasks states the form; CAP-TRACE-code-entrypoints reconciled
+findings: []
+assumptions:
+- Nothing committed before G3; diff_scope has no head sha
+- 'Integrated after SPEC-open-feedback-and-progress: .devkit/installation.json is resynced after the rebase'
+checks:
+  tests: PASS just ci
+  build: PASS uv build
+  lint: PASS ruff, pyright, devkit rules check
+diff_scope:
+  base: bf565a7b08a8a02c97985666cc03f45da472dc0a
+  head: ''

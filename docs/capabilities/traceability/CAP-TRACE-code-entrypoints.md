@@ -88,8 +88,11 @@ joins them.
 
 1. **Code side**: every `_Boundary` line of `tasks.md` outside fenced code blocks, attached to the checklist item
    above it (task `0` before the first one; tasks are numbered by checklist position from `1`). The label MAY carry
-   bold or italic markers and the line MAY be a list item. The value is split on commas; each entry loses backticks
-   and `(...)` notes, and a value wrapped in `**...**` loses the markers.
+   bold or italic markers and the line MAY be a list item. The value MAY continue on the following lines indented
+   deeper than the label line; a blank line, a list item (bullet or ordered), another `_Boundary` line, a fence or a
+   line indented no deeper ends it, and the lines are joined with a space (`SPEC-boundary-continuation-lines`). The
+   value is split on commas; each entry loses backticks and `(...)` notes, and a value wrapped in `**...**` loses the
+   markers.
 2. **Skipped entries** (`kind=boundary`): `not-a-path` (empty, `N/A`, `none`), `invalid-path` (section 3.1, globs
    included) and `excluded-tree` (`.`, `docs/...`, `specs/...`).
 3. **Candidates**: each path counts once per bundle, with the first task naming it. A candidate under another

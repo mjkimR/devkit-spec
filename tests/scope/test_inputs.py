@@ -151,3 +151,16 @@ def test_package_targets_keep_shared_code_candidates(repo: Path) -> None:
     assert [item.path for item in a.code] == ["src/shared.py"]
     result = compare(a, b)
     assert len(result.docs) == 1 and len(result.code) == 1 and result.unresolved == 0
+
+
+def test_from_spec_reads_a_wrapped_boundary(repo: Path) -> None:
+    # AC-03: the registry takes the parse of CAP-TRACE-code-entrypoints, continuation lines included.
+    base = "specs/2026-10/20261004-w"
+    write(repo, f"{base}/spec.md", "---\nid: SPEC-w\n---\n")
+    write(repo, f"{base}/tasks.md", "- [ ] t\n  - **_Boundary**: `src/a`,\n    `src/b`,\n    `src/shared.py`\n")
+    scope = from_spec(repo, base)
+    assert [item.path for item in scope.code if item.source is Source.DECLARED_CODE] == [
+        "src/a",
+        "src/b",
+        "src/shared.py",
+    ]

@@ -20,7 +20,7 @@ Use this skill once `spec.md` and `plan.md` exist (the `specify` stage of workfl
 ## 2. Work Breakdown Principles
 
 - **One verifiable result per task**: a task is a unit that can be implemented and checked on its own. Keep the code and its tests in the same task when they change together; split when one part can be verified without the other.
-- **Expected scope (`_Boundary:`)**: every task names the paths it is expected to touch. It is a scope estimate, not a lock: a change that turns out to need another path goes ahead and is explained in the report. It is strict for a delegated task through the `spec-delegate` write scope.
+- **Expected scope (`_Boundary:`)**: every task names the paths it is expected to touch. A long list may wrap onto lines indented deeper than the label line, its entries still separated by commas; a blank line, a list item or any line not indented deeper ends it. It is a scope estimate, not a lock: a change that turns out to need another path goes ahead and is explained in the report. It is strict for a delegated task through the `spec-delegate` write scope.
 - **Acceptance links (`_Requirements:`)**: every task links the scenarios it serves on a direct child line indented two spaces, `- _Requirements: AC-01, AC-02_` (`RULE-task-coverage`); every `[AC-NN]` in `spec.md` is covered by at least one task, and a task cites only IDs the spec defines. A `_Requirements:_` line in a table, prose or under a non-task item covers nothing.
 - **Optional markers, when they help**: a `**Verification**` command when the check is not obvious from the boundary and phase headings when the list is long enough to need grouping.
 

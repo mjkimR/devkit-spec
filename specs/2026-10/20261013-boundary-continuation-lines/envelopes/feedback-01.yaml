@@ -1,0 +1,8 @@
+kind: feedback
+stage: collect-feedback
+created_at: '2026-10-13T06:21:54Z'
+status: completed
+summary: 'Session swept: 0 recorded; the receipt overlap seen here is recorded once, in SPEC-open-feedback-and-progress (FB-receipt-overlap-between-tasks)'
+findings: []
+checks:
+  swept: PASS recorded=0 duplicates=1

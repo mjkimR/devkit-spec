@@ -2,7 +2,10 @@
 
 ``tasks.md`` is scanned outside fenced code blocks. Each ``_Boundary:`` line (bold or italic markers around the
 label allowed, as a list item or not) belongs to the most recent checklist item (``- [ ]``/``- [x]``); one before
-any checklist item belongs to task ``0``. Its value is split on commas; each entry loses backticks and ``(...)``
+any checklist item belongs to task ``0``. Its value continues on the following lines indented deeper than the label
+line, up to a blank line, a list item (bullet or ordered), another ``_Boundary:`` line, a fence or a line
+indented no deeper; the lines are joined with a space. The
+value is split on commas; each entry loses backticks and ``(...)``
 notes, and a value wrapped in ``**...**`` loses the markers.
 
 ``reconcile.md`` frontmatter is read in the shape ``RULE-reconcile-contract`` checks: ``targets`` a list of
@@ -23,6 +26,8 @@ from devkit_spec.errors import EntrypointsInputInvalidError, EntrypointsInputMis
 
 _CHECKLIST_ITEM = re.compile(r"^ *(?:- |\* |\+ )\[[ xX]\] (.*)$")
 _BOUNDARY_LINE = re.compile(r"^\s*(?:[-*+]\s+)?\**_Boundary\**\s*:\**\s*(.*)$")
+_LIST_ITEM = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s")
+_FENCES = ("```", "~~~")
 _PAREN_NOTE = re.compile(r"\([^)]*\)")
 _BOLD = re.compile(r"^\*\*(.+)\*\*$")
 
@@ -62,9 +67,30 @@ def parse_boundaries(text: str) -> list[TaskBoundary]:
     current: TaskBoundary | None = None
     items = 0
     fenced = False
+    # The open boundary value: its label line's indentation and the text so far, until a line ends it.
+    open_indent: int | None = None
+    value = ""
+
+    def close() -> None:
+        nonlocal open_indent, value
+        if open_indent is not None and current is not None:
+            current.values.extend(split_boundary(value))
+        open_indent, value = None, ""
+
     for line in text.replace("\r\n", "\n").split("\n"):
         stripped = line.strip()
-        if stripped.startswith(("```", "~~~")):
+        if open_indent is not None:
+            if (
+                stripped
+                and _indent(line) > open_indent
+                and not _LIST_ITEM.match(line)
+                and not _BOUNDARY_LINE.match(line)
+                and not stripped.startswith(_FENCES)
+            ):
+                value += " " + stripped
+                continue
+            close()
+        if stripped.startswith(_FENCES):
             fenced = not fenced
             continue
         if fenced:
@@ -81,8 +107,13 @@ def parse_boundaries(text: str) -> list[TaskBoundary]:
         if current is None:
             current = TaskBoundary(index=0)
             tasks.append(current)
-        current.values.extend(split_boundary(boundary.group(1)))
+        open_indent, value = _indent(line), boundary.group(1)
+    close()
     return tasks
+
+
+def _indent(line: str) -> int:
+    return len(line) - len(line.lstrip(" \t"))
 
 
 def split_boundary(value: str) -> list[str]:

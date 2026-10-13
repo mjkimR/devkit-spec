@@ -1,0 +1,6 @@
+request: gate:direction
+kind: approve
+action: accept
+workflow: direct-delivery
+stage: direction
+at: '2026-10-13T06:06:03Z'

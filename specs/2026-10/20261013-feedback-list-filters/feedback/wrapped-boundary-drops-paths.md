@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-13
 ---
 
@@ -30,3 +30,5 @@ created_at: 2026-10-13
 [PAIR: CAP-DOCS-document-lookup code=src/devkit_spec/bundle/skills/spec-next/SKILL.md ... task=4 state=new]
 (only 1 of the 4 Task 2.1 paths before the fix; 4 after joining the lines)
 ```
+
+- **Disposition**: `SPEC-boundary-continuation-lines`: indented continuation lines join a `_Boundary` value; `spec-tasks` states the form
