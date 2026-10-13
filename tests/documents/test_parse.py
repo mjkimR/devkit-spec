@@ -133,3 +133,21 @@ def test_a_span_ends_with_its_paragraph() -> None:
 
 def test_text_after_a_multiline_span_stays_visible() -> None:
     assert _refs(_doc("`a\nb` `US-a`\n")) == [("US-a", "body", 6, False)]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "- item\n    `US-a` continued\n",
+        "- item\n\n    `US-a` a paragraph of the item\n",
+        "1. item\n    - nested `US-a`\n",
+        "text\n    `US-a` continues the paragraph\n",
+    ],
+)
+def test_indented_prose_is_referenced(body: str) -> None:
+    assert [target for target, *_ in _refs(_doc(body))] == ["US-a"]
+
+
+@pytest.mark.parametrize("body", ["    `US-a`\n", "text\n\n    `US-a`\n", "text\n\n    code\n\n    `US-a`\n"])
+def test_indented_code_is_not(body: str) -> None:
+    assert _refs(_doc(body)) == []

@@ -82,6 +82,11 @@ class Document:
         return _text(self.frontmatter.get("title"))
 
     @property
+    def summary(self) -> str:
+        """The frontmatter ``summary``: one or two English sentences saying what the document defines."""
+        return _text(self.frontmatter.get("summary"))
+
+    @property
     def area(self) -> str:
         return _text(self.frontmatter.get("area"))
 
@@ -93,6 +98,7 @@ class Document:
             "status": self.status,
             "title": self.title,
             "area": self.area,
+            "summary": self.summary,
         }
 
 

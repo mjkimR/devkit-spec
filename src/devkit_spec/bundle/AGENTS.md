@@ -23,6 +23,8 @@ terminate the user's session.
 - In a monorepo, packages may keep their own Living Spec under `docs/packages/<name>/` (namespaces). `list` and
   `search` default to the current directory's namespace plus the global documents; IDs, `resolve` and `refs` are
   repository-wide. Use `--all-namespaces` for cross-package impact.
+- Documents carry an English `summary` in their frontmatter (one or two sentences; titles and bodies may use any
+  language): `devkit spec search` finds documents by it.
 - Refer to ID-bearing documents by full ID (`` `CAP-...` ``), never by Markdown path. `devkit spec resolve <ID>` gives
   the path, `devkit spec refs <ID> --direction out|in` the references.
 - Agents MUST NOT implement Non-Goals or add unrequested features, refactors or speculative scope; unstated assumptions

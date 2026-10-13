@@ -5,12 +5,12 @@ path it would create), then:
 
 1. writes ``specs/<YYYY-MM>/<YYYYMMDD>-<slug>/`` with ``spec.md``, ``plan.md`` and ``tasks.md`` carried from the
    proposal body, each marked as a skeleton (``spec.md`` keeps the proposal's ``namespace``, which must be
-   ``global`` or registered), and binds ``spec.md`` to the proposal's ``handoff_workflow``
+   ``global`` or registered, and its ``summary``, which must be a string), and binds ``spec.md`` to the proposal's ``handoff_workflow``
    (default ``direct-delivery``; ``kind: bugfix`` for ``bugfix``). A spec bound to ``bugfix`` gets ``spec.md`` only, with the proposal's target area and
    boundaries in its carried notes;
 2. copies ``target-docs.md`` into the spec bundle;
 3. promotes each ``decisions/PADR-<slug>.md`` to ``docs/decisions/<YYYY-MM>/<YYYYMMDD>-<slug>.md`` as an accepted
-   ``ADR-<slug>``;
+   ``ADR-<slug>`` (its frontmatter, ``summary`` included, is kept);
 4. moves a non-empty ``materials/`` to ``docs/materials/<YYYY-MM>/<YYYYMMDD>-<slug>/``;
 5. rewrites links and ID references that pointed into the proposal (``rewrite``);
 6. removes the proposal.
@@ -87,6 +87,7 @@ from devkit_spec.proposals.specs import (
 HANDOFF_WORKFLOW = "handoff_workflow"
 """The proposal frontmatter key naming the workflow its spec follows (``workflow`` is devkit's own binding)."""
 NAMESPACE = "namespace"
+SUMMARY = "summary"
 ACCEPTED = "accepted"
 DIRECTION_STATUSES = ("draft", "reviewing")
 
@@ -203,6 +204,7 @@ def handoff_proposal(
             f"proposal PROP-{slug} has status {status or '-'}; handoff needs {needed}", target_files=[proposal_rel]
         )
     namespace = _namespace(root, meta, proposal_rel)
+    summary = _summary(meta, proposal_rel)
     index = DocumentIndex.load(root)
     check_spec_conflict(index, slug)
     binding, unbound = resolve_binding(root, meta.get(HANDOFF_WORKFLOW), proposal_rel, field=HANDOFF_WORKFLOW)
@@ -249,6 +251,7 @@ def handoff_proposal(
         meta=meta,
         kind=spec_kind(binding),
         namespace=namespace,
+        summary=summary,
         target_docs_ref=target_docs_ref,
     )
     if bugfix:
@@ -331,6 +334,26 @@ def _namespace(root: Path, meta: dict[str, Any], proposal_rel: str) -> str | Non
         fix=(
             f"Set the proposal's namespace to one of {', '.join(known)} (registered in [[tool.spec.namespaces]] of"
             " .devkit/config.toml), or remove the field to hand it off as global, then rerun the handoff"
+        ),
+    )
+
+
+def _summary(meta: dict[str, Any], proposal_rel: str) -> str | None:
+    """The proposal's ``summary``, carried to ``spec.md``; ``None`` when it has none or it is blank.
+
+    Raises ``ProposalInvalidError`` when it is not a string.
+    """
+    value = meta.get(SUMMARY)
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value.strip() or None
+    raise ProposalInvalidError(
+        f"{proposal_rel}: summary {value!r} is not a string",
+        target_files=[proposal_rel],
+        fix=(
+            "Write the proposal's summary as one or two English sentences in quotes, or remove the field, then rerun"
+            " the handoff"
         ),
     )
 

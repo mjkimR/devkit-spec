@@ -1,6 +1,7 @@
 ---
 id: ADR-<slug>
 title: Decision Title
+summary: "One or two English sentences: what was decided and why"   # required, English; quote it, it may contain ": "
 status: proposed          # proposed | accepted | deprecated | superseded
 created_at: YYYY-MM-DD
 ---

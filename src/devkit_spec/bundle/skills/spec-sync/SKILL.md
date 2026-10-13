@@ -42,14 +42,14 @@ Use this skill immediately after `spec-review` passes and implementation is comp
 ### Principle 4: Living Spec Currency
 - If the feature modified existing behavior, update the existing `docs/capabilities/` document so it reflects the new truth.
 - Rewrite the affected statement in place. Do not append dated notes, correction markers, "changed from X to Y" narration or history sections; cite the deciding ADR or spec by full ID (`` `ADR-<slug>` ``, `` `SPEC-<slug>` ``) where the reason matters. History stays in Git, ADRs and `docs/materials/`.
-- If the feature added new system capabilities, create a new capability document under the appropriate area directory, from `.devkit/managed/spec/templates/capability.md` (stories: `story.md`). The file stem is the ID (`CAP-<AREA>-<slug>`, `US-<slug>`), `area` matches the directory, and no slug is a sequence number (`RULE-id-convention`).
+- If the feature added new system capabilities, create a new capability document under the appropriate area directory, from `.devkit/managed/spec/templates/capability.md` (stories: `story.md`). The file stem is the ID (`CAP-<AREA>-<slug>`, `US-<slug>`), `area` matches the directory, no slug is a sequence number (`RULE-id-convention`), and `summary` is English (`RULE-document-summary`).
 
 ---
 
 ### Principle 5: Draft Delegation and Integration-Stage Confirmation
 - Step 1 and Step 2 (impact assessment and docs draft) MAY be delegated to the `reconciler` role in an isolated context (its role contract, invoked through `spec-delegate`). The Reconciler writes only inside the injected docs scope and this feature's `reconcile.md`, never source or tests, and never stages or commits. The Developer rejects any draft whose diff touches a declared source or test path.
 - Implementation-versus-contract mismatches are returned for a code fix (the stage returns to `build-verify`, or `fix-verify` for a bugfix), not endorsed by documentation or waived.
-- Confirmation (`reconcile.md` `status: resolved`, spec `status: completed`) is done by the Developer or the integration executor (`spec-integrate`). Resolve before the `integration` gate (G3). Intermediate commits follow existing commit authority and do not complete this stage; final cumulative verification is `devkit rules check --ci --base <ref>`.
+- Confirmation (`reconcile.md` `status: resolved`, spec `status: completed`) is done by the Developer or the integration executor (`spec-integrate`). Resolve before the `integration` gate (G3). Intermediate commits do not complete this stage; the final check is `devkit rules check --ci --base <ref>`.
 
 ## 3. Reconciliation Workflow
 

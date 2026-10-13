@@ -8,14 +8,16 @@ work) or ``waived`` (no change needed), and a waiver's ``rationale`` holds at le
 it says why. Whether a completed spec has a resolved record is ``RULE-spec-lifecycle``'s.
 
 Checked on every targeted ``reconcile.md`` of a current bundle (a completed bundle's record is history, checked only
-when named as an explicit target). Not ported yet: specrig's diff evidence (a ``modified`` target must be in the
-diff of the commit or pull request that resolves the record), which needs the rule engine to expose the Git snapshot
-a ``check --staged`` or ``--ci`` run evaluates.
+when named as an explicit target). In a snapshot run (``check --staged`` at commit time, ``check --ci`` on a pull
+request) a resolved record the diff changes must also have its evidence in that diff: every ``modified`` target is
+changed or deleted by it. Commit the Living Spec changes with the record that resolves them; ``--ci`` judges the whole
+branch, so a target changed in an earlier commit of the branch counts there.
 """
 
 from __future__ import annotations
 
-from devkit.core import FrontmatterError, is_safe_relpath
+from devkit.core import FrontmatterError, GitError, is_safe_relpath, run_git
+from devkit.core.frontmatter import parse
 from devkit.rules import Phase, RuleContext, Severity, Violation
 from devkit.rules.rules import BaseRule
 
@@ -66,6 +68,32 @@ def _problems(data: dict[str, object]) -> list[str]:
     return problems
 
 
+def _evidence(ctx: RuleContext, relative: str, data: dict[str, object]) -> list[str]:
+    """In a snapshot run, the ``modified`` targets of a resolved record that the diff does not change.
+
+    Applies to a record the diff itself changes. A record whose frontmatter equals the base's is retained history
+    whose body alone changed (a link rewrite): it claims nothing new about this diff and is skipped.
+    """
+    snapshot = ctx.snapshot
+    if snapshot is None or relative not in snapshot.changed or data.get("status") != "resolved":
+        return []
+    try:
+        base = run_git(snapshot.root, "show", f"{snapshot.base}:{relative}").decode("utf-8", errors="replace")
+        if parse(base).data == data:
+            return []
+    except (GitError, FrontmatterError):
+        pass  # a new record, or a base version that cannot be compared: check it
+    diff = {*snapshot.changed, *snapshot.deleted}
+    targets = data.get("targets")
+    if not isinstance(targets, list):
+        return []
+    return [
+        f"target {target['file']} is resolved as modified but absent from the {snapshot.mode} diff"
+        for target in targets
+        if isinstance(target, dict) and target.get("resolution") == "modified" and target.get("file") not in diff
+    ]
+
+
 class ReconcileContractRule(BaseRule):
     def __init__(self) -> None:
         super().__init__(
@@ -97,7 +125,10 @@ class ReconcileContractRule(BaseRule):
             if data is None:
                 found.append(self._violation(relative, "reconcile.md has no frontmatter"))
                 continue
-            found.extend(self._violation(relative, problem) for problem in _problems(data))
+            problems = _problems(data)
+            found.extend(self._violation(relative, problem) for problem in problems)
+            if not problems:
+                found.extend(self._violation(relative, problem) for problem in _evidence(ctx, relative, data))
         return found
 
     def _completed(self, ctx: RuleContext, bundle: str) -> bool:

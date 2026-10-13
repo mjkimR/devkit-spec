@@ -33,6 +33,6 @@ Not fixable: restore the code, point the declaration at where the code moved, or
 Checks capabilities and stories under `docs/capabilities/`, `docs/stories/` and the same directories under
 `docs/packages/<name>/`. Like every devkit rule, a violation is reported only in the documents the run targets:
 `devkit rules check` without targets checks every declaration; `--staged` and `--ci` check the documents the
-change touches. Deleting code without touching the document that declares it is therefore caught by a
-whole-workspace `devkit rules check`, not by the commit gate. `--staged` and `--ci` resolve paths in the snapshot's
-tree, where an empty directory does not exist.
+change touches and, in addition, every current document that declares a path the diff deletes, so deleting code
+without touching the document that declares it fails the commit gate too. `--staged` and `--ci` resolve paths in the
+snapshot's tree, where an empty directory does not exist.

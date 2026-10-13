@@ -28,5 +28,11 @@ targets:
 ## Scope
 
 Every targeted `reconcile.md` of a current spec bundle; a completed bundle's record is history, checked only when named
-as an explicit target. Not checked yet: that each `modified` target is in the diff of the commit or pull request that
-resolves the record; compare the targets with `git diff --name-only` yourself before resolving.
+as an explicit target.
+
+**Diff evidence.** In a snapshot run (`devkit rules check --staged`, which the commit gate runs, and `--ci` on a pull
+request), a `resolved` record that the diff changes must have each `modified` target changed or deleted by that diff:
+commit the Living Spec edits together with the record that resolves them. `--ci` judges the whole branch against its
+merge base, so a target changed in an earlier commit of the branch counts there. A record whose frontmatter is
+unchanged from the base (only its body was edited, such as a rewritten link) claims nothing new and is not
+re-checked. A plain `devkit rules check` has no diff and checks the form only.

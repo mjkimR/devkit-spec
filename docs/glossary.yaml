@@ -1,0 +1,35 @@
+# Synonyms for `devkit spec search`: a query containing any word of a cluster is expanded with the whole cluster.
+# Project-owned; add the domain terms and the abbreviations or translations people search with.
+terms:
+  - primary: reconciliation
+    synonyms: ["reconcile", "정합성", "정합", "동기화", "sync", "역반영"]
+  - primary: S-Lane
+    synonyms: ["s-lane", "단기 세션", "flash"]
+  - primary: capability
+    synonyms: ["역량", "기능", "cap"]
+  - primary: proposal
+    synonyms: ["제안서", "제안", "prop"]
+  - primary: story
+    synonyms: ["스토리", "사용자 스토리", "user story"]
+  - primary: decision
+    synonyms: ["ADR", "결정", "의사결정"]
+  - primary: handoff
+    synonyms: ["hand off", "hand-off", "이관", "인계"]
+  - primary: entrypoint
+    synonyms: ["entrypoints", "entry point", "code link", "진입점"]
+  - primary: namespace
+    synonyms: ["namespaces", "monorepo", "모노레포", "네임스페이스"]
+  - primary: scope
+    synonyms: ["work scope", "scope registry", "overlap", "작업 범위", "충돌"]
+  - primary: gate
+    synonyms: ["approval", "approvals", "승인", "게이트"]
+  - primary: workflow
+    synonyms: ["route", "stage", "워크플로", "단계"]
+  - primary: envelope
+    synonyms: ["final report", "review envelope", "엔벨로프"]
+  - primary: spec bundle
+    synonyms: ["feature spec", "spec.md", "기능 명세"]
+  - primary: Living Spec
+    synonyms: ["living spec", "리빙 스펙", "current contract"]
+  - primary: rule
+    synonyms: ["rules", "lint", "violation", "규칙"]

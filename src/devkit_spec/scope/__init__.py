@@ -3,7 +3,7 @@
 ``inputs`` builds a ``ScopeSet`` from a proposal or a spec bundle (and what Git observes in a worktree),
 ``compare`` reports the overlaps of each pair, ``localfs`` is the file registry with its event journal, ``location``
 finds the registry and the worktree's token, and ``flow`` runs a worktree's own register, update (the ACK) and
-release. The purpose is detection before parallel work runs, never exclusive ownership. See ``docs/scope.md``.
+release. The purpose is detection before parallel work runs, never exclusive ownership. Contract: ``CAP-COLL-work-scope-registry`` (``docs/capabilities/collaboration/``).
 """
 
 from devkit_spec.scope.compare import compare, compare_all, compare_with

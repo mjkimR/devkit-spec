@@ -1,6 +1,7 @@
 ---
 id: ARCH-05-2-components
 title: Components View
+summary: The components inside each container and their responsibilities (C4 level 3).
 status: draft
 ---
 

@@ -154,7 +154,18 @@ def test_a_characterized_bugfix_bundle_passes_the_rules(tmp_path: Path) -> None:
     """A bugfix bundle has no tasks.md until plan-tasks, so its characterized spec.md alone is lint-clean."""
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     assert _devkit(tmp_path, "sync").returncode == 0
-    result = _devkit(tmp_path, "spec", "new", "x", "--workflow", "bugfix", "--format", "json")
+    result = _devkit(
+        tmp_path,
+        "spec",
+        "new",
+        "x",
+        "--workflow",
+        "bugfix",
+        "--summary",
+        "Saving an empty file works.",
+        "--format",
+        "json",
+    )
     assert result.returncode == 0, result.stdout + result.stderr
     unit = tmp_path / json.loads(result.stdout)["dir"]
     assert sorted(path.name for path in unit.iterdir()) == ["spec.md"]

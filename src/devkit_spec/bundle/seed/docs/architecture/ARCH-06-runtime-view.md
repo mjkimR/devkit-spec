@@ -1,6 +1,7 @@
 ---
 id: ARCH-06-runtime-view
 title: Runtime View
+summary: The key runtime scenarios as sequences across containers and components.
 status: draft
 ---
 

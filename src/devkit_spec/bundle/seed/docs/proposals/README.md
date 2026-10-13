@@ -28,6 +28,7 @@ docs/proposals/PROP-{slug}/
   ---
   id: PROP-<slug>
   title: Proposal Title
+  summary: <One or two English sentences: what this proposal changes and why>   # required, English
   status: draft                         # draft | reviewing | accepted | rejected
   created_at: YYYY-MM-DD
   target_area: capabilities/<area>/      # Target capability area on graduation

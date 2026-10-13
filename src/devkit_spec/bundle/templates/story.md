@@ -1,6 +1,7 @@
 ---
 id: US-<slug>
 title: User Story Title (e.g., Complete Checkout with Saved Card)
+summary: "One or two English sentences: who achieves what through this story"   # required, English; quote it, it may contain ": "
 area: <area>              # Must match parent directory docs/stories/<area>/
 actor: <!-- End User | Operator | AI Agent, etc. -->
 status: proposed          # proposed | active | completed | deprecated

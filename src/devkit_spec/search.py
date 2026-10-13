@@ -4,9 +4,11 @@ The policy on top of the generic ranking:
 
 - **Candidates** are the indexed documents (``documents.DocumentIndex``), current ones only unless ``history``,
   optionally narrowed to some kinds.
-- **Fields**: a document's ID, title and area are its metadata, ranked lexically and densely; the body after the
-  frontmatter is ranked lexically only, so documents written in other languages are found through their English
-  frontmatter.
+- **Fields**: a document's ID and its English ``summary`` are its metadata, ranked lexically and densely (the ID
+  alone when it has no summary); the title, the area and the body after the frontmatter are ranked lexically only,
+  in whatever language they are written. Measured on specrig's documents (Korean titles and bodies, English paraphrase
+  queries), hybrid MRR rose from 0.54 (ID, title and area embedded) to 0.70 (ID alone) and 0.81 (ID and summary);
+  embedding whole bodies did worse than the ID alone.
 - **Pinning**: a query equal to a document's ID, workspace-relative path or file name (case-insensitive) puts that
   document first, whatever the ranking.
 - **Glossary expansion**: ``docs/glossary.yaml`` (optional; ``terms: [{primary, synonyms: [...]}]``) adds a term's
@@ -89,6 +91,16 @@ def expand_query(query: str, glossary: dict[str, list[str]]) -> str:
     return " ".join([query, *extra]) if extra else query
 
 
+def metadata(document: Document) -> str:
+    """What the dense ranking embeds: the ID and the English ``summary``, or the ID alone without a summary.
+
+    Titles and bodies may be written in any language and go to the lexical ranking only: an English embedding model
+    gains nothing from other scripts and loses precision when they dilute the vector. The ID's slug is English by
+    convention, so it carries meaning even when a document has no summary.
+    """
+    return f"{document.id}\n{document.summary}" if document.summary else document.id
+
+
 def _matches_exactly(document: Document, query: str) -> bool:
     wanted = query.strip().casefold()
     return wanted in (document.id.casefold(), document.path.casefold(), document.path.rsplit("/", 1)[-1].casefold())
@@ -128,7 +140,9 @@ def search_documents(
     ranking = SearchIndex(
         [
             SearchDocument(
-                document.path, "\n".join([document.id, document.title, document.area]), _body(index.root, document)
+                document.path,
+                metadata(document),
+                "\n".join([document.title, document.area, _body(index.root, document)]),
             )
             for document in candidates
         ]

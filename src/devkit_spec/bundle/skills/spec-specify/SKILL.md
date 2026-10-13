@@ -17,7 +17,7 @@ Use this skill when a spec bundle `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` needs its
 ## 2. Create or open the bundle
 
 - **Handed-off bundle** (`devkit spec proposal handoff`): it already exists and is bound; `spec.md`, `plan.md` and `tasks.md` carry the skeleton marker. Rewrite `spec.md` in place, keeping the carried content that still holds.
-- **New bundle**: `devkit spec new <slug> --title "<Title>"` for a feature (workflow `direct-delivery`), `devkit spec new <slug> --title "<Title>" --workflow bugfix` for a defect. It creates `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` with skeleton `spec.md`, `plan.md` and `tasks.md`, sets the ID `SPEC-<slug>` and binds the bundle. Never hand-make the bundle or its binding. The slug is kebab-case, has no date or sequence number and is unique among specs (`RULE-id-convention`).
+- **New bundle**: `devkit spec new <slug> --title "<Title>" --summary "<English sentence>"` for a feature (workflow `direct-delivery`), `devkit spec new <slug> --title "<Title>" --workflow bugfix` for a defect. It creates `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` with skeleton `spec.md`, `plan.md` and `tasks.md`, sets the ID `SPEC-<slug>` and binds the bundle. Never hand-make the bundle or its binding. The slug is kebab-case, has no date or sequence number and is unique among specs (`RULE-id-convention`).
 - Read the workflow the bundle follows: `devkit workflow show --unit <dir>`; `devkit workflow next --unit <dir>` names the current stage and what is unmet.
 
 ## 3. Choose the reference
@@ -44,7 +44,7 @@ Read one reference, not both. A small, low-risk defect is Route 1 (workflow `s-l
 
 - [ ] User and agent agree on the boundary (feature) or on current, expected and preserved behavior (bugfix).
 - [ ] Every non-goal states what is excluded; every AC is mechanically checkable.
-- [ ] `spec.md` written in the reference's output standard, keeping the `id`, `workflow` and `workflow_hash` frontmatter the bundle was created with.
+- [ ] `spec.md` written in the reference's output standard, keeping the `id`, `workflow` and `workflow_hash` frontmatter the bundle was created with, and an English `summary` of what the spec changes (`RULE-document-summary`).
 - [ ] The skeleton marker line `<!-- devkit:skeleton -->` is removed from `spec.md`; until then `not-skeleton(spec.md)` keeps the `specify` (feature) or `characterize` (bugfix) stage open. The markers in `plan.md` and `tasks.md` are removed by `spec-plan` and `spec-tasks`.
 - [ ] `devkit rules check <dir>` reports no spec-rule violation other than coverage the tasks have not been written for yet.
 - [ ] Ready for `spec-plan` (feature: still the `specify` stage; bugfix: the `plan-tasks` stage once `direction` holds).

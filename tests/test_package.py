@@ -24,6 +24,8 @@ RULES = (
     "RULE-task-coverage",
     "RULE-spec-lifecycle",
     "RULE-reconcile-contract",
+    "RULE-code-entrypoints",
+    "RULE-document-summary",
 )
 PYPROJECT = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 

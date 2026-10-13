@@ -22,6 +22,7 @@ docs/decisions/
 ---
 id: ADR-<slug>
 title: <Decision Title>
+summary: <One or two English sentences: what was decided and why> # required, English
 status: accepted # proposed | accepted | superseded | rejected | deprecated
 created_at: <YYYY-MM-DD>
 supersedes: [] # optional

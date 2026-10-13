@@ -2,7 +2,7 @@
 
 ``paths`` holds the path contract (``RULE-code-entrypoints`` checks it), ``bundle`` reads a spec bundle's
 declarations, ``derive`` joins them into document-code pairs and ``apply`` writes chosen pairs into frontmatter.
-Libraries never print: ``devkit spec entrypoints derive`` renders the results. See ``docs/entrypoints.md``.
+Libraries never print: ``devkit spec entrypoints derive`` renders the results. Contract: ``CAP-TRACE-code-entrypoints`` (``docs/capabilities/traceability/``).
 """
 
 from devkit_spec.entrypoints.apply import Applied, ApplyResult, apply, collapse, set_entrypoints

@@ -7,7 +7,9 @@ handed-off ``PROP-<slug>`` maps to exactly one ``SPEC-<slug>``.
 ``proposal.md`` is the anchor of a devkit workflow unit: a new proposal is bound to workflow ``incubated-delivery``
 when the project has it. ``workflow`` and ``workflow_hash`` are that binding; the workflow the spec follows after
 handoff is ``handoff_workflow``. ``namespace`` names the document namespace (``devkit_spec.namespaces``) the bundle
-belongs to; without it the bundle is global, and handoff carries it to ``spec.md``.
+belongs to; without it the bundle is global, and handoff carries it to ``spec.md``. ``summary`` is the one or two
+English sentences ``RULE-document-summary`` requires of ``proposal.md``; handoff carries it to ``spec.md``, and a
+PADR's ``summary`` stays in its promoted ADR.
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ from pathlib import Path
 
 import yaml
 from devkit.advisory import AdvisoryError
+from devkit.core.errors import ArgumentError
 from devkit.workflow import write_binding
 
 from devkit_spec.config import GLOBAL, read_spec_config
@@ -33,6 +36,7 @@ from devkit_spec.errors import (
 )
 from devkit_spec.namespaces import require
 from devkit_spec.proposals.binding import PROPOSAL_WORKFLOW, resolve_binding
+from devkit_spec.rules.document_summary import foreign_letters
 
 PROPOSALS = "docs/proposals"
 PROPOSAL_FILE = "proposal.md"
@@ -79,6 +83,24 @@ def require_namespace(root: Path, namespace: str | None) -> str | None:
     if namespace is None or namespace == GLOBAL:
         return namespace
     return require(read_spec_config(root).namespaces, namespace)
+
+
+def require_summary(summary: str | None) -> str | None:
+    """``summary`` stripped when it is non-empty English text (``RULE-document-summary``'s check); ``None`` when
+    omitted. Raises ``ArgumentError`` (``--summary``) for an empty summary or one with a letter outside the Latin
+    script."""
+    if summary is None:
+        return None
+    text = summary.strip()
+    letters = foreign_letters(text)
+    if text and not letters:
+        return text
+    problem = f"contains {''.join(letters[:5])}, not English" if letters else "is empty"
+    raise ArgumentError(
+        f"--summary {problem}",
+        target_files=["--summary"],
+        fix="Pass --summary with one or two English sentences saying what the document defines",
+    )
 
 
 def bundle_dir(root: Path, slug: str) -> Path:
@@ -140,20 +162,23 @@ def create_proposal(
     milestone: str | None = None,
     handoff_workflow: str | None = None,
     namespace: str | None = None,
+    summary: str | None = None,
     with_target_docs: bool = False,
     today: date | None = None,
 ) -> CreatedProposal:
     """Scaffold ``docs/proposals/PROP-<slug>/`` under the workspace ``root`` and bind ``proposal.md``.
 
-    ``handoff_workflow`` and ``namespace`` are written only when given; handoff resolves the workflow and carries the
-    namespace. ``proposal.md`` is bound to ``incubated-delivery`` when it resolves and validates, else left unbound
+    ``handoff_workflow``, ``namespace`` and ``summary`` are written only when given (without ``summary``, a commented
+    placeholder line); handoff resolves the workflow and carries the namespace and summary. ``proposal.md`` is bound to ``incubated-delivery`` when it resolves and validates, else left unbound
     with a ``SPEC_PROPOSAL_UNBOUND`` notice. Raises ``ProposalSlugError`` for a slug without letters or digits,
-    ``ArgumentError`` for a ``namespace`` that is neither ``global`` nor registered, ``ProposalExistsError`` when the
+    ``ArgumentError`` for a ``namespace`` that is neither ``global`` nor registered or a ``summary`` that is empty or
+    not English, ``ProposalExistsError`` when the
     bundle or a single-file proposal of the slug exists, ``ProposalSlugConflictError`` when ``SPEC-<slug>`` exists.
     """
     root = root.resolve()
     slug = require_slug(slug)
     namespace = require_namespace(root, namespace)
+    summary = require_summary(summary)
     title = (title or "").strip() or slug
     area = (target_area or "").strip() or DEFAULT_TARGET_AREA
     area = area if area.endswith("/") else area + "/"
@@ -172,7 +197,14 @@ def create_proposal(
     (bundle / MATERIALS).mkdir()
     proposal = bundle / PROPOSAL_FILE
     text = _proposal(
-        slug, title, area, (milestone or "").strip(), (handoff_workflow or "").strip(), namespace or "", created
+        slug,
+        title,
+        area,
+        (milestone or "").strip(),
+        (handoff_workflow or "").strip(),
+        namespace or "",
+        summary or "",
+        created,
     )
     proposal.write_text(text, encoding="utf-8")
     if binding is not None:
@@ -200,8 +232,20 @@ def create_proposal(
 
 
 def _proposal(
-    slug: str, title: str, area: str, milestone: str, handoff_workflow: str, namespace: str, created: str
+    slug: str,
+    title: str,
+    area: str,
+    milestone: str,
+    handoff_workflow: str,
+    namespace: str,
+    summary: str,
+    created: str,
 ) -> str:
+    summary_line = (
+        f"summary: {yaml_scalar(summary)}"
+        if summary
+        else "# summary: <one or two English sentences: what this proposal changes and why>"
+    )
     namespace_line = f"namespace: {yaml_scalar(namespace)}\n" if namespace else ""
     milestone_line = f"milestone: {yaml_scalar(milestone)}\n" if milestone else ""
     handoff_line = (
@@ -212,6 +256,7 @@ def _proposal(
     return f"""---
 id: PROP-{slug}
 title: {yaml_scalar(title)}
+{summary_line}
 status: draft                         # draft | reviewing | accepted | rejected
 created_at: {created}
 target_area: {yaml_scalar(area)}
@@ -308,14 +353,19 @@ class CreatedDecision:
         return {"id": self.id, "path": self.path, "proposal": self.proposal}
 
 
-def create_padr(root: Path, slug: str, title: str, *, today: date | None = None) -> CreatedDecision:
+def create_padr(
+    root: Path, slug: str, title: str, *, summary: str | None = None, today: date | None = None
+) -> CreatedDecision:
     """Scaffold ``decisions/PADR-<title slug>.md`` in the bundle of proposal ``slug``.
 
-    Raises ``ProposalSlugError`` for a slug or title without letters or digits, ``ProposalNotFoundError`` when the
-    bundle does not exist, ``ProposalExistsError`` when any document already declares the PADR ID.
+    ``summary`` is written only when given; the promoted ADR keeps it. Raises ``ProposalSlugError`` for a slug or
+    title without letters or digits, ``ArgumentError`` for a ``summary`` that is empty or not English,
+    ``ProposalNotFoundError`` when the bundle does not exist, ``ProposalExistsError`` when any document already
+    declares the PADR ID.
     """
     root = root.resolve()
     slug = require_slug(slug)
+    summary = require_summary(summary)
     title = title.strip()
     padr_id = f"PADR-{require_slug(title, 'title')}"
     bundle = bundle_dir(root, slug)
@@ -334,15 +384,20 @@ def create_padr(root: Path, slug: str, title: str, *, today: date | None = None)
         raise ProposalExistsError(f"PADR ID {padr_id} already exists: {', '.join(existing)}", target_files=existing)
     created = (today or date.today()).isoformat()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(_padr(padr_id, title, slug, created), encoding="utf-8")
+    path.write_text(_padr(padr_id, title, summary, slug, created), encoding="utf-8")
     return CreatedDecision(id=padr_id, path=path.relative_to(root).as_posix(), proposal=f"PROP-{slug}")
 
 
-def _padr(padr_id: str, title: str, slug: str, created: str) -> str:
+def _padr(padr_id: str, title: str, summary: str | None, slug: str, created: str) -> str:
+    summary_line = (
+        f"summary: {yaml_scalar(summary)}\n"
+        if summary
+        else "# summary: <one or two English sentences: what is decided and why>\n"
+    )
     return f"""---
 id: {padr_id}
 title: {yaml_scalar(title)}
-proposal: PROP-{slug}
+{summary_line}proposal: PROP-{slug}
 status: draft
 created_at: {created}
 ---

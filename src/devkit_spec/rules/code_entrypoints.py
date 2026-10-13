@@ -11,8 +11,9 @@ Checks the capabilities and stories (``docs/capabilities/``, ``docs/stories/`` a
   directory does not exist.
 
 An omitted field and an empty list pass. Not fixable: the rule never guesses whether the code moved or the
-declaration is obsolete. Reported for the targeted documents only (devkit's targeting), so deleting code without
-touching the document is caught by a whole-workspace run, not by a commit that changes only the code.
+declaration is obsolete. Reported for the targeted documents (devkit's targeting) and, in a snapshot run, also for
+every current document that declares a path the diff deletes: a commit that removes code without touching the
+document declaring it is caught by the commit gate and CI, not only by a whole-workspace run.
 """
 
 from __future__ import annotations
@@ -22,11 +23,12 @@ from typing import Any
 import yaml
 from devkit.core import FrontmatterError
 from devkit.core.frontmatter import locate
-from devkit.rules import Phase, RuleContext, Severity, Violation
+from devkit.rules import Phase, RuleContext, Severity, Violation, match_path
 from devkit.rules.rules import BaseRule
 
-from devkit_spec.documents import Document, Kind
+from devkit_spec.documents import Document, DocumentIndex, Kind
 from devkit_spec.entrypoints import entrypoint_bearing, exists, normalize
+from devkit_spec.entrypoints.paths import covers
 from devkit_spec.errors import EntrypointsPathError
 from devkit_spec.rules import document_index, reportable
 
@@ -57,7 +59,9 @@ class CodeEntrypointsRule(BaseRule):
         for document in index.documents:
             if FIELD not in document.frontmatter or document.kind not in _KINDS:
                 continue
-            if not entrypoint_bearing(document.path) or not reportable(ctx, index, document):
+            if not entrypoint_bearing(document.path):
+                continue
+            if not (reportable(ctx, index, document) or _declares_deleted(ctx, index, document)):
                 continue
             found.extend(self._check(ctx, document))
         return found
@@ -86,6 +90,31 @@ class CodeEntrypointsRule(BaseRule):
 
     def _violation(self, document: Document, line: int, message: str) -> Violation:
         return Violation(rule_id=self.id, file=document.path, line=line, message=message, remediation=REMEDIATION)
+
+
+def _declares_deleted(ctx: RuleContext, index: DocumentIndex, document: Document) -> bool:
+    """In a snapshot run, whether a current, non-excluded document declares a path the diff deletes.
+
+    The commit gate targets only the files a commit changes; a commit that deletes code without touching the document
+    declaring it would otherwise pass, so such a document is checked too.
+    """
+    snapshot = ctx.snapshot
+    if snapshot is None or not snapshot.deleted or index.is_historical(document):
+        return False
+    if any(match_path(pattern, document.path) for pattern in ctx.exclude):
+        return False
+    value = document.frontmatter.get(FIELD)
+    if not isinstance(value, list):
+        return False
+    declared: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            continue
+        try:
+            declared.append(normalize(item))
+        except EntrypointsPathError:
+            continue
+    return any(covers(entry, deleted) for entry in declared for deleted in snapshot.deleted)
 
 
 def _lines(text: str) -> tuple[int, list[int]]:

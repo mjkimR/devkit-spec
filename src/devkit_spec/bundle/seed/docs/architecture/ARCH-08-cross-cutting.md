@@ -1,6 +1,7 @@
 ---
 id: ARCH-08-cross-cutting
 title: Cross-cutting Concepts
+summary: Concepts that apply across the system: security, errors, logging, configuration and conventions.
 status: draft
 ---
 

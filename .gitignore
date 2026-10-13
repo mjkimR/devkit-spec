@@ -46,3 +46,8 @@ Thumbs.db
 *.log
 /scratch/
 /tmp/
+
+# Agents
+.agents/
+.claude/
+.codex/

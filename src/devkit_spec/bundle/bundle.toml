@@ -163,6 +163,12 @@ id = "code-entrypoints"
 kind = "rule"
 source = "rules/code_entrypoints"
 
+# Searchable documents carry a short English summary, the main signal of document search.
+[[assets]]
+id = "document-summary"
+kind = "rule"
+source = "rules/document_summary"
+
 # Starting points for new documents, read by path (.devkit/managed/spec/templates/<kind>.md).
 [[assets]]
 id = "templates"
@@ -234,6 +240,7 @@ assets = [
     "task-coverage",
     "spec-lifecycle",
     "reconcile-contract",
+    "document-summary",
     "code-entrypoints",
     "templates",
     "spec",

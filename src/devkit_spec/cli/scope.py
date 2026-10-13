@@ -18,7 +18,7 @@ Text output (paths are workspace-relative; ``<a>``/``<b>`` are spec, proposal or
   ``[SUMMARY: namespace= active= stale= unverifiable= error= removed=]``.
 
 A failed update prints its ACK, then its ``SPEC_SCOPE_*`` error. Warnings (unreadable records or journal lines, a
-journal that cannot be written, a shared worktree) follow the result on stderr. See ``docs/scope.md``.
+journal that cannot be written, a shared worktree) follow the result on stderr. Contract: ``CAP-COLL-work-scope-registry``.
 """
 
 from __future__ import annotations

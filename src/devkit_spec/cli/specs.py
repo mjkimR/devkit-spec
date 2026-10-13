@@ -38,6 +38,11 @@ from devkit_spec.proposals import create_spec
     help="Document namespace of the bundle: global or a registered package [default: none, global]",
 )
 @click.option(
+    "--summary",
+    default=None,
+    help="spec.md's summary: one or two English sentences saying what the spec defines [default: none]",
+)
+@click.option(
     "--date",
     "day",
     type=click.DateTime(formats=["%Y-%m-%d"]),
@@ -52,6 +57,7 @@ def spec_new_cmd(
     title: str | None,
     workflow: str | None,
     namespace: str | None,
+    summary: str | None,
     day: datetime | None,
     workspace_root: str | None,
     output_format: str,
@@ -63,6 +69,7 @@ def spec_new_cmd(
         title=title,
         workflow=workflow,
         namespace=namespace,
+        summary=summary,
         day=day.date() if day else None,
     )
     if is_json(output_format):

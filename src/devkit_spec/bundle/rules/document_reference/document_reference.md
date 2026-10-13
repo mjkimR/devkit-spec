@@ -25,7 +25,7 @@ document was meant.
 
 Reference extraction skips code fences, indented code, non-ID inline code, HTML comments, escapes, link labels,
 `~~strikethrough~~` (a historical mention of a removed document stays allowed there) and a heading's own ID
-([documents overview](https://github.com/mjkimR/devkit-spec/blob/main/docs/documents/overview.md)). External URLs,
+([documents overview](https://github.com/mjkimR/devkit-spec/blob/main/docs/capabilities/documents/CAP-DOCS-document-model.md)). External URLs,
 images, code files, documents without IDs and links with a fragment or query keep Markdown links.
 
 Materials are free-form and not checked. Files of completed spec bundles are work history: checked only when named as

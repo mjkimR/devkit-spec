@@ -2,7 +2,7 @@
 
 IDs (``ids``), documents and references (``model``), the parser
 (``parse_document``), the Markdown body scanner (``markdown``) and the
-workspace index (``DocumentIndex``). See ``docs/documents/overview.md``.
+workspace index (``DocumentIndex``). Contract: ``CAP-DOCS-document-model`` (``docs/capabilities/documents/``).
 """
 
 from devkit_spec.documents.ids import ID_PATTERN, PREFIXES, Kind, is_id, kind_of

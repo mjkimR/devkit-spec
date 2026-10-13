@@ -1,6 +1,7 @@
 ---
 id: ARCH-01-introduction-and-goals
 title: Introduction & Goals
+summary: The system's mission, its quality goals and its stakeholders.
 status: draft
 ---
 

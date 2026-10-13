@@ -97,7 +97,11 @@ def search_cmd(
                 "expanded": result.expanded,
                 "mode": str(result.mode),
                 "namespace": scope.selection.name,
-                "hits": [hit.document.to_dict() | {"score": hit.score, "pinned": hit.pinned} for hit in result.hits],
+                "hits": [
+                    hit.document.to_dict()
+                    | {"namespace": scope.namespace_of(hit.document), "score": hit.score, "pinned": hit.pinned}
+                    for hit in result.hits
+                ],
                 "notices": [notice.to_dict() for notice in index.problems],
             }
         )

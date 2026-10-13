@@ -5,7 +5,8 @@ replaced by spaces, so character offsets still match the original text:
 
 - fenced code blocks (a run of three or more backticks or tildes indented at
   most three spaces, closed by a run of the same character at least as long)
-  and lines indented four or more spaces are left out entirely;
+  and indented code blocks (four or more spaces after a blank line, outside a
+  list) are left out entirely;
 - HTML comments, backslash escapes, inline code spans (a backtick run closed
   by the next run of the same length) and ``~~strikethrough~~`` are blanked;
   a span may continue on the following lines of its paragraph (it ends at a
@@ -171,14 +172,23 @@ def _closes_later(following: Iterable[str], char: str, width: int) -> bool:
     return False
 
 
+_LIST_ITEM = re.compile(r"^\s*(?:[-*+]|\d{1,9}[.)])(?:\s|$)")
+
+
 def visible_lines(
     text: str, *, start: int = 0, first_line: int = 1, mask_links: bool = True, keep_id_spans: bool = True
 ) -> Iterator[VisibleLine]:
-    """The prose lines of ``text[start:]`` (a document body), numbered from ``first_line``."""
+    """The prose lines of ``text[start:]`` (a document body), numbered from ``first_line``.
+
+    A line indented four or more spaces is indented code only where CommonMark makes it one: after a blank line
+    (or at the start) and outside a list. Inside a list item, nested items and continuation paragraphs are prose,
+    and so is a line continuing a paragraph.
+    """
     masker = _Masker(mask_links=mask_links, keep_id_spans=keep_id_spans)
     fence = ""
     offset, number = start, first_line
     lines = text[start:].split("\n")
+    after_blank, in_code, in_list = True, False, False
     for position, line in enumerate(lines):
         content = line.removesuffix("\r")
         stripped = content.strip()
@@ -187,11 +197,20 @@ def visible_lines(
         if fence:
             if run and run[0] == fence[0] and len(run) >= len(fence) and not stripped[len(run) :].strip():
                 fence = ""
+            after_blank, in_code = False, False
         elif run:
             fence = run
+            after_blank, in_code = False, False
+        elif not stripped:
+            after_blank = True
+        elif indent >= 4 and (in_code or (after_blank and not in_list)):
+            in_code, after_blank = True, False
         else:
-            visible = masker.visible(content, itertools.islice(lines, position + 1, None))
-            if indent < 4:
-                yield VisibleLine(number, offset, visible)
+            if _LIST_ITEM.match(content):
+                in_list = True
+            elif indent == 0:
+                in_list = False
+            in_code, after_blank = False, False
+            yield VisibleLine(number, offset, masker.visible(content, itertools.islice(lines, position + 1, None)))
         offset += len(line) + 1
         number += 1

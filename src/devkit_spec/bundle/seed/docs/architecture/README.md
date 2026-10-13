@@ -29,6 +29,7 @@ System blueprint directory rendering C4 Model diagrams via Mermaid on top of arc
 ---
 id: ARCH-03-context        # Matches file stem
 title: Document Title
+summary: <One or two English sentences>   # required, English
 status: active             # draft | active | deprecated
 ---
 ```

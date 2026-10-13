@@ -1,6 +1,7 @@
 ---
 id: PROP-<slug>
 title: Proposal Title (e.g., Pre-action Hook Context Advisor)
+summary: "One or two English sentences: what this proposal changes and why"   # required, English; quote it, it may contain ": "
 status: draft                         # draft | reviewing | accepted | rejected
 created_at: YYYY-MM-DD
 target_area: capabilities/<area>/      # Target capability area on graduation (e.g., capabilities/governance/)

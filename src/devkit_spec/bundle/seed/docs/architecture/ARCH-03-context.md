@@ -1,6 +1,7 @@
 ---
 id: ARCH-03-context
 title: System Scope & Context
+summary: The system's scope and context: users, neighboring systems and the interfaces between them (C4 level 1).
 status: draft
 ---
 

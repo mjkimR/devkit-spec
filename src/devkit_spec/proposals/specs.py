@@ -7,7 +7,8 @@ for ``bugfix``, carries ``kind: bugfix``.
 
 ``create_spec`` creates a bundle without a proposal (``devkit spec new``): unlike ``devkit workflow new`` it writes
 the document IDs the rules expect. ``spec.md``'s ``namespace`` names the document namespace the bundle belongs to;
-without it the bundle is global.
+without it the bundle is global. Its ``summary`` (one or two English sentences, ``RULE-document-summary``) is written
+when given; a skeleton-marked ``spec.md`` is exempt from the rule until it is written.
 """
 
 from __future__ import annotations
@@ -27,7 +28,14 @@ from devkit_spec.documents import DocumentIndex
 from devkit_spec.errors import SpecExistsError, SpecSlugError, SpecUnboundNotice, SpecWorkflowError, SpecWriteError
 from devkit_spec.proposals.binding import BUGFIX_WORKFLOW, DEFAULT_WORKFLOW, resolve_binding
 from devkit_spec.proposals.body import CarriedProposal, ensure_ac_ids
-from devkit_spec.proposals.scaffold import bundle_dir, clean_slug, require_namespace, single_file, yaml_scalar
+from devkit_spec.proposals.scaffold import (
+    bundle_dir,
+    clean_slug,
+    require_namespace,
+    require_summary,
+    single_file,
+    yaml_scalar,
+)
 
 # devkit's not-skeleton check: specify stays open until the spec, plan and tasks are written and the line removed.
 SKELETON_MARKER = "<!-- devkit:skeleton -->"
@@ -74,13 +82,14 @@ def spec_files(
     meta: dict[str, Any] | None = None,
     kind: str | None = None,
     namespace: str | None = None,
+    summary: str | None = None,
     target_docs_ref: str = "",
 ) -> dict[str, str]:
     """``spec.md``, ``plan.md`` and ``tasks.md`` of a spec bundle, each marked as a skeleton.
 
     ``origin`` opens the problem statement; ``carried`` fills the sections from a proposal body; ``meta`` is the
-    proposal frontmatter (``milestone``, ``target_area``, ``boundaries``); ``kind`` and ``namespace`` become
-    ``spec.md``'s ``kind`` and ``namespace`` (none written when ``None``).
+    proposal frontmatter (``milestone``, ``target_area``, ``boundaries``); ``kind``, ``namespace`` and ``summary``
+    become ``spec.md``'s ``kind``, ``namespace`` and ``summary`` (none written when ``None``).
     """
     carried = carried or CarriedProposal()
     meta = meta or {}
@@ -97,9 +106,10 @@ def spec_files(
     extra = f"\nnamespace: {yaml_scalar(namespace)}" if namespace else ""
     extra += f"\nmilestone: {yaml_scalar(milestone)}" if milestone else ""
     kind_line = f"\nkind: {yaml_scalar(kind)}" if kind else ""
+    summary_line = f"\nsummary: {yaml_scalar(summary)}" if summary else ""
     spec = f"""---
 id: SPEC-{slug}
-title: {yaml_scalar(title)}
+title: {yaml_scalar(title)}{summary_line}
 status: planned{kind_line}
 created: {created}{extra}
 related_capabilities: []
@@ -236,14 +246,16 @@ def create_spec(
     title: str | None = None,
     workflow: str | None = None,
     namespace: str | None = None,
+    summary: str | None = None,
     day: date | None = None,
 ) -> CreatedSpec:
     """Create ``specs/<YYYY-MM>/<YYYYMMDD>-<slug>/`` under the workspace ``root`` and bind ``spec.md``.
 
     ``workflow`` defaults to ``direct-delivery`` (unbound, with a ``SPEC_UNBOUND`` notice, when the project does not
     have it). A ``bugfix`` bundle gets only ``spec.md`` (``kind: bugfix``); its workflow writes the plan and tasks.
-    ``namespace`` is written to ``spec.md`` only when given. Raises before writing: ``SpecSlugError``,
-    ``ArgumentError`` (a ``namespace`` that is neither ``global`` nor registered), ``SpecExistsError``
+    ``namespace`` and ``summary`` are written to ``spec.md`` only when given. Raises before writing:
+    ``SpecSlugError``, ``ArgumentError`` (a ``namespace`` that is neither ``global`` nor registered, a ``summary``
+    that is empty or not English), ``SpecExistsError``
     (``SPEC-<slug>`` or ``PROP-<slug>`` is declared, a proposal of the slug exists, or the directory exists),
     ``SpecWorkflowError`` (an explicit workflow that does not resolve or validate); ``SpecWriteError`` when a write
     fails (what was written is removed).
@@ -254,6 +266,7 @@ def create_spec(
     if not slug:
         raise SpecSlugError(f"slug {raw!r} has no letter or digit", target_files=[raw])
     namespace = require_namespace(root, namespace)
+    summary = require_summary(summary)
     day = day or date.today()
     directory = spec_dir(root, slug, day)
     index = DocumentIndex.load(root)
@@ -276,6 +289,7 @@ def create_spec(
         origin="<Describe the problem, who has it and why it matters now.>\n",
         kind=spec_kind(binding),
         namespace=namespace,
+        summary=summary,
     )
     if spec_kind(binding) == BUGFIX_WORKFLOW:
         # bugfix writes plan.md and tasks.md in its plan-tasks stage; a skeleton tasks.md would have to match the

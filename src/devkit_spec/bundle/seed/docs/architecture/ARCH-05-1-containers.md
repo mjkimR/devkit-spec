@@ -1,6 +1,7 @@
 ---
 id: ARCH-05-1-containers
 title: Containers View
+summary: The deployable containers of the system and how they communicate (C4 level 2).
 status: draft
 ---
 

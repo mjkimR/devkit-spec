@@ -1,6 +1,7 @@
 ---
 id: ARCH-07-deployment
 title: Deployment View
+summary: How the system is deployed: environments, infrastructure and release flow.
 status: draft
 ---
 

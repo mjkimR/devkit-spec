@@ -1,10 +1,11 @@
-"""``devkit spec proposal new|padr|handoff``: incubate a proposal, record its preliminary decisions, hand it off.
+"""``devkit spec proposal new|padr|handoff|prune``: incubate a proposal, record its preliminary decisions, hand it off.
 
 Text output (paths are relative to the workspace root):
 
 - ``new``: ``[PROPOSAL: <id> path= dir= target_docs= workflow=]`` and, when ``proposal.md`` is bound to a workflow,
   ``[NEXT_CMD: devkit workflow next --unit <dir>]``.
 - ``padr``: ``[PADR: <id> path= proposal=]``.
+- ``prune``: ``[PRUNED: <dir>]`` per empty proposal directory removed, else ``[OK: nothing to prune]``.
 - ``handoff``: ``[HANDOFF: <proposal id> spec= dir= workflow=]``, then ``[TARGET_DOCS: <path>]``,
   ``[MATERIALS: <dir>]``, one ``[PROMOTED_ADR: <id> path= padr=]`` per promoted decision, one
   ``[REWRITTEN: <path>:<line> kind=link|id from= to=]`` per rewritten link or reference, one
@@ -37,7 +38,7 @@ from devkit.core.cli import (
 
 from devkit_spec.cli.output import sentinel
 from devkit_spec.cli.scope import echo_registered, registered_dict
-from devkit_spec.proposals import create_padr, create_proposal, handoff_proposal
+from devkit_spec.proposals import create_padr, create_proposal, handoff_proposal, prune_proposals
 from devkit_spec.scope import SOURCE_HANDOFF, auto_register
 
 WORKSPACE = workspace_option()
@@ -63,6 +64,11 @@ def proposal_group() -> None:
     default=None,
     help="Document namespace of the bundle: global or a registered package; carried to spec.md [default: none, global]",
 )
+@click.option(
+    "--summary",
+    default=None,
+    help="One or two English sentences: what the proposal changes and why; carried to spec.md [default: none]",
+)
 @click.option("--with-target-docs", is_flag=True, help="Also scaffold target-docs.md, the Living Spec blueprint")
 @WORKSPACE
 @FORMAT_OPTION
@@ -74,6 +80,7 @@ def new_cmd(
     milestone: str | None,
     handoff_workflow: str | None,
     namespace: str | None,
+    summary: str | None,
     with_target_docs: bool,
     workspace_root: str | None,
     output_format: str,
@@ -87,6 +94,7 @@ def new_cmd(
         milestone=milestone,
         handoff_workflow=handoff_workflow,
         namespace=namespace,
+        summary=summary,
         with_target_docs=with_target_docs,
     )
     if is_json(output_format):
@@ -111,12 +119,17 @@ def new_cmd(
 @proposal_group.command(name="padr")
 @click.argument("slug")
 @click.argument("title")
+@click.option(
+    "--summary",
+    default=None,
+    help="One or two English sentences: what the decision defines; kept by the promoted ADR [default: none]",
+)
 @WORKSPACE
 @FORMAT_OPTION
 @boundary
-def padr_cmd(slug: str, title: str, workspace_root: str | None, output_format: str) -> None:
+def padr_cmd(slug: str, title: str, summary: str | None, workspace_root: str | None, output_format: str) -> None:
     """Record a preliminary decision PADR-<title slug> in proposal SLUG's decisions/."""
-    created = create_padr(resolve_root(workspace_root), slug, title)
+    created = create_padr(resolve_root(workspace_root), slug, title, summary=summary)
     if is_json(output_format):
         echo_json(created.to_dict())
         return
@@ -170,3 +183,23 @@ def handoff_cmd(slug: str, direction_chosen: bool, workspace_root: str | None, o
             click.echo(f"[NEXT_CMD: {result.next_command}]")
     echo_notices(result.notices)
     exit_on_warnings(result.notices)
+
+
+@proposal_group.command(name="prune")
+@click.argument("slug", required=False)
+@workspace_option()
+@FORMAT_OPTION
+@boundary
+def prune_cmd(slug: str | None, workspace_root: str | None, output_format: str) -> None:
+    """Remove the empty docs/proposals/PROP-<SLUG>/ directories a merged handoff left (all of them without SLUG).
+
+    Run it in the base checkout after `devkit worktree finish`; a directory holding any file is kept.
+    """
+    pruned = prune_proposals(resolve_root(workspace_root), slug)
+    if is_json(output_format):
+        echo_json({"pruned": pruned})
+    elif pruned:
+        for path in pruned:
+            click.echo(sentinel("PRUNED", path))
+    else:
+        click.echo("[OK: nothing to prune]")
