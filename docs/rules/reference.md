@@ -23,6 +23,7 @@ Not ported yet: specrig's document namespaces (`docs/packages/<name>/`); the rul
 | `RULE-traceability-link` | linter, error | A story's `capabilities` and a capability's `stories` link both ways. | Appends the missing reverse ID, keeping the list's style, when both IDs are unique. |
 | `RULE-task-coverage` | linter, error | Each acceptance-criterion heading of a spec carries one `[AC-NN]`, IDs are unique, every criterion is cited by a task of `tasks.md` (on the task or its `_Requirements:_` line) and tasks cite only defined ones. A pair is checked when either file is targeted. | none |
 | `RULE-spec-lifecycle` | linter, error | A completed spec has a resolved `reconcile.md`; a spec whose reconcile is resolved and whose tasks are all checked is marked `completed`. Completed bundles are checked too. | Sets `status: completed` in a targeted `spec.md`. |
+| `RULE-reconcile-contract` | linter, error | A `reconcile.md` has `reconcile_id`, `status` `pending` or `resolved`, and `targets` of unique workspace-relative `file`s with `resolution` `modified` or `waived`, each waiver with a rationale of at least 20 non-whitespace characters. Not yet: specrig's diff evidence (a `modified` target must be in the resolving diff). | none |
 
 ## Layout
 

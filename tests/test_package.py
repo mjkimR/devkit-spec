@@ -23,6 +23,7 @@ RULES = (
     "RULE-traceability-link",
     "RULE-task-coverage",
     "RULE-spec-lifecycle",
+    "RULE-reconcile-contract",
 )
 PYPROJECT = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
@@ -69,3 +70,15 @@ def test_devkit_sync_deploys_the_default_preset_and_its_rules_run(tmp_path: Path
     for rule in RULES:
         explain = _devkit("rules", "explain", rule, "-w", str(tmp_path))
         assert explain.returncode == 0 and f"# {rule}" in explain.stdout, explain.stderr
+
+
+def test_the_docs_skeleton_is_opt_in_and_passes_the_rules(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    assert _devkit("sync", "-w", str(tmp_path)).returncode == 0
+    assert not (tmp_path / "docs").exists()
+    added = _devkit("add", "spec:docs-skeleton", "-w", str(tmp_path))
+    assert added.returncode == 0, added.stderr
+    assert (tmp_path / "docs/architecture/ARCH-01-introduction-and-goals.md").is_file()
+    assert (tmp_path / "docs/glossary.yaml").is_file()
+    check = _devkit("rules", "check", "-w", str(tmp_path))
+    assert check.returncode == 0, check.stdout

@@ -2,7 +2,7 @@
 role: scout
 title: Scout (librarian and researcher)
 description: Pinpoints internal code, documents and constraints, and looks up external official material, without polluting the main session.
-skill: sr-scout
+skill: spec-scout
 x-execution: isolated
 x-invocation: optional
 x-model-profile: light-medium

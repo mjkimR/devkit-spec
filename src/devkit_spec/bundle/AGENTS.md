@@ -2,7 +2,7 @@
 
 This project develops through spec-driven delivery: `docs/` is the durable Living Spec, feature specs in `specs/`
 carry each change, and completed work is reconciled into `docs/` before it is reported done. Start development work
-with the `sr` skill (`/sr <intent>`); `/sr-next` orients in work already under way. Agents MUST NOT unilaterally
+with the `spec` skill (`/spec <intent>`); `/spec-next` orients in work already under way. Agents MUST NOT unilaterally
 terminate the user's session.
 
 ## 1. Context
@@ -30,7 +30,7 @@ terminate the user's session.
 
 ## 3. Routes and Workflows
 
-`sr` chooses the route by uncertainty, contract impact and risk:
+`spec` chooses the route by uncertainty, contract impact and risk:
 
 - **Route 1, S-Lane**: low uncertainty and low risk, done within the session; workflow `s-lane`, no planning files.
 - **Route 2, direct delivery**: known direction, contract impact; workflow `direct-delivery`, or `bugfix` for a
@@ -46,14 +46,14 @@ stage, `devkit workflow show --unit <dir>` shows the definition.
 Read `devkit spec policy` before routing, gate and Git decisions. `ask` gates wait for the user's answer, recorded with
 `devkit workflow answer`; `auto` delegates the decision within existing authority and the assumptions are reported.
 Neither grants new commit, merge, publication or deletion authority, and the intent gate always needs the user's
-intent. Report stages the policy switched off as skipped. Before formal worktree work read the `sr` skill's
+intent. Report stages the policy switched off as skipped. Before formal worktree work read the `spec` skill's
 `references/worktree.md`; before completion or Git actions its `references/completion.md`. Explicit user
 instructions take precedence.
 
 ## 4. Verification and Completion
 
 Every route compares the final diff, the agreed requirements, the check results and the Living Spec impact before
-reporting completion (`sr-review`, `sr-sync`). Fix implementation defects rather than rewriting documentation to
+reporting completion (`spec-review`, `spec-sync`). Fix implementation defects rather than rewriting documentation to
 endorse them. Reconcile behavior, capability and constraint changes into the affected Living Spec, and recheck after
 further changes.
 

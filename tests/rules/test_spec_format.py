@@ -55,14 +55,14 @@ def test_only_document_files_in_scope_are_checked(workspace: Path, write: Write)
         "docs/proposals/x/materials/notes.md",
         "docs/architecture/ARCH-x.md",
         "specs/2026-10/20261001-x/reconcile.md",
-        "template/agents/skills/sr/SKILL.md",
+        "template/agents/skills/spec/SKILL.md",
     ):
         write(path, "# no frontmatter\n")
     assert run(RULE, workspace) == []
 
 
 def test_only_targets_are_reported(workspace: Path, write: Write) -> None:
-    files = ["docs/capabilities/CAP-test.md", "specs/test/reconcile.md", "template/agents/skills/sr/SKILL.md"]
+    files = ["docs/capabilities/CAP-test.md", "specs/test/reconcile.md", "template/agents/skills/spec/SKILL.md"]
     for path in [*files, "docs/stories/US-other.md"]:
         write(path, "# no frontmatter\n")
     assert [file for file, _, _ in found(run(RULE, workspace, *files))] == [files[0]]

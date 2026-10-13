@@ -22,7 +22,7 @@ Each definition sets its own `layout`, so spec bundles and proposal bundles live
 - **`bugfix`**: `intent` (G1), `characterize`, `direction` (G2), `plan-tasks`, `reproduce`, `fix-verify`, then the stages of `direct-delivery` from `review-refine` on.
 - **`incubated-delivery`**: `intent-proposal` (G1), `spike` (optional), `direction-handoff` (G2), `handoff`.
 
-Every workflow also has the out-of-band `exception` stage (E). A stage id shared by several definitions has the same exit checks, gate, role, isolation, skills and artifacts in each; `devkit workflow validate` with no arguments reports a difference as `SHARED_STAGE_MISMATCH`. Stages delegate to the roles `reviewer` (`review-refine`), `reconciler` (`living-spec-draft`) and `scout` (`spike`); `challenger` is invoked through `sr-challenge`. Every role is optional: the Developer may run the procedure in the main session.
+Every workflow also has the out-of-band `exception` stage (E). A stage id shared by several definitions has the same exit checks, gate, role, isolation, skills and artifacts in each; `devkit workflow validate` with no arguments reports a difference as `SHARED_STAGE_MISMATCH`. Stages delegate to the roles `reviewer` (`review-refine`), `reconciler` (`living-spec-draft`) and `scout` (`spike`); `challenger` is invoked through `spec-challenge`. Every role is optional: the Developer may run the procedure in the main session.
 
 ## 3. Gates and Project Policy
 
@@ -64,17 +64,17 @@ Other deviations from specrig:
 
 ## 5. Proposal Handoff
 
-`incubated-delivery` ends at handoff and declares no `next` candidates: devkit's `devkit workflow handoff` rebinds a unit in place and refuses a candidate with another anchor (`HANDOFF_LAYOUT_MISMATCH`), so it cannot turn a proposal bundle into a spec bundle. Once the direction gate holds, `next` reports the proposal unit complete, and `devkit spec proposal handoff <slug>` does the cross-layout move: it creates `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` from the proposal and binds `spec.md` to the delivery workflow the proposal names in `handoff_workflow` (`bugfix`, default `direct-delivery`; `workflow` in `proposal.md` is the proposal unit's own binding). That workflow is then evaluated from its first stage; its G1 is the spec bundle's intent, normally confirmed by the accepted proposal. Skeleton files the handoff writes must carry devkit's `<!-- devkit:skeleton -->` line (specrig's marker was `<!-- specrig:handoff-skeleton -->`), which keeps `specify` (or `plan-tasks`) open until `sr-spec`, `sr-plan` and `sr-tasks` replace them.
+`incubated-delivery` ends at handoff and declares no `next` candidates: devkit's `devkit workflow handoff` rebinds a unit in place and refuses a candidate with another anchor (`HANDOFF_LAYOUT_MISMATCH`), so it cannot turn a proposal bundle into a spec bundle. Once the direction gate holds, `next` reports the proposal unit complete, and `devkit spec proposal handoff <slug>` does the cross-layout move: it creates `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` from the proposal and binds `spec.md` to the delivery workflow the proposal names in `handoff_workflow` (`bugfix`, default `direct-delivery`; `workflow` in `proposal.md` is the proposal unit's own binding). That workflow is then evaluated from its first stage; its G1 is the spec bundle's intent, normally confirmed by the accepted proposal. Skeleton files the handoff writes must carry devkit's `<!-- devkit:skeleton -->` line (specrig's marker was `<!-- specrig:handoff-skeleton -->`), which keeps `specify` (or `plan-tasks`) open until `spec-specify`, `spec-plan` and `spec-tasks` replace them.
 
 ## 6. Role Contracts
 
-One Markdown contract per role, in devkit's [role contract format](https://github.com/mjkimR/devkit/blob/main/docs/distribution/agent-projections.md#role-contract-format): `role`, `title`, `description`, `skill` (the `sr-*` procedure) and a `hosts` block for `claude-code`, `codex` and `antigravity`. specrig-only metadata is kept as extension keys devkit does not interpret: `x-execution`, `x-invocation`, `x-model-profile` (`light-medium`, `general-high`, `high-reasoning`; never a host model name) and `x-git-actions` (`[read]` for every support role).
+One Markdown contract per role, in devkit's [role contract format](https://github.com/mjkimR/devkit/blob/main/docs/distribution/agent-projections.md#role-contract-format): `role`, `title`, `description`, `skill` (the `spec-*` procedure) and a `hosts` block for `claude-code`, `codex` and `antigravity`. specrig-only metadata is kept as extension keys devkit does not interpret: `x-execution`, `x-invocation`, `x-model-profile` (`light-medium`, `general-high`, `high-reasoning`; never a host model name) and `x-git-actions` (`[read]` for every support role).
 
 | Role | Skill | Writes | Envelope kind |
 | --- | --- | --- | --- |
-| `challenger` | `sr-challenge` | nothing | `challenger` |
-| `reconciler` | `sr-sync` | docs drafts and the bundle's `reconcile.md` | `reconciler` |
-| `reviewer` | `sr-review` | nothing | `review`, `reverify` |
-| `scout` | `sr-scout` | nothing, or the proposal's `materials/` on request | `scout` |
+| `challenger` | `spec-challenge` | nothing | `challenger` |
+| `reconciler` | `spec-sync` | docs drafts and the bundle's `reconcile.md` | `reconciler` |
+| `reviewer` | `spec-review` | nothing | `review`, `reverify` |
+| `scout` | `spec-scout` | nothing, or the proposal's `materials/` on request | `scout` |
 
 A role returns the fields of a devkit envelope; the Developer records them with `devkit workflow envelope new --unit <dir> --kind <kind> ...` and checks them with `devkit workflow envelope check --unit <dir>`. specrig's `docs_impact` block has no envelope key in devkit: the reconciler writes the docs impact into the draft `reconcile.md`, where it already lived. No role stages or commits.

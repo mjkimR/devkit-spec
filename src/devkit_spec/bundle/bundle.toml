@@ -60,81 +60,96 @@ source = "rules/spec_lifecycle"
 
 # Entry router: classify intent, choose the route and drive the workflow.
 [[assets]]
-id = "sr"
+id = "spec"
 kind = "skill"
-source = "skills/sr"
+source = "skills/spec"
 
 # Orient in work under way: diagnose the stage and the next action.
 [[assets]]
-id = "sr-next"
+id = "spec-next"
 kind = "skill"
-source = "skills/sr-next"
+source = "skills/spec-next"
 
 # Write spec.md: requirements, non-goals and acceptance criteria.
 [[assets]]
-id = "sr-spec"
+id = "spec-specify"
 kind = "skill"
-source = "skills/sr-spec"
+source = "skills/spec-specify"
 
 # Write plan.md: design, interfaces and verification plan.
 [[assets]]
-id = "sr-plan"
+id = "spec-plan"
 kind = "skill"
-source = "skills/sr-plan"
+source = "skills/spec-plan"
 
 # Write tasks.md: tasks covering every acceptance criterion.
 [[assets]]
-id = "sr-tasks"
+id = "spec-tasks"
 kind = "skill"
-source = "skills/sr-tasks"
+source = "skills/spec-tasks"
 
 # Verify the change against the spec, tests and checks before completion.
 [[assets]]
-id = "sr-review"
+id = "spec-review"
 kind = "skill"
-source = "skills/sr-review"
+source = "skills/spec-review"
 
 # Reconcile the change into the Living Spec and resolve reconcile.md.
 [[assets]]
-id = "sr-sync"
+id = "spec-sync"
 kind = "skill"
-source = "skills/sr-sync"
+source = "skills/spec-sync"
 
 # Integrate an approved change: conflicts, docs reflection, merge and cleanup.
 [[assets]]
-id = "sr-integrate"
+id = "spec-integrate"
 kind = "skill"
-source = "skills/sr-integrate"
+source = "skills/spec-integrate"
 
 # Delegate a stage to a role contract and record its envelope.
 [[assets]]
-id = "sr-delegate"
+id = "spec-delegate"
 kind = "skill"
-source = "skills/sr-delegate"
+source = "skills/spec-delegate"
 
 # Challenge a direction before it is chosen.
 [[assets]]
-id = "sr-challenge"
+id = "spec-challenge"
 kind = "skill"
-source = "skills/sr-challenge"
+source = "skills/spec-challenge"
 
 # Scout prior art and evidence for a proposal.
 [[assets]]
-id = "sr-scout"
+id = "spec-scout"
 kind = "skill"
-source = "skills/sr-scout"
+source = "skills/spec-scout"
 
 # Author or tune a project rule for devkit rules.
 [[assets]]
-id = "sr-rule"
+id = "spec-rule"
 kind = "skill"
-source = "skills/sr-rule"
+source = "skills/spec-rule"
 
 # Record and sweep feedback observations.
 [[assets]]
-id = "sr-feedback"
+id = "spec-feedback"
 kind = "skill"
-source = "skills/sr-feedback"
+source = "skills/spec-feedback"
+
+# The docs/ skeleton (Living Spec directories, arc42 chapters, glossary, search synonyms): written once where absent,
+# then project-owned. Opt-in preset, so an existing docs/ tree never receives files it did not ask for.
+[[assets]]
+id = "docs-skeleton"
+kind = "document"
+seeded = true
+source = "seed/docs"
+target = "docs"
+
+# A reconcile.md record has an id, a pending or resolved status and well-formed targets.
+[[assets]]
+id = "reconcile-contract"
+kind = "rule"
+source = "rules/reconcile_contract"
 
 # Starting points for new documents, read by path (.devkit/managed/spec/templates/<kind>.md).
 [[assets]]
@@ -184,6 +199,17 @@ id = "scout"
 kind = "subagent"
 source = "subagents/scout.md"
 
+# Occasional procedures, found through `devkit playbook search` on explicit request.
+[[assets]]
+id = "brownfield-adoption"
+kind = "playbook"
+source = "playbooks/brownfield-adoption"
+
+[[assets]]
+id = "feedback-hygiene"
+kind = "playbook"
+source = "playbooks/feedback-hygiene"
+
 [presets.core]
 assets = [
     "contract-authoring",
@@ -195,20 +221,21 @@ assets = [
     "traceability-link",
     "task-coverage",
     "spec-lifecycle",
+    "reconcile-contract",
     "templates",
-    "sr",
-    "sr-next",
-    "sr-spec",
-    "sr-plan",
-    "sr-tasks",
-    "sr-review",
-    "sr-sync",
-    "sr-integrate",
-    "sr-delegate",
-    "sr-challenge",
-    "sr-scout",
-    "sr-rule",
-    "sr-feedback",
+    "spec",
+    "spec-next",
+    "spec-specify",
+    "spec-plan",
+    "spec-tasks",
+    "spec-review",
+    "spec-sync",
+    "spec-integrate",
+    "spec-delegate",
+    "spec-challenge",
+    "spec-scout",
+    "spec-rule",
+    "spec-feedback",
     "s-lane",
     "direct-delivery",
     "bugfix",
@@ -217,4 +244,9 @@ assets = [
     "reconciler",
     "reviewer",
     "scout",
+    "brownfield-adoption",
+    "feedback-hygiene",
 ]
+
+[presets.docs-skeleton]
+assets = ["docs-skeleton"]

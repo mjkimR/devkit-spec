@@ -2,7 +2,7 @@
 role: reconciler
 title: Reconciler (Living Spec draft executor)
 description: Drafts the Living Spec changes a completed change needs, or returns a no-impact rationale, in an isolated context before integration approval.
-skill: sr-sync
+skill: spec-sync
 x-execution: isolated
 x-invocation: optional
 x-model-profile: light-medium
@@ -23,7 +23,7 @@ hosts:
 
 ## Purpose
 
-Execute the impact-assessment and drafting steps of `sr-sync` in an isolated context before the `integration` gate: compare the actual diff with the specification, draft the `docs/` changes, and propose the `reconcile.md` targets, or return a no-impact rationale. Confirmation (`reconcile.md` `status: resolved`, `spec.md` `status: completed`) is done by the Developer or the integration executor, not by this role. Contract mismatches are returned, never endorsed by documentation.
+Execute the impact-assessment and drafting steps of `spec-sync` in an isolated context before the `integration` gate: compare the actual diff with the specification, draft the `docs/` changes, and propose the `reconcile.md` targets, or return a no-impact rationale. Confirmation (`reconcile.md` `status: resolved`, `spec.md` `status: completed`) is done by the Developer or the integration executor, not by this role. Contract mismatches are returned, never endorsed by documentation.
 
 ## Input
 

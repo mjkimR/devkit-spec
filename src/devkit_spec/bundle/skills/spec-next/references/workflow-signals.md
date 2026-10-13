@@ -1,0 +1,27 @@
+# Workflow signals from `devkit workflow next`
+
+Read [Stage ids](#stage-ids) when mapping `[STAGE]` onto the skill's decision matrix; read the table below when the output of `devkit workflow next --unit <dir>` has a line other than `[WORKFLOW]`, `[DONE]`, `[STAGE]`, `[UNMET]`, `[CHECK]`, `[NEXT_SKILL]` and `[RETURNS]`, or an advisory.
+
+| Line or advisory | Meaning | What to recommend |
+| :--- | :--- | :--- |
+| `[DELEGATE: role=<role> isolation=...]` | The stage names a support role | Name the role and `spec-delegate`. It is an instruction to follow, not a guarantee the host enforces. |
+| `[GATE: <gate> policy=auto ... source=policy]` | The project policy delegates this gate | Report the delegation as the authority, never as a human approval; it grants no new Git or external action authority. A choice outside the requested scope still goes to the user. |
+| `[WAITING: human gate:<gate>]` with `[REQUEST: id=gate:<gate> ...]` | A human gate (`intent` G1, `direction` G2, `integration` G3) decides the next step | Present the decision to the user. After their explicit answer, record it: `devkit workflow answer --unit <dir> --request gate:<gate> --action accept` (or `--action decline --note "..."`). Never record an inferred answer. |
+| `[WAITING: human gate:integration]` | G3 itself, under `[GATE_POLICY: integration policy=ask]` | Use an existing user OK (record it) or present the verified result for approval; where a runner binds the gate to PR state, the PR ready state answers it. Once held, `next` names the `integrate` stage. This grants no new Git or external action authority. |
+| `[WAITING: runner ...]` | The named runner checks (`lint-ci-clean`, `merged`) are confirmed outside this session; they are never evaluated here, so the line shows from the start of the stage | Still do the stage's own `[NEXT_SKILL]` work (for example `spec-integrate`). Once the runner (CI, the PR merge, or the local cumulative check when no runner exists) has reported, re-run `next` with `--given <check>`. |
+| `[DECLINED: id=... note=...]` | The user declined the request; it stays open | Take the work back along the stage's `[RETURNS]` with the note; when it goes to an earlier stage, `devkit workflow return --unit <dir> --to <stage>`. |
+| `[STALE_APPROVAL: ... counts=yes void_with="..."]` | An earlier stage is current while a later stage's approval exists; it still counts | Ask the user whether the redone work needs fresh approval; if so, run the `void_with` command. `next` never voids it itself. |
+| `[SKIPPED: <id> reason=...]` | The project policy (`devkit spec policy`: `STAGE_POLICY`, or a gate set to `off`) takes this stage out | Report it as skipped, never as done or pending, and do not recommend its skill. |
+| `[ENVELOPE_ERROR: <file> "..."]` | An envelope file is malformed and ignored | A defect to fix before anything else (`devkit workflow envelope check --unit <dir>`). |
+| `[DECISION_ERROR: <file> "..."]` | A decision record is malformed, or a recorded choice is ignored | A defect to fix before anything else; a malformed approval does not count. |
+| `[LINT_ERROR: "..."]` | `lint-clean` could not run; the rules error follows on stderr | Fix what stops `devkit rules check` from running first. |
+| `WORKFLOW_DRIFT` advisory | The bound workflow's stage schema changed after binding (active bundle) | Show the user the change (`devkit workflow show --unit <dir>`); once they accept it, run the `[FIX]` command `devkit workflow bind --unit <dir>`. A rebind planned in the bundle's own tasks is already accepted. |
+| `[DRIFT: ...]` on a completed bundle | Its workflow changed later | History; nothing to do. |
+| `WORKFLOW_NOT_FOUND` advisory | The bound workflow id has no definition | Restore the workflow (`devkit sync` for a managed one) or bind the bundle to an existing one. |
+| `WORKFLOW_NOT_SELECTED` advisory | The unit is unbound and no default applies | Bind it: `devkit workflow bind --unit <dir> --workflow <id>`. |
+
+`next` reads the anchor's status and binding, `tasks.md`, `reconcile.md`, `envelopes/*.yaml`, `decisions/*.yaml` and the rules. It does not see Git state, PR state, feedback or other units; Steps 1-4 of the skill cover those.
+
+## Stage ids
+
+`[STAGE]` ids map onto the decision matrix as: `specify` → Specification rows, `build-verify` → Building (Implementation), `review-refine` → Building (Verification Review), `living-spec-draft` → Reconcile, `collect-feedback` → Collect feedback, `final-change-report`/`integration-approval` → Awaiting G3, `integrate`/`merge` → Integration. `intent` and `direction` are the G1 and G2 gates: present them with the `[GATE]` and `[WAITING]` rows above. Workflow `bugfix` adds `characterize` → Specification (Drafting, the `spec-specify` skill's bugfix reference), `plan-tasks` → Specification (Planning, Tasks), `reproduce` → Building (Reproduction: write the `red` envelope), `fix-verify` → Building (Implementation, ending with the `green` envelope). A proposal unit (`incubated-delivery`) maps `intent-proposal`, `spike`, `direction-handoff` → Shaping (Proposal Incubation) and `[STAGE: - complete=true]` → Shaping (Proposal Hand-off). `s-lane` has no unit and is not evaluated by `next`; read it with `devkit workflow show s-lane` and diagnose from Steps 1-3.

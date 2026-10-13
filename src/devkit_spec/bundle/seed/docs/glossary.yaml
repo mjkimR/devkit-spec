@@ -1,0 +1,15 @@
+# Synonyms for `devkit spec search`: a query containing any word of a cluster is expanded with the whole cluster.
+# Project-owned; add the domain terms and the abbreviations or translations people search with.
+terms:
+  - primary: reconciliation
+    synonyms: ["reconcile", "정합성", "정합", "동기화", "sync", "역반영"]
+  - primary: S-Lane
+    synonyms: ["s-lane", "단기 세션", "flash"]
+  - primary: capability
+    synonyms: ["역량", "기능", "cap"]
+  - primary: proposal
+    synonyms: ["제안서", "제안", "prop"]
+  - primary: story
+    synonyms: ["스토리", "사용자 스토리", "user story"]
+  - primary: decision
+    synonyms: ["ADR", "결정", "의사결정"]

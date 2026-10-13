@@ -22,7 +22,7 @@ stages:
     entry: []
     exit: [anchor-exists]
     artifacts: [docs/proposals/PROP-<slug>/proposal.md, specs/<YYYY-MM>/<YYYYMMDD>-<slug>/]
-    skills: [sr]
+    skills: [spec]
     role: developer
     isolation: none
     returns: []
@@ -32,7 +32,7 @@ stages:
     entry: [anchor-exists]
     exit: [frontmatter(spec.md kind bugfix), not-skeleton(spec.md), lint-clean]
     artifacts: [spec.md]
-    skills: [sr-spec]
+    skills: [spec-specify]
     role: developer
     isolation: none
     returns:
@@ -43,7 +43,7 @@ stages:
     entry: [anchor-exists]
     exit: [anchor-exists]
     artifacts: [specs/<YYYY-MM>/<YYYYMMDD>-<slug>/]
-    skills: [sr]
+    skills: [spec]
     role: developer
     isolation: none
     returns: []
@@ -53,7 +53,7 @@ stages:
     entry: [frontmatter(spec.md kind bugfix)]
     exit: [file-exists(plan.md), tasks-exists, not-skeleton(plan.md), not-skeleton(tasks.md), lint-clean]
     artifacts: [plan.md, tasks.md]
-    skills: [sr-plan, sr-tasks]
+    skills: [spec-plan, spec-tasks]
     role: developer
     isolation: none
     returns:
@@ -65,7 +65,7 @@ stages:
     entry: [tasks-exists]
     exit: [envelope-check-pass(red reproduced)]
     artifacts: [envelopes/red-NN.yaml]
-    skills: [sr-spec]
+    skills: [spec-specify]
     role: developer
     isolation: none
     returns:
@@ -89,7 +89,7 @@ stages:
     entry: [tasks-all-checked]
     exit: [envelope-review-passed]
     artifacts: [envelopes/review-NN.yaml, envelopes/reverify-NN.yaml]
-    skills: [sr-review, sr-delegate]
+    skills: [spec-review, spec-delegate]
     role: reviewer
     isolation: preferred
     returns:
@@ -101,7 +101,7 @@ stages:
     entry: [envelope-review-passed]
     exit: [frontmatter(reconcile.md status resolved), anchor-status-completed]
     artifacts: [docs draft, reconcile.md]
-    skills: [sr-sync, sr-delegate]
+    skills: [spec-sync, spec-delegate]
     role: reconciler
     isolation: preferred
     returns:
@@ -112,7 +112,7 @@ stages:
     entry: [frontmatter(reconcile.md status resolved)]
     exit: [envelope-check-pass(feedback swept)]
     artifacts: [feedback/*.md, envelopes/feedback-NN.yaml]
-    skills: [sr-feedback]
+    skills: [spec-feedback]
     role: developer
     isolation: none
     returns: []
@@ -122,7 +122,7 @@ stages:
     entry: [envelope-check-pass(feedback swept)]
     exit: [envelope-check-pass(final-report tests), envelope-check-pass(final-report build), envelope-check-pass(final-report lint)]
     artifacts: [envelopes/final-report-NN.yaml]
-    skills: [sr]
+    skills: [spec]
     role: developer
     isolation: none
     returns: []
@@ -132,7 +132,7 @@ stages:
     entry: [envelope-check-pass(final-report tests), envelope-check-pass(final-report build), envelope-check-pass(final-report lint)]
     exit: []
     artifacts: [decisions/NN-gate-integration.yaml or PR ready state]
-    skills: [sr]
+    skills: [spec]
     role: developer
     isolation: none
     returns:
@@ -144,7 +144,7 @@ stages:
     entry: [envelope-check-pass(final-report tests), envelope-check-pass(final-report build), envelope-check-pass(final-report lint)]
     exit: [frontmatter(reconcile.md status resolved), anchor-status-completed, lint-ci-clean]
     artifacts: [integrated head]
-    skills: [sr-integrate]
+    skills: [spec-integrate]
     role: developer
     isolation: none
     returns:
@@ -169,7 +169,7 @@ stages:
     entry: [exception-raised]
     exit: [exception-handled]
     artifacts: [exception report envelope]
-    skills: [sr]
+    skills: [spec]
     role: developer
     isolation: none
     returns:
@@ -178,7 +178,7 @@ stages:
 
 # Bugfix (formal)
 
-A defect whose fix has contract impact or enough uncertainty to need a spec bundle. The bundle (`devkit spec new <slug> --workflow bugfix`, or a proposal handed off with `handoff_workflow: bugfix`) keeps `spec.md` (ID `SPEC-<slug>`, written with `kind: bugfix` by either command) and the defect characterization (current, expected and preserved behavior, reproduction conditions) instead of a feature specification; procedure: `sr-spec`. Reproduction evidence comes before the fix (`envelopes/red-NN.yaml`, `checks.reproduced`), resolution and preservation evidence after it (`envelopes/green-NN.yaml`, `checks.resolved`, `checks.preserved`). Evidence is judged by `envelope-check-pass`; `diff_scope` is recorded for traceability and `revision-ancestor(red green)` is available when a project wants stricter ordering. A small, low-risk defect takes workflow `s-lane` instead. The stages after the fix are those of workflow `direct-delivery`.
+A defect whose fix has contract impact or enough uncertainty to need a spec bundle. The bundle (`devkit spec new <slug> --workflow bugfix`, or a proposal handed off with `handoff_workflow: bugfix`) keeps `spec.md` (ID `SPEC-<slug>`, written with `kind: bugfix` by either command) and the defect characterization (current, expected and preserved behavior, reproduction conditions) instead of a feature specification; procedure: `spec-specify`. Reproduction evidence comes before the fix (`envelopes/red-NN.yaml`, `checks.reproduced`), resolution and preservation evidence after it (`envelopes/green-NN.yaml`, `checks.resolved`, `checks.preserved`). Evidence is judged by `envelope-check-pass`; `diff_scope` is recorded for traceability and `revision-ancestor(red green)` is available when a project wants stricter ordering. A small, low-risk defect takes workflow `s-lane` instead. The stages after the fix are those of workflow `direct-delivery`.
 
 ## Stages
 

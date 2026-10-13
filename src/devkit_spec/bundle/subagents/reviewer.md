@@ -1,8 +1,8 @@
 ---
 role: reviewer
-title: Reviewer (isolated sr-review executor)
-description: Runs the sr-review procedure in an isolated context against the actual diff, acceptance criteria and check results.
-skill: sr-review
+title: Reviewer (isolated spec-review executor)
+description: Runs the spec-review procedure in an isolated context against the actual diff, acceptance criteria and check results.
+skill: spec-review
 x-execution: isolated
 x-invocation: optional
 x-model-profile: general-high
@@ -24,7 +24,7 @@ hosts:
 
 ## Purpose
 
-Execute the existing `sr-review` procedure in an isolated context against the actual diff, acceptance criteria and check results, so the implementer's self-assessment does not bias the review. This is not a new review contract: the Developer running `sr-review` directly is the default, and both produce the same review envelope. Invoke when risk, uncertainty, change size, or the user's request justifies an independent pass.
+Execute the existing `spec-review` procedure in an isolated context against the actual diff, acceptance criteria and check results, so the implementer's self-assessment does not bias the review. This is not a new review contract: the Developer running `spec-review` directly is the default, and both produce the same review envelope. Invoke when risk, uncertainty, change size, or the user's request justifies an independent pass.
 
 ## Input
 

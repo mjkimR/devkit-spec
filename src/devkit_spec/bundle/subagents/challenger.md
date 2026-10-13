@@ -2,7 +2,7 @@
 role: challenger
 title: Challenger (evidence-based critic)
 description: Attacks a proposal, spec or design before implementation and returns issues with evidence and failure conditions.
-skill: sr-challenge
+skill: spec-challenge
 x-execution: isolated
 x-invocation: optional
 x-model-profile: high-reasoning

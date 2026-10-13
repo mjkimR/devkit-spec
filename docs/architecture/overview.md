@@ -48,15 +48,15 @@ Where each specrig component goes. "devkit" means the capability already exists 
 | `search` (BM25, go-potion dense, hybrid) | `devkit spec search` on devkit.search | devkit-spec keeps the search policy: scopes, namespaces, exact-ID pinning, glossary. |
 | `proposal new\|padr\|handoff` | `devkit spec proposal`, `devkit spec new` | Handoff is its own cross-layout move (devkit's `devkit workflow handoff` rebinds a unit in place); `devkit spec new` creates a spec bundle without a proposal. [Proposals](../proposals/overview.md). |
 | `entrypoints derive` | `devkit spec entrypoints` | |
-| `list feedback`, feedback capture | `devkit spec list feedback`, the `sr-feedback` skill | Feedback documents are indexed like any document; specrig's scope, severity and kind filters are not ported. |
+| `list feedback`, feedback capture | `devkit spec list feedback`, the `spec-feedback` skill | Feedback documents are indexed like any document; specrig's scope, severity and kind filters are not ported. |
 | `list playbooks`, `playbook new` | devkit `devkit playbook search` | Authoring a playbook needs no command. |
 | `cache`, `serve`, `sync`, `reading` | dropped | Derived-data cache, the removed web viewer, and two commands specrig never implemented. |
-| Skills `sr`, `sr-*` | `spec` bundle, `kind = "skill"` | Rewritten against devkit and `devkit spec` commands. |
+| Skills `sr`, `sr-*` | `spec` bundle, `kind = "skill"`, renamed `spec`, `spec-*` (`sr-spec` became `spec-specify`) | Rewritten against devkit and `devkit spec` commands. |
 | Subagents challenger, reconciler, reviewer, scout | `spec` bundle, `kind = "subagent"` role contracts | |
 | Instructions contract-authoring, living-spec-writing | `spec` bundle, `kind = "instruction"` | contract-authoring is ported. |
 | Instruction guidance-architecture | devkit | Superseded by devkit's resource taxonomy. |
 | Templates (capability, story, decision, proposal, feedback, playbook) | `spec` bundle, `kind = "document"` | capability, story, decision and proposal are ported (the decision template gains the frontmatter real ADRs carry); feedback waits for the feedback decision, playbook is devkit's. |
-| `template/docs` skeleton, `glossary.yaml` | `spec` bundle, seeded `document` | Written once, then project-owned. |
+| `template/docs` skeleton, `glossary.yaml` | `spec` bundle, seeded `document` `docs-skeleton` in its own preset | Opt-in (`devkit add spec:docs-skeleton`), so an existing `docs/` tree never receives files it did not ask for; written once where absent, then project-owned. `glossary.yaml` moved to `docs/glossary.yaml`, the search synonyms of `devkit spec search`. |
 | Playbooks brownfield-adoption, feedback-hygiene | `spec` bundle, `kind = "playbook"` | |
 | Playbooks harness-maintenance, cache-ops | dropped | Installation upkeep is devkit's; the cache is gone. |
 | Managed `SPECRIG:START/END` block in `AGENTS.md` | `guidance` fragments | devkit writes the one `DEVKIT:START/END` block. |

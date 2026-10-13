@@ -21,7 +21,7 @@ stages:
     entry: []
     exit: [anchor-exists]
     artifacts: [docs/proposals/PROP-<slug>/proposal.md]
-    skills: [sr]
+    skills: [spec]
     role: developer
     isolation: none
     returns: []
@@ -32,7 +32,7 @@ stages:
     entry: [anchor-exists]
     exit: []
     artifacts: [docs/proposals/PROP-<slug>/materials/]
-    skills: [sr-delegate, sr-scout, sr-challenge]
+    skills: [spec-delegate, spec-scout, spec-challenge]
     role: scout
     isolation: preferred
     returns:
@@ -43,7 +43,7 @@ stages:
     entry: [anchor-exists]
     exit: []
     artifacts: ["proposal.md with status accepted, or the recorded direction decision"]
-    skills: [sr]
+    skills: [spec]
     role: developer
     isolation: none
     returns:
@@ -54,7 +54,7 @@ stages:
     entry: [anchor-exists]
     exit: []
     artifacts: [specs/<YYYY-MM>/<YYYYMMDD>-<slug>/ bound to the workflow the proposal names]
-    skills: [sr, sr-next]
+    skills: [spec, spec-next]
     role: developer
     isolation: none
     returns:
@@ -66,7 +66,7 @@ stages:
     entry: [exception-raised]
     exit: [exception-handled]
     artifacts: [exception report envelope]
-    skills: [sr]
+    skills: [spec]
     role: developer
     isolation: none
     returns:
@@ -81,7 +81,7 @@ High uncertainty: the problem is shaped in a proposal bundle `docs/proposals/PRO
 
 The frontmatter is the only stage definition. Read it with `devkit workflow show incubated-delivery` (or `devkit workflow show --unit <dir>`). This document keeps only the rules the schema cannot express.
 
-- **Spike** is optional and never becomes the current stage on its own: run it when the direction needs evidence, delegating to the `scout` role (and `challenger` through `sr-challenge`). Its materials go under the proposal's `materials/`.
+- **Spike** is optional and never becomes the current stage on its own: run it when the direction needs evidence, delegating to the `scout` role (and `challenger` through `spec-challenge`). Its materials go under the proposal's `materials/`.
 - **Handoff** has no exit check: once the direction gate holds, `next` reports the unit complete (`[STAGE: - complete=true]`, no `[HANDOFF]` line). That is the cue to run `devkit spec proposal handoff <slug>`. The definition declares no `next` candidates, because devkit's `devkit workflow handoff` rebinds a unit in place and cannot move it into another layout.
 
 ## Gate rules

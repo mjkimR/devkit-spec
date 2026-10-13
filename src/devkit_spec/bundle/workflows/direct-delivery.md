@@ -22,7 +22,7 @@ stages:
     entry: []
     exit: [anchor-exists]
     artifacts: [docs/proposals/PROP-<slug>/proposal.md, specs/<YYYY-MM>/<YYYYMMDD>-<slug>/]
-    skills: [sr]
+    skills: [spec]
     role: developer
     isolation: none
     returns: []
@@ -32,7 +32,7 @@ stages:
     entry: [anchor-exists]
     exit: [anchor-exists]
     artifacts: [specs/<YYYY-MM>/<YYYYMMDD>-<slug>/]
-    skills: [sr]
+    skills: [spec]
     role: developer
     isolation: none
     returns: []
@@ -42,7 +42,7 @@ stages:
     entry: [anchor-exists]
     exit: [file-exists(plan.md), tasks-exists, not-skeleton(spec.md), not-skeleton(plan.md), not-skeleton(tasks.md), lint-clean]
     artifacts: [spec.md, plan.md, tasks.md]
-    skills: [sr-spec, sr-plan, sr-tasks]
+    skills: [spec-specify, spec-plan, spec-tasks]
     role: developer
     isolation: none
     returns:
@@ -65,7 +65,7 @@ stages:
     entry: [tasks-all-checked]
     exit: [envelope-review-passed]
     artifacts: [envelopes/review-NN.yaml, envelopes/reverify-NN.yaml]
-    skills: [sr-review, sr-delegate]
+    skills: [spec-review, spec-delegate]
     role: reviewer
     isolation: preferred
     returns:
@@ -77,7 +77,7 @@ stages:
     entry: [envelope-review-passed]
     exit: [frontmatter(reconcile.md status resolved), anchor-status-completed]
     artifacts: [docs draft, reconcile.md]
-    skills: [sr-sync, sr-delegate]
+    skills: [spec-sync, spec-delegate]
     role: reconciler
     isolation: preferred
     returns:
@@ -88,7 +88,7 @@ stages:
     entry: [frontmatter(reconcile.md status resolved)]
     exit: [envelope-check-pass(feedback swept)]
     artifacts: [feedback/*.md, envelopes/feedback-NN.yaml]
-    skills: [sr-feedback]
+    skills: [spec-feedback]
     role: developer
     isolation: none
     returns: []
@@ -98,7 +98,7 @@ stages:
     entry: [envelope-check-pass(feedback swept)]
     exit: [envelope-check-pass(final-report tests), envelope-check-pass(final-report build), envelope-check-pass(final-report lint)]
     artifacts: [envelopes/final-report-NN.yaml]
-    skills: [sr]
+    skills: [spec]
     role: developer
     isolation: none
     returns: []
@@ -108,7 +108,7 @@ stages:
     entry: [envelope-check-pass(final-report tests), envelope-check-pass(final-report build), envelope-check-pass(final-report lint)]
     exit: []
     artifacts: [decisions/NN-gate-integration.yaml or PR ready state]
-    skills: [sr]
+    skills: [spec]
     role: developer
     isolation: none
     returns:
@@ -120,7 +120,7 @@ stages:
     entry: [envelope-check-pass(final-report tests), envelope-check-pass(final-report build), envelope-check-pass(final-report lint)]
     exit: [frontmatter(reconcile.md status resolved), anchor-status-completed, lint-ci-clean]
     artifacts: [integrated head]
-    skills: [sr-integrate]
+    skills: [spec-integrate]
     role: developer
     isolation: none
     returns:
@@ -145,7 +145,7 @@ stages:
     entry: [exception-raised]
     exit: [exception-handled]
     artifacts: [exception report envelope]
-    skills: [sr]
+    skills: [spec]
     role: developer
     isolation: none
     returns:
@@ -154,7 +154,7 @@ stages:
 
 # Direct delivery (Route 2)
 
-Low uncertainty, high contract impact: the spec bundle `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` is created directly with `devkit spec new <slug>`, which writes the `SPEC-<slug>`, `PLAN-<slug>` and `TASKS-<slug>` skeletons and binds `spec.md` to this workflow. Project approval policy applies at three gates (`intent`, `direction`, `integration`) and exceptions are handled by a person; everything between is autonomous work backed by mechanical checks. Routes 3 and 4 reach this workflow through workflow `incubated-delivery` and `devkit spec proposal handoff`. Role contracts ship with the `spec` bundle (`.devkit/managed/spec/subagents/`); envelopes follow devkit's envelope contract and are written with `devkit workflow envelope new`; invocation guidance is `sr-delegate`. Living Spec changes land in the same integration unit before merge.
+Low uncertainty, high contract impact: the spec bundle `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` is created directly with `devkit spec new <slug>`, which writes the `SPEC-<slug>`, `PLAN-<slug>` and `TASKS-<slug>` skeletons and binds `spec.md` to this workflow. Project approval policy applies at three gates (`intent`, `direction`, `integration`) and exceptions are handled by a person; everything between is autonomous work backed by mechanical checks. Routes 3 and 4 reach this workflow through workflow `incubated-delivery` and `devkit spec proposal handoff`. Role contracts ship with the `spec` bundle (`.devkit/managed/spec/subagents/`); envelopes follow devkit's envelope contract and are written with `devkit workflow envelope new`; invocation guidance is `spec-delegate`. Living Spec changes land in the same integration unit before merge.
 
 ## Stages
 
@@ -162,7 +162,7 @@ The frontmatter is the only stage definition. Read it with `devkit workflow show
 
 ## Role invocation
 
-Developer, `sr-review` and `sr-sync` by default; the `reviewer` and `reconciler` roles are optional. `[DELEGATE]` in `next` names the role and its contract when a stage prefers isolation; `sr-delegate` decides between a host subagent and a main-session substitute and records the choice in the envelope. PR, worktree and approval policy follow the repository and existing authority, independent of the number of roles.
+Developer, `spec-review` and `spec-sync` by default; the `reviewer` and `reconciler` roles are optional. `[DELEGATE]` in `next` names the role and its contract when a stage prefers isolation; `spec-delegate` decides between a host subagent and a main-session substitute and records the choice in the envelope. PR, worktree and approval policy follow the repository and existing authority, independent of the number of roles.
 
 ## Gate rules
 
