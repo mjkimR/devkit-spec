@@ -160,17 +160,19 @@ Option conflicts fail with devkit's `ARGUMENT_INVALID`: `--spec` with `--all` or
 ### 4.2 Text Output
 
 ```text
-[PAIR: CAP-CORE-engine code=src/engine spec=SPEC-engine task=1 state=new exists=yes]
-[PAIR: CAP-CORE-engine code=src/engine/parse.py spec=SPEC-engine task=2 state=new exists=yes folded_into=src/engine]
+[CANDIDATES: CAP-CORE-engine path=docs/capabilities/core/CAP-CORE-engine.md new=src/engine missing=- folded=src/engine/parse.py declared=-]
 [SKIPPED: N/A kind=boundary spec=SPEC-engine task=3 reason=not-a-path]
 [SKIPPED: docs/decisions/2026-10/20261001-x.md kind=target spec=SPEC-engine reason=not-entrypoint-bearing]
 [APPLIED: CAP-CORE-engine path=docs/capabilities/core/CAP-CORE-engine.md added=src/engine/]
 [SUMMARY: pairs=2 new=2 declared=0 skipped=2 applied=1]
 ```
 
-- `[PAIR: <doc-id> code= spec= task= state=new|declared exists=yes|no folded_into=]` per pair, sorted by document
-  path then code; `folded_into` only when folded. With `--all`, `count=` and `specs=` (comma-separated) replace
-  `spec=` and `task=`.
+- `[CANDIDATES: <doc-id> path= new= missing= folded= declared=]` per document, in document path order: its
+  candidate paths by state, comma-separated in code order (`-` for none). `new`: not declared and present in the
+  working tree; `missing`: not declared and absent; `folded`: covered by a same-bundle ancestor candidate; `declared`:
+  covered by an existing entrypoint. With `--all` each path carries its spec count, `src/engine(2)`. One line per
+  document keeps the review per document, as `--apply --target` applies it; `--format json` lists every pair with
+  its `spec` and `task` (or `count` and `specs`) and `folded_into`.
 - `[SKIPPED: <value> kind= spec= task= reason=]` per input or candidate left out; `spec=` and `task=` only when known.
 - `[APPLIED: <doc-id> path= added=]` per document written (`added` comma-separated).
 - `[SUMMARY: pairs= new= declared= skipped= applied=]` last.

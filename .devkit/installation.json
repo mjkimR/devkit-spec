@@ -529,7 +529,7 @@
     },
     ".agents/skills/spec-entrypoints/SKILL.md": {
       "mode": 420,
-      "sha256": "ba74805d4ca80cbe3ba0c1f257364e9f85256d18062fbbee4122c7691c995b10"
+      "sha256": "165fcc182c5d60a5ea69139fffa92a5fd9a6ee05af628e678c4c27e029c99b1c"
     },
     ".agents/skills/spec-feedback/SKILL.md": {
       "mode": 420,
@@ -617,7 +617,7 @@
     },
     ".agents/skills/spec/references/worktree.md": {
       "mode": 420,
-      "sha256": "c9e58c1c2f6bdc321da77db72e0864ab5ae7e97c44d680bc09963a5af2a4b346"
+      "sha256": "a063b008a589595aa9c3c9ba7c182053b531e1031b9106156eaeee053c1826ef"
     },
     ".claude/agents/challenger.md": {
       "mode": 420,
@@ -653,7 +653,7 @@
     },
     ".claude/skills/spec-entrypoints/SKILL.md": {
       "mode": 420,
-      "sha256": "ba74805d4ca80cbe3ba0c1f257364e9f85256d18062fbbee4122c7691c995b10"
+      "sha256": "165fcc182c5d60a5ea69139fffa92a5fd9a6ee05af628e678c4c27e029c99b1c"
     },
     ".claude/skills/spec-feedback/SKILL.md": {
       "mode": 420,
@@ -741,7 +741,7 @@
     },
     ".claude/skills/spec/references/worktree.md": {
       "mode": 420,
-      "sha256": "c9e58c1c2f6bdc321da77db72e0864ab5ae7e97c44d680bc09963a5af2a4b346"
+      "sha256": "a063b008a589595aa9c3c9ba7c182053b531e1031b9106156eaeee053c1826ef"
     },
     ".codex/agents/challenger.toml": {
       "mode": 420,
@@ -965,7 +965,7 @@
     },
     ".devkit/managed/spec/skills/spec-entrypoints/SKILL.md": {
       "mode": 420,
-      "sha256": "ba74805d4ca80cbe3ba0c1f257364e9f85256d18062fbbee4122c7691c995b10"
+      "sha256": "165fcc182c5d60a5ea69139fffa92a5fd9a6ee05af628e678c4c27e029c99b1c"
     },
     ".devkit/managed/spec/skills/spec-feedback/SKILL.md": {
       "mode": 420,
@@ -1053,7 +1053,7 @@
     },
     ".devkit/managed/spec/skills/spec/references/worktree.md": {
       "mode": 420,
-      "sha256": "c9e58c1c2f6bdc321da77db72e0864ab5ae7e97c44d680bc09963a5af2a4b346"
+      "sha256": "a063b008a589595aa9c3c9ba7c182053b531e1031b9106156eaeee053c1826ef"
     },
     ".devkit/managed/spec/subagents/challenger.md": {
       "mode": 420,

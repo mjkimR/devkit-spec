@@ -46,7 +46,7 @@ policy with one command, `devkit spec policy`, before routing, gate and Git deci
 2. **devkit tables first**: a policy devkit models (approvals, stage switches, pull requests, branch cleanup, worktree
    setup) MUST live in devkit's table; `[tool.spec]` holds only keys devkit has no table for.
 3. **Defaults**: a gate the project does not set is `ask` with `source=default` (devkit's default for every gate);
-   `[tool.spec] worktree` defaults to `true`; `[worktree]` values are devkit's defaults (`pull_request = true`,
+   `[tool.spec] worktree` defaults to `true`; `[worktree]` values are devkit's defaults (`pull_request = false`,
    `delete_branch = true`, no `setup`).
 4. **Gate order**: the spec workflows' gates `intent`, `direction`, `integration` come first, then any other gate the
    project configures, in sorted order.
@@ -95,7 +95,7 @@ integration = "ask"         # G3: one approval per integration unit (PR)
 collect-feedback = "off"    # switch a stage off by id
 
 [worktree]
-pull_request = true         # integrate through pull requests
+pull_request = true         # integrate through pull requests (default false: merge locally)
 delete_branch = true        # delete the merged branch
 setup = "uv sync"           # run in each new worktree
 

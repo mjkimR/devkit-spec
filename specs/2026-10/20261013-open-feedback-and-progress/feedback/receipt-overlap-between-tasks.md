@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: noise
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-13
 ---
 
@@ -31,3 +31,5 @@ created_at: 2026-10-13
 ```text
 [EVIDENCE: .devkit/installation.json a=SPEC-boundary-continuation-lines b=SPEC-open-feedback-and-progress kind=code granularity=file ...]
 ```
+
+- **Disposition**: src/devkit_spec/bundle/skills/spec/references/worktree.md: S-Lane; a receipt conflict when integrating the base is resolved by `devkit sync`; the registry still reports the overlap, which is real

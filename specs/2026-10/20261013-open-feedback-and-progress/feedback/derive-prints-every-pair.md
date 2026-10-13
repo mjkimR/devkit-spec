@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: noise
 recurring: true
-status: open
+status: promoted
 created_at: 2026-10-13
 ---
 
@@ -31,3 +31,5 @@ created_at: 2026-10-13
 ```text
 [SUMMARY: pairs=80 new=70 declared=10 skipped=3 applied=0]
 ```
+
+- **Disposition**: src/devkit_spec/cli/entrypoints.py, `CAP-TRACE-code-entrypoints`: S-Lane; the text output is one `[CANDIDATES]` line per document with its paths grouped by state (80 lines become 4 in the observed case); JSON keeps every pair

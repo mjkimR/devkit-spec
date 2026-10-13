@@ -23,7 +23,7 @@ def test_defaults(workspace: Path) -> None:
         "[GATE_POLICY: intent policy=ask source=default]",
         "[GATE_POLICY: direction policy=ask source=default]",
         "[GATE_POLICY: integration policy=ask source=default]",
-        "[GIT_POLICY: worktree=yes pull_request=yes delete_branch=yes setup=-]",
+        "[GIT_POLICY: worktree=yes pull_request=no delete_branch=yes setup=-]",
     ]
 
 

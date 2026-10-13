@@ -2,9 +2,11 @@
 
 Text output (paths are workspace-relative):
 
-- ``[PAIR: <doc-id> code= spec= task= state=new|declared exists=yes|no]`` per (document, code) pair of one bundle
-  (``--spec``), with ``folded_into=`` when a same-bundle ancestor candidate covers the path; with ``--all``,
-  ``count=`` and ``specs=`` (comma-separated) replace ``spec=`` and ``task=``;
+- ``[CANDIDATES: <doc-id> path= new= missing= folded= declared=]`` per document, in document path order: its
+  candidate paths by state, comma-separated (``-`` for none). ``new`` paths exist and are not declared yet,
+  ``missing`` ones are new but absent from the working tree, ``folded`` ones are covered by a same-bundle ancestor
+  candidate, ``declared`` ones are already covered by an entrypoint. With ``--all`` each path carries its spec count,
+  ``src/a.py(2)``. ``--format json`` lists every pair with its spec and task (or count and specs);
 - ``[SKIPPED: <value> kind=boundary|target|bundle|apply reason=]`` per input or candidate left out, with ``spec=``
   and ``task=`` when known;
 - ``[APPLIED: <doc-id> path= added=]`` per document ``--apply`` wrote;
@@ -249,17 +251,29 @@ def _resolve_targets(index: DocumentIndex, targets: Sequence[str], derived: set[
     return only
 
 
-def _echo_text(pairs: Sequence[Pair], skipped: Sequence[Skipped], applied: Sequence[Applied], summary: dict) -> None:
+CANDIDATE_GROUPS = ("new", "missing", "folded", "declared")
+
+
+def _candidates(pairs: Sequence[Pair]) -> list[tuple[str, str, dict[str, list[str]]]]:
+    """The pairs grouped per document (in pair order): each candidate path under its group of ``CANDIDATE_GROUPS``."""
+    grouped: dict[tuple[str, str], dict[str, list[str]]] = {}
     for pair in pairs:
-        fields: dict[str, object] = {"code": pair.code}
-        if pair.count is None:
-            fields |= {"spec": pair.spec, "task": pair.task}
+        groups = grouped.setdefault((pair.doc, pair.doc_path), {name: [] for name in CANDIDATE_GROUPS})
+        if pair.state is State.DECLARED:
+            group = "declared"
+        elif pair.folded_into is not None:
+            group = "folded"
         else:
-            fields |= {"count": pair.count, "specs": ",".join(pair.specs or ())}
-        fields |= {"state": str(pair.state), "exists": pair.exists}
-        if pair.folded_into is not None:
-            fields["folded_into"] = pair.folded_into
-        click.echo(sentinel("PAIR", pair.doc, **fields))
+            group = "new" if pair.exists else "missing"
+        groups[group].append(pair.code if pair.count is None else f"{pair.code}({pair.count})")
+    return [(doc, doc_path, groups) for (doc, doc_path), groups in grouped.items()]
+
+
+def _echo_text(pairs: Sequence[Pair], skipped: Sequence[Skipped], applied: Sequence[Applied], summary: dict) -> None:
+    for doc, doc_path, groups in _candidates(pairs):
+        click.echo(
+            sentinel("CANDIDATES", doc, path=doc_path, **{name: ",".join(paths) for name, paths in groups.items()})
+        )
     for item in skipped:
         extra: dict[str, object] = {"kind": str(item.kind)}
         if item.spec:

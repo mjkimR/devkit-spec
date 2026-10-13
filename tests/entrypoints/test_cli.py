@@ -48,7 +48,7 @@ def test_single_bundle(bundles: Path) -> None:
     result = _derive(bundles, "--spec", "specs/2026-10/20261001-one")
     assert result.exit_code == 0, result.output
     assert result.stdout.splitlines() == [
-        "[PAIR: CAP-X-one code=src/pkg spec=SPEC-one task=1 state=new exists=yes]",
+        "[CANDIDATES: CAP-X-one path=docs/capabilities/x/CAP-X-one.md new=src/pkg missing=- folded=- declared=-]",
         "[SKIPPED: N/A kind=boundary spec=SPEC-one task=1 reason=not-a-path]",
         "[SUMMARY: pairs=1 new=1 declared=0 skipped=1 applied=0]",
     ]
@@ -83,8 +83,10 @@ def test_all_aggregates_and_skips_bundles(bundles: Path) -> None:
     result = _derive(bundles, "--all")
     assert result.exit_code == 0, result.output
     lines = result.stdout.splitlines()
-    assert "[PAIR: CAP-X-one code=src/pkg count=2 specs=SPEC-one,SPEC-two state=new exists=yes]" in lines
-    assert "[PAIR: CAP-X-one code=src/other count=1 specs=SPEC-two state=new exists=yes]" in lines
+    assert (
+        "[CANDIDATES: CAP-X-one path=docs/capabilities/x/CAP-X-one.md new=src/other(1),src/pkg(2) missing=- folded=- declared=-]"
+        in lines
+    )
     assert "US-two" not in result.stdout
     assert "[SKIPPED: specs/2026-10/20261004-four kind=bundle spec=SPEC-four reason=input-missing]" in lines
 
@@ -94,7 +96,9 @@ def test_all_aggregates_and_skips_bundles(bundles: Path) -> None:
     assert payload["errors"] == [] and payload["notices"] == []
 
     result = _derive(bundles, "--all", "--status", "Draft")
-    assert "[PAIR: US-two code=src/other count=1 specs=SPEC-three state=new exists=yes]" in result.stdout.splitlines()
+    assert "[CANDIDATES: US-two path=docs/stories/x/US-two.md new=src/other(1) missing=- folded=- declared=-]" in (
+        result.stdout.splitlines()
+    )
 
 
 def test_apply_with_targets(bundles: Path) -> None:
@@ -113,15 +117,15 @@ def test_apply_with_targets(bundles: Path) -> None:
         "---\nid: CAP-X-one\nstatus: active\nentrypoints:\n  - src/other/\n  - src/pkg/\n---\n"
     )
     result = _derive(bundles, "--all", "--apply", "--target", f"./{CAP}")
-    assert "state=declared" in result.stdout and result.stdout.endswith("applied=0]\n")
+    assert "declared=src/other(1),src/pkg(2)]" in result.stdout and result.stdout.endswith("applied=0]\n")
 
 
 def test_code_and_exclude_filters(bundles: Path) -> None:
     result = _derive(bundles, "--all", "--code", "src/other")
-    assert "code=src/pkg " not in result.stdout and "code=src/other " in result.stdout
+    assert "new=src/other(1) " in result.stdout
     result = _derive(bundles, "--all", "--exclude", "src/other/")
     assert "[SKIPPED: src/other kind=boundary reason=excluded]" in result.stdout.splitlines()
-    assert "code=src/pkg " in result.stdout
+    assert "src/pkg(2)" in result.stdout
     assert _code(_derive(bundles, "--all", "--code", "../x", "--format", "json")) == "SPEC_ENTRYPOINTS_PATH_INVALID"
 
 
@@ -152,3 +156,24 @@ def test_invalid_documents_are_warnings(bundles: Path, write: Write) -> None:
     result = _derive(bundles, "--spec", "specs/2026-10/20261001-one")
     assert result.exit_code == 0
     assert "(SPEC_DOCUMENT_INVALID)" in result.stderr
+
+
+def test_candidates_group_each_document_by_state() -> None:
+    from devkit_spec.cli.entrypoints import _candidates
+    from devkit_spec.entrypoints import Pair, State
+
+    pairs = [
+        Pair("CAP-A", "a.md", "src/a", State.NEW, True, "SPEC-x", 1),
+        Pair("CAP-A", "a.md", "src/a/b.py", State.NEW, True, "SPEC-x", 1, folded_into="src/a"),
+        Pair("CAP-A", "a.md", "src/gone.py", State.NEW, False, "SPEC-x", 2),
+        Pair("CAP-A", "a.md", "src/old", State.DECLARED, True, "SPEC-x", 2),
+        Pair("US-b", "b.md", "src/a", State.NEW, True, "SPEC-x", 1),
+    ]
+    assert _candidates(pairs) == [
+        (
+            "CAP-A",
+            "a.md",
+            {"new": ["src/a"], "missing": ["src/gone.py"], "folded": ["src/a/b.py"], "declared": ["src/old"]},
+        ),
+        ("US-b", "b.md", {"new": ["src/a"], "missing": [], "folded": [], "declared": []}),
+    ]
