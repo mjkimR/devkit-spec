@@ -40,6 +40,7 @@ Check the nature of the request against the routes of the spec constitution (`de
 | **Task implementation** | Building | Follow `tasks.md` boundaries and run incremental tests. |
 | **Pre-merge review & rule check** | Verification | Trigger `spec-review`. |
 | **Living spec reconciliation** | Sync | Trigger `spec-sync`. |
+| **Entrypoints from a spec bundle** | Sync | Trigger `spec-entrypoints`: derive docs-code links, review, apply. |
 | **Spike, independent review, or docs draft in an isolated context** | Optional Support Role | Trigger `spec-delegate` (role `scout` via `spec-scout`, `challenger` via `spec-challenge`, `reviewer` runs `spec-review`, `reconciler` runs the `spec-sync` draft steps). Optional by route, risk and request. |
 | **Integration after G3 authorization** | Integration | Trigger `spec-integrate`: base integration, re-verify changed parts, confirm reconcile, final checks. |
 
@@ -47,7 +48,7 @@ Each route uses one workflow (`s-lane`, `direct-delivery`, `bugfix`, `incubated-
 
 Gates follow `GATE_POLICY`. `intent` always needs the user's intent (goal, scope, verification). `direction` under `auto` delegates choices within the requested scope with reported assumptions; under `ask` it confirms concrete new direction choices, reusing existing agreement. Unresolved requirements and exceptions need input. Under `ask`, `devkit workflow next` prints `[WAITING: human gate:<gate>]` with a `[REQUEST]`; record the answer with `devkit workflow answer --unit <dir> --request gate:<gate> --action accept|decline` only after the user's explicit answer.
 
-`devkit spec new` and proposal handoff bind the bundle; a bundle made otherwise is bound with `devkit workflow bind --unit <dir> --workflow <id>`. `devkit workflow next --unit <dir>` evaluates artifact state and refuses `WORKFLOW_DRIFT` when the bound schema changed; rebind to accept a reviewed change. An approval is a decision record, never inferred and never a hand-written file; `--given` asserts a runner check (`lint-ci-clean`, `merged`) or a gate for one run. Under `auto` report the policy delegation (`source=policy`) as the authority, never as a human approval. Going back to an earlier stage, run `devkit workflow return --unit <dir> --to <stage>`, which voids the approvals of that stage and later ones. Formal envelopes live under the bundle's `envelopes/` directory ([envelope](references/envelope.md)).
+`devkit spec new` and proposal handoff bind the bundle; a bundle made otherwise is bound with `devkit workflow bind --unit <dir> --workflow <id>`. `devkit workflow next --unit <dir>` refuses `WORKFLOW_DRIFT` when the bound schema changed; rebind after review. An approval is a decision record, never inferred and never a hand-written file; `--given` asserts a runner check (`lint-ci-clean`, `merged`) or a gate for one run. Under `auto` report the policy delegation (`source=policy`) as the authority, never as a human approval. Go back with `devkit workflow return --unit <dir> --to <stage>` (it voids later approvals). Formal envelopes live under the bundle's `envelopes/` directory ([envelope](references/envelope.md)).
 
 ### Tier 2: Operational Playbooks
 If the user asks for an operational procedure that is NOT standard feature development (e.g., onboarding, weekly release, database migration, incident recovery):

@@ -19,7 +19,8 @@ uv run devkit spec search "cache policy" --kind decision --kind capability --his
 ## Policy
 
 - **Candidates**: the indexed documents ([documents overview](documents/overview.md)), current ones unless
-  `--history`, narrowed by `--kind` (repeatable).
+  `--history`, narrowed by `--kind` (repeatable) and by namespace (`--namespace`, `--all-namespaces`, default: the
+  current directory's; [namespaces](documents/overview.md#3-namespaces)).
 - **Fields**: ID, title and area are the metadata, ranked lexically and densely; the body after the frontmatter is
   ranked lexically only. Keep frontmatter in English: documents written in another language are then still found by
   English queries.
@@ -41,7 +42,7 @@ uv run devkit spec search "cache policy" --kind decision --kind capability --his
   that ran.
 
 `--limit/-n` (default `10`, `0` for all). JSON: `query`, `expanded` (the query after glossary expansion), `mode`,
-`hits` (`id`, `kind`, `path`, `status`, `title`, `area`, `score`, `pinned`), `notices`.
+`namespace`, `hits` (`id`, `kind`, `path`, `status`, `title`, `area`, `namespace`, `score`, `pinned`), `notices`.
 
 ## Error Codes
 

@@ -15,7 +15,7 @@ The policy on top of the generic ranking:
 
 from __future__ import annotations
 
-from collections.abc import Collection
+from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -110,12 +110,18 @@ def search_documents(
     mode: SearchMode = SearchMode.AUTO,
     limit: int = DEFAULT_LIMIT,
     min_similarity: float = DEFAULT_MIN_SIMILARITY,
+    accept: Callable[[Document], bool] | None = None,
 ) -> SpecSearchResult:
-    """Rank the documents of ``index`` for ``query`` under the spec search policy; ``limit`` ``0`` returns all."""
+    """Rank the documents of ``index`` for ``query`` under the spec search policy; ``limit`` ``0`` returns all.
+
+    ``accept`` narrows the candidates further (a namespace selection).
+    """
     candidates = [
         document
         for document in index.documents
-        if (not kinds or document.kind in kinds) and (history or not index.is_historical(document))
+        if (not kinds or document.kind in kinds)
+        and (history or not index.is_historical(document))
+        and (accept is None or accept(document))
     ]
     expanded = expand_query(query, load_glossary(index.root))
     pinned = [document for document in candidates if _matches_exactly(document, query)]

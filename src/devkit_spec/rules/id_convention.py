@@ -22,8 +22,13 @@ escapes are skipped, link labels and targets are not.
 Fields are read line by line as written (a top-level ``id:`` / ``area:`` line), so a header YAML rejects is still
 checked. The fix sets the ``id`` / ``reconcile_id`` and ``area`` lines (inserting a missing one) and the heading
 token, never moves a file, never renames a duplicate slug and never rewrites a reference; it skips completed spec
-bundles (within the targets, when the run names any). Namespace document roots (``docs/packages/<name>/``) are not
-identifier targets yet.
+bundles (within the targets, when the run names any).
+
+A namespace docs root (``docs/packages/<name>/``, registered in ``[[tool.spec.namespaces]]``) holds Living Spec
+documents under the same conventions: ``docs/packages/<name>/capabilities/<area>/CAP-<AREA>-<slug>.md`` is checked as
+``docs/capabilities/<area>/CAP-<AREA>-<slug>.md``, and so on. IDs stay repository-wide, so a slug a package shares
+with ``docs/`` or another package is a duplicate. A package's ``materials/`` directory is skipped like
+``docs/materials/``.
 """
 
 from __future__ import annotations
@@ -37,8 +42,10 @@ from devkit.core.frontmatter import FrontmatterBlock, locate
 from devkit.rules import Phase, RuleContext, Severity, Violation
 from devkit.rules.rules import BaseRule
 
+from devkit_spec.config import Namespace
 from devkit_spec.documents import DocumentIndex, Kind, VisibleLine, visible_lines
-from devkit_spec.rules import FIX_COMMAND, document_index, explicitly_targeted
+from devkit_spec.namespaces import docs_roots, living_path
+from devkit_spec.rules import FIX_COMMAND, document_index, explicitly_targeted, namespaces
 
 RULE_ID = "RULE-id-convention"
 type Add = Callable[..., None]
@@ -77,7 +84,8 @@ _REFERENCE_REMEDIATION = (
 @dataclass(frozen=True, slots=True)
 class _Target:
     """An identifier target: ``kind`` is ``SPEC`` for every spec bundle file; ``expected_id`` and ``slug`` are set
-    when ``path_issue`` is empty; ``expected_area`` is the parent directory of a capability or story."""
+    when ``path_issue`` is empty; ``expected_area`` is the parent directory of a capability or story; ``docs_root``
+    is the docs root of a Living Spec document (``docs`` or a namespace's ``docs/packages/<name>``)."""
 
     path: str
     kind: Kind
@@ -86,6 +94,7 @@ class _Target:
     expected_id: str = ""
     expected_area: str = ""
     path_issue: str = ""
+    docs_root: str = "docs"
 
     def allowed_tokens(self) -> list[str]:
         """The IDs a first H1 token may name."""
@@ -158,13 +167,18 @@ def _feedback(path: str) -> _Target:
     return _Target(path, Kind.FEEDBACK, slug=slug, expected_id=expected, path_issue=issue)
 
 
-def _living_spec(path: str, kind: Kind) -> _Target:
-    parts = path.split("/")
+def _living_spec(path: str, kind: Kind, docs_root: str, registered: tuple[Namespace, ...]) -> _Target:
+    """The target of a Living Spec document under ``docs_root``, checked by the path it mirrors under ``docs/``."""
+    parts = living_path(registered, path).split("/")
     stem = _stem(path)
+
+    def target(**fields: str) -> _Target:
+        return _Target(path, kind, docs_root=docs_root, **fields)
+
     if kind is Kind.CAPABILITY:
         if len(parts) != 4:
-            return _Target(
-                path, kind, path_issue="Capability must be stored at docs/capabilities/{area}/CAP-{AREA}-{slug}.md"
+            return target(
+                path_issue=f"Capability must be stored at {docs_root}/capabilities/{{area}}/CAP-{{AREA}}-{{slug}}.md"
             )
         match = _CAP_STEM.match(stem)
         if match is None or not _has_letter(match.group(2)):
@@ -172,35 +186,33 @@ def _living_spec(path: str, kind: Kind) -> _Target:
                 "file name must be CAP-{AREA}-{slug} with an upper-case area and a kebab-case slug"
                 f" that is not a sequence number: {stem}"
             )
-            return _Target(path, kind, path_issue=issue)
-        return _Target(path, kind, slug=match.group(2), expected_id=stem, expected_area=parts[2])
+            return target(path_issue=issue)
+        return target(slug=match.group(2), expected_id=stem, expected_area=parts[2])
     if kind is Kind.STORY:
         if len(parts) != 4:
-            return _Target(path, kind, path_issue="Story must be stored at docs/stories/{area}/US-{slug}.md")
+            return target(path_issue=f"Story must be stored at {docs_root}/stories/{{area}}/US-{{slug}}.md")
         match = _STORY_STEM.match(stem)
         if match is None or not _has_letter(match.group(1)):
             issue = f"file name must be US-{{slug}} with a kebab-case slug that is not a sequence number: {stem}"
-            return _Target(path, kind, path_issue=issue)
-        return _Target(path, kind, slug=match.group(1), expected_id=stem, expected_area=parts[2])
+            return target(path_issue=issue)
+        return target(slug=match.group(1), expected_id=stem, expected_area=parts[2])
     if len(parts) != 3:
-        return _Target(
-            path, kind, path_issue="Architecture document must be stored at docs/architecture/ARCH-{slug}.md"
-        )
+        return target(path_issue=f"Architecture document must be stored at {docs_root}/architecture/ARCH-{{slug}}.md")
     match = _ARCH_STEM.match(stem)
     if match is None or not _has_letter(match.group(3)):
         issue = (
             "file name must be ARCH-{slug} or ARCH-{NN}[-{n}]-{slug} with an arc42 chapter number"
             f" and a kebab-case slug: {stem}"
         )
-        return _Target(path, kind, path_issue=issue)
+        return target(path_issue=issue)
     chapter = match.group(1)
     if chapter and chapter not in _ARCH_CHAPTERS:
         issue = (
             f'arc42 chapter "{chapter}" is not available for ARCH documents'
             f" (01-08, 10, 11; decisions and glossary have their own directories): {stem}"
         )
-        return _Target(path, kind, path_issue=issue)
-    return _Target(path, kind, slug=match.group(3), expected_id=stem)
+        return target(path_issue=issue)
+    return target(slug=match.group(3), expected_id=stem)
 
 
 def _markdown(ctx: RuleContext, directory: str) -> list[str]:
@@ -224,16 +236,19 @@ def _targets(ctx: RuleContext) -> list[_Target]:
                 targets.append(_feedback(path))
         elif parts[-1] in _SPEC_FILES:
             targets.append(_spec_file(path, _SPEC_FILES[parts[-1]]))
-    for directory, kind in _LIVING_DIRECTORIES.items():
-        for path in _markdown(ctx, f"docs/{directory}"):
-            if not path.endswith("/README.md"):
-                targets.append(_living_spec(path, kind))
+    registered = namespaces(ctx)
+    for docs_root in docs_roots(registered):
+        for directory, kind in _LIVING_DIRECTORIES.items():
+            for path in _markdown(ctx, f"{docs_root}/{directory}"):
+                if not path.endswith("/README.md"):
+                    targets.append(_living_spec(path, kind, docs_root, registered))
     return targets
 
 
 def _reference_files(ctx: RuleContext) -> list[str]:
     """The Markdown files whose frontmatter and prose must not use date- or number-based references."""
-    files = [path for path in _markdown(ctx, "docs") if not path.startswith("docs/materials/")]
+    registered = namespaces(ctx)
+    files = [path for path in _markdown(ctx, "docs") if not living_path(registered, path).startswith("docs/materials/")]
     return files + _markdown(ctx, "specs")
 
 
@@ -423,7 +438,7 @@ class IdConventionRule(BaseRule):
                     1,
                     f'Frontmatter area is "{area}" but the directory requires "{target.expected_area}"',
                     f"Run `{FIX_COMMAND}` or set area: {target.expected_area}"
-                    f" (or move the file to docs/{directory}/{area}/)",
+                    f" (or move the file to {target.docs_root}/{directory}/{area}/)",
                     fixable=True,
                 )
         heading = _heading(text, block)

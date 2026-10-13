@@ -14,8 +14,10 @@ from __future__ import annotations
 import click
 
 from devkit_spec.cli.documents import list_cmd, refs_cmd, resolve_cmd
+from devkit_spec.cli.entrypoints import entrypoints_group
 from devkit_spec.cli.policy import policy_cmd
 from devkit_spec.cli.proposals import proposal_group
+from devkit_spec.cli.scope import scope_group
 from devkit_spec.cli.search import search_cmd
 from devkit_spec.cli.specs import spec_new_cmd
 
@@ -51,3 +53,5 @@ cli.add_command(policy_cmd)
 cli.add_command(proposal_group)
 cli.add_command(search_cmd)
 cli.add_command(spec_new_cmd)
+cli.add_command(entrypoints_group)
+cli.add_command(scope_group)

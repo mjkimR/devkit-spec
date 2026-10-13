@@ -216,3 +216,232 @@ class SpecUnboundNotice(SpecError):
     code = "SPEC_UNBOUND"
     level = Level.NOTICE
     fix = "Bind the unit with devkit workflow bind --unit <dir> --workflow <id> once a workflow fits it"
+
+
+class EntrypointsInputMissingError(SpecError):
+    """``devkit spec entrypoints derive --spec``: the bundle has no ``tasks.md`` or ``reconcile.md``
+    (``INPUT_ERROR``)."""
+
+    code = "SPEC_ENTRYPOINTS_INPUT_MISSING"
+    input_error = True
+    fix = (
+        "Write the file in [TARGET] first (tasks.md with the spec-tasks skill, reconcile.md with the spec-sync "
+        "skill), then rerun the derivation"
+    )
+
+
+class EntrypointsInputInvalidError(SpecError):
+    """``devkit spec entrypoints derive --spec``: ``tasks.md`` or ``reconcile.md`` cannot be read, or the
+    frontmatter of ``reconcile.md`` is not the shape ``RULE-reconcile-contract`` checks (``MAINTENANCE``)."""
+
+    code = "SPEC_ENTRYPOINTS_INPUT_INVALID"
+    fix = (
+        "Repair the file in [TARGET] (UTF-8 text; reconcile.md frontmatter with targets: [{file, resolution}]), "
+        "then rerun the derivation"
+    )
+
+
+class EntrypointsPathError(SpecError):
+    """An entrypoint path is not a literal workspace-relative path: empty, absolute, with a ``..`` segment, a glob,
+    a backslash, a drive colon or a control character (``INPUT_ERROR``)."""
+
+    code = "SPEC_ENTRYPOINTS_PATH_INVALID"
+    input_error = True
+    fix = "Pass a literal workspace-relative file or directory path (no glob, no leading /, no .. segment)"
+
+
+class EntrypointsTargetError(SpecError):
+    """``devkit spec entrypoints derive --apply --target``: the ID or path is not among the derived documents
+    (``INPUT_ERROR``)."""
+
+    code = "SPEC_ENTRYPOINTS_TARGET_UNKNOWN"
+    input_error = True
+    fix = "Pass the ID or path of a document that appears in the derive output without --apply"
+
+
+class EntrypointsApplyError(SpecError):
+    """``devkit spec entrypoints derive --apply``: some documents could not be written (``MAINTENANCE``); the
+    documents in [TARGET] are unchanged, the others listed as applied were written."""
+
+    code = "SPEC_ENTRYPOINTS_APPLY_FAILED"
+    fix = "Fix the problem in [DETAIL] for each document in [TARGET], then rerun the same command with --apply"
+
+
+class ScopeError(SpecError):
+    """Base class of the work-scope registry errors (``devkit spec scope``)."""
+
+
+class ScopeNotAWorktreeError(ScopeError):
+    """The workspace is not inside a Git work tree, so it has no registry location or token (``INPUT_ERROR``)."""
+
+    code = "SPEC_SCOPE_NOT_A_WORKTREE"
+    input_error = True
+    fix = "Run the command inside a Git work tree of the project, or pass it with -w"
+
+
+class ScopeSpecNotFoundError(ScopeError):
+    """``--spec`` names no directory in the workspace (``INPUT_ERROR``)."""
+
+    code = "SPEC_SCOPE_SPEC_NOT_FOUND"
+    input_error = True
+    fix = "Pass an existing spec bundle directory: specs/<YYYY-MM>/<YYYYMMDD>-<slug>"
+
+
+class ScopeInputInvalidError(ScopeError):
+    """A scope input (``tasks.md``, ``reconcile.md``, ``target-docs.md``) cannot be read, or its ``targets``
+    frontmatter is not a list of mappings with a string ``file`` (``MAINTENANCE``)."""
+
+    code = "SPEC_SCOPE_INPUT_INVALID"
+    fix = "Repair the file in [TARGET] (UTF-8 text; targets: [{file: <workspace-relative path>, ...}]), then rerun"
+
+
+class ScopeTokenMissingError(ScopeError):
+    """This worktree holds no registry token: it registered no task, or released it (``INPUT_ERROR``)."""
+
+    code = "SPEC_SCOPE_TOKEN_MISSING"
+    input_error = True
+    fix = (
+        "A worktree that does not take part in the registry skips scope update; to take part, register first: "
+        "devkit spec scope register --spec <dir>"
+    )
+
+
+class ScopeTokenExistsError(ScopeError):
+    """This worktree already registered a task; a second registration would orphan the first (``INPUT_ERROR``)."""
+
+    code = "SPEC_SCOPE_TOKEN_EXISTS"
+    input_error = True
+    fix = (
+        "Keep the registration (devkit spec scope query shows it with own=yes) and run devkit spec scope update, "
+        "or run devkit spec scope release first"
+    )
+
+
+class ScopeTaskExistsError(ScopeError):
+    """Another record of the namespace has the task ID (``INPUT_ERROR``)."""
+
+    code = "SPEC_SCOPE_TASK_EXISTS"
+    input_error = True
+    fix = "Pass a distinct --task-id, or release the other record from the worktree that registered it"
+
+
+class ScopeRecordMissingError(ScopeError):
+    """The record of this worktree's token no longer exists: it was released or swept (``INPUT_ERROR``)."""
+
+    code = "SPEC_SCOPE_RECORD_MISSING"
+    input_error = True
+    fix = "Run devkit spec scope release (it removes the orphaned token), then devkit spec scope register --spec <dir>"
+
+
+class ScopeTokenMismatchError(ScopeError):
+    """The token does not own the record: only the registering worktree updates or releases it (``BLOCKED``)."""
+
+    code = "SPEC_SCOPE_TOKEN_MISMATCH"
+    guardrail = True
+    fix = (
+        "Update or release the record from the worktree that registered it; sweep removes records of removed worktrees"
+    )
+
+
+class ScopeStaleRevisionError(ScopeError):
+    """The record changed between the read and the write (``AUTO``); nothing was written."""
+
+    code = "SPEC_SCOPE_STALE_REVISION"
+    actor = Actor.TOOL
+    retry = Retry.SAFE
+    fix = "Rerun the same command: it reads the current revision"
+
+
+class ScopeTimeoutError(ScopeError):
+    """The operation exceeded ``[tool.spec.scope] timeout``: the namespace lock or Git stayed busy (``DEFER``)."""
+
+    code = "SPEC_SCOPE_TIMEOUT"
+    actor = Actor.NONE
+    retry = Retry.SAFE
+    fix = (
+        "Retry once the other registry command has finished (an update with --request-id <request_id> from "
+        "[SCOPE_ACK]); raise [tool.spec.scope] timeout when the registry is busy for longer"
+    )
+
+
+class ScopeLockUnsupportedError(ScopeError):
+    """The platform has no ``fcntl.flock``: the local registry runs on Linux and macOS only (``BLOCKED``)."""
+
+    code = "SPEC_SCOPE_LOCK_UNSUPPORTED"
+    guardrail = True
+    fix = "Run devkit spec scope on Linux or macOS"
+
+
+class ScopeNamespaceError(ScopeError):
+    """A registry namespace is empty, contains a path separator or starts with a dot (``INPUT_ERROR``)."""
+
+    code = "SPEC_SCOPE_NAMESPACE_INVALID"
+    input_error = True
+    fix = "Set [tool.spec.scope] namespace to a plain name of letters, digits, '.', '_' and '-' not starting with '.'"
+
+
+class ScopeSharedPathError(ScopeError):
+    """The shared registry directory cannot be created, read or written (``INTERACTION``)."""
+
+    code = "SPEC_SCOPE_SHARED_PATH_UNAVAILABLE"
+    actor = Actor.USER
+    retry = Retry.AFTER_FIX
+    what_to_report = "The registry directory in [TARGET] and the file system error"
+    fix = "Fix the permissions of the directory in [TARGET], or set [tool.spec.scope] shared_path to a writable one"
+
+
+class ScopeUnsupportedError(ScopeError):
+    """An adapter operation reserved by the registry contract (``claim``) is not implemented (``MAINTENANCE``)."""
+
+    code = "SPEC_SCOPE_UNSUPPORTED"
+    fix = "Do not call the reserved operation: exclusive claims are not part of the local registry"
+
+
+class ScopeAckFailedError(ScopeError):
+    """``devkit spec scope update`` did not apply for a cause without its own code (``MAINTENANCE``); the record is
+    unchanged."""
+
+    code = "SPEC_SCOPE_ACK_FAILED"
+    fix = "Fix the cause in [DETAIL], then rerun devkit spec scope update"
+
+
+class ScopeSharedWorktreeWarning(ScopeError):
+    """Another task of the namespace registered the same worktree (``WARNING``): changes observed there are
+    attributed to both."""
+
+    code = "SPEC_SCOPE_SHARED_WORKTREE"
+    level = Level.WARNING
+    fix = "Run one registered task per worktree; release the other task's record when it is done"
+
+
+class ScopeRecordInvalidWarning(ScopeError):
+    """A record file of the namespace cannot be read or parsed and was left out (``WARNING``)."""
+
+    code = "SPEC_SCOPE_RECORD_INVALID"
+    level = Level.WARNING
+    fix = "Delete the record file in [TARGET] once its task is known to be finished (devkit spec scope sweep lists it)"
+
+
+class ScopeJournalWarning(ScopeError):
+    """The event journal could not be written (``WARNING``); the operation itself succeeded or failed as reported."""
+
+    code = "SPEC_SCOPE_JOURNAL_UNAVAILABLE"
+    level = Level.WARNING
+    fix = "Make journal.jsonl in [TARGET] a writable file; the registry works without it"
+
+
+class ScopeJournalLineWarning(ScopeError):
+    """Lines of the event journal are not JSON events and were skipped (``WARNING``)."""
+
+    code = "SPEC_SCOPE_JOURNAL_LINE_INVALID"
+    level = Level.WARNING
+    fix = "Remove or repair the lines named in [DETAIL] of journal.jsonl in [TARGET]"
+
+
+class ScopeRegisterFailedWarning(ScopeError):
+    """``devkit spec proposal handoff`` completed in the task worktree but registering its scope failed
+    (``WARNING``)."""
+
+    code = "SPEC_SCOPE_REGISTER_FAILED"
+    level = Level.WARNING
+    fix = "Fix the cause in [DETAIL], then run devkit spec scope register --spec <dir> in the worktree"

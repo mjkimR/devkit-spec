@@ -8,6 +8,9 @@ rule checks that the fields are present, non-blank strings; their values are che
 - A file without a frontmatter block (`---` on the first line, closed by `---`).
 - A malformed block: never closed, invalid YAML, duplicate keys, or not a mapping. Fix it by hand.
 - A missing or blank `id`, `title` or `status`, or one that is not a string (quote a value such as `id: "123"`).
+- A `namespace` in a proposal's `proposal.md` (under `docs/proposals/`) or a spec's `spec.md` that is not a string
+  naming `global` or a namespace registered in `[[tool.spec.namespaces]]` of `.devkit/config.toml`. Set a registered
+  name, or remove the field: a bundle without one is global. Not fixable.
 
 `devkit rules fix` fills what is missing and leaves every present value alone:
 
@@ -20,11 +23,13 @@ Review the filled-in values: `status: draft` and a title taken from the heading 
 
 ## Scope
 
-Markdown files under `docs/capabilities/`, `docs/stories/` and `docs/proposals/`, except `README.md`, templates
-(`*-template.md`, `*_template.md`), directories starting with `.` and `materials/` directories. Unlike the
-document index, a file is checked even when it declares no ID. Like every devkit rule, a violation is reported only
-in the files the run targets: a commit checks the files it changes, `devkit rules check` without targets the whole
-workspace.
+Markdown files under `docs/capabilities/`, `docs/stories/` and `docs/proposals/`, and under `capabilities/` and
+`stories/` of each namespace docs root (`docs/packages/<name>/`), except `README.md`, templates (`*-template.md`,
+`*_template.md`), directories starting with `.` and `materials/` directories. Unlike the document index, a file is
+checked even when it declares no ID. Like every devkit rule, a violation is reported only in the files the run
+targets: a commit checks the files it changes, `devkit rules check` without targets the whole workspace. The
+`namespace` field is checked in current proposals and specs (a completed spec only when named), and in every one of
+them when the run targets `.devkit/config.toml`, since a change to the registry can invalidate them.
 
 ## Examples
 

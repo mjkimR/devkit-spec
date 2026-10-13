@@ -5,13 +5,12 @@ description: Reconcile completed feature specs and discovered behaviors into the
 
 # spec-sync: Living Specification Reconciliation Workflow
 
-Use this skill immediately after `spec-review` passes and implementation is complete: the `living-spec-draft` stage (it opens on `envelope-review-passed`). The goal is to close the delivery lifecycle by promoting transient feature specs (`specs/<YYYY-MM>/<YYYYMMDD>-<slug>/`) into the permanent system knowledge base (`docs/capabilities/`, `docs/stories/`), preventing specification rot. Read the `living-spec-writing` instruction before editing `docs/`.
+Use this skill immediately after `spec-review` passes and implementation is complete: the `living-spec-draft` stage (it opens on `envelope-review-passed`). It promotes what the feature spec established into the Living Spec (`docs/capabilities/`, `docs/stories/`). Read the `living-spec-writing` instruction before editing `docs/`.
 
 ---
 
 ## 1. Prerequisites & Inputs
 
-- A fully verified feature branch with `spec-review` passing.
 - Completed feature files: `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/spec.md`, `tasks.md`.
 - Durable documentation directory: `docs/capabilities/`, `docs/stories/`, `docs/architecture/`, `docs/decisions/`.
 
@@ -35,11 +34,10 @@ Use this skill immediately after `spec-review` passes and implementation is comp
     capabilities:
       - CAP-<AREA>-<slug>
     ```
-- Do NOT nest capabilities inside stories or stories inside capabilities.
+- Never nest one kind inside the other.
 
 ### Principle 3: No Manual README Catalogs
-- Do NOT manually edit or maintain index tables in directory `README.md` files.
-- Discovery and listing are performed dynamically via CLI (`devkit spec list <kind>`, `devkit spec refs <ID>`).
+- Do NOT maintain index tables in directory `README.md` files; list with `devkit spec list <kind>` and `devkit spec refs <ID>`.
 
 ### Principle 4: Living Spec Currency
 - If the feature modified existing behavior, update the existing `docs/capabilities/` document so it reflects the new truth.
@@ -77,18 +75,24 @@ targets:
     resolution: modified   # modified | waived (with a substantive rationale)
 ---
 ```
+- In a registered task worktree, then run `devkit spec scope update --spec <dir>` (`SPEC_SCOPE_TOKEN_MISSING`: not registered, skip); `[SCOPE_ACK]` overlaps inform scheduling, never block.
 
 ### Step 2a: Hand Off Deferred Work
 - Apply the Deferred Work Handoff in the `spec` skill's `references/completion.md` before deleting a source proposal or marking the current spec completed.
 - Link each concrete retained follow-up to an existing open PROP or create a draft one (`devkit spec proposal new <slug>`), with source, remaining scope, deferral reason, restart conditions, and acceptance checks. Record the destination in `reconcile.md` and verify it through `devkit spec list proposal`.
 - Do not transfer unmet requirements still in the agreed scope to make the current feature appear complete.
 
+### Step 2b: Sync Entrypoints from the Bundle
+- Run the `spec-entrypoints` skill for this bundle: derive (doc, code) candidates, review them, apply the chosen ones.
+- A document whose `entrypoints` changed is a `modified` target in `reconcile.md`.
+
 ### Step 3: Run Deterministic Lint Gates
 - Execute `devkit rules check --staged` for staged changes or `devkit rules check --ci --base <ref>` for a committed branch; state which scope was checked. It verifies:
   - Valid frontmatter with `id`, `title` and `status` (`RULE-spec-format`).
   - Bidirectional traceability between stories and capabilities (`RULE-traceability-link`; `devkit rules fix <document>` appends a missing reverse link).
   - IDs derived from paths and references by resolvable full ID (`RULE-id-convention`, `RULE-document-reference`).
-  - Spec status agreeing with `tasks.md` and `reconcile.md` (`RULE-spec-lifecycle`).
+  - Spec status agreeing with `tasks.md` and `reconcile.md` (`RULE-spec-lifecycle`), and a well-formed reconcile record (`RULE-reconcile-contract`).
+  - Every declared `entrypoints` path exists (`RULE-code-entrypoints`).
 - Run the project's own lint (e.g., `just lint`) where it covers Markdown and Mermaid diagrams in the updated docs.
 
 ### Step 4: Archive or Mark Completed Feature Spec

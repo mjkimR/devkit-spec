@@ -8,8 +8,13 @@ Text output (paths are relative to the workspace root):
 - ``handoff``: ``[HANDOFF: <proposal id> spec= dir= workflow=]``, then ``[TARGET_DOCS: <path>]``,
   ``[MATERIALS: <dir>]``, one ``[PROMOTED_ADR: <id> path= padr=]`` per promoted decision, one
   ``[REWRITTEN: <path>:<line> kind=link|id from= to=]`` per rewritten link or reference, one
-  ``[UNRESOLVED_LINK: <path>:<line> kind= target= reason=]`` per link or reference left as it was, and
+  ``[UNRESOLVED_LINK: <path>:<line> kind= target= reason=]`` per link or reference left as it was,
+  ``[SCOPE: <task> namespace= ... token=]`` when it registered the bundle's work scope, and
   ``[NEXT_CMD: devkit workflow next --unit <dir>]`` when ``spec.md`` is bound to a workflow.
+
+A handoff inside a linked worktree with ``[tool.spec] worktree = true`` registers the new bundle in the work-scope
+registry (``devkit spec scope register``); a registration failure is a ``SPEC_SCOPE_REGISTER_FAILED`` warning and
+leaves the handoff done.
 
 Unresolved links are a ``SPEC_PROPOSAL_LINK_UNRESOLVED`` warning, rewritten ID references a
 ``SPEC_PROPOSAL_REFS_REWRITTEN`` notice and an unbound proposal or spec a ``SPEC_PROPOSAL_UNBOUND`` notice, all on
@@ -31,7 +36,9 @@ from devkit.core.cli import (
 )
 
 from devkit_spec.cli.output import sentinel
+from devkit_spec.cli.scope import echo_registered, registered_dict
 from devkit_spec.proposals import create_padr, create_proposal, handoff_proposal
+from devkit_spec.scope import SOURCE_HANDOFF, auto_register
 
 WORKSPACE = workspace_option()
 
@@ -51,6 +58,11 @@ def proposal_group() -> None:
     default=None,
     help="Workflow the spec follows after handoff (handoff_workflow) [default at handoff: direct-delivery]",
 )
+@click.option(
+    "--namespace",
+    default=None,
+    help="Document namespace of the bundle: global or a registered package; carried to spec.md [default: none, global]",
+)
 @click.option("--with-target-docs", is_flag=True, help="Also scaffold target-docs.md, the Living Spec blueprint")
 @WORKSPACE
 @FORMAT_OPTION
@@ -61,6 +73,7 @@ def new_cmd(
     target_area: str | None,
     milestone: str | None,
     handoff_workflow: str | None,
+    namespace: str | None,
     with_target_docs: bool,
     workspace_root: str | None,
     output_format: str,
@@ -73,6 +86,7 @@ def new_cmd(
         target_area=target_area,
         milestone=milestone,
         handoff_workflow=handoff_workflow,
+        namespace=namespace,
         with_target_docs=with_target_docs,
     )
     if is_json(output_format):
@@ -121,9 +135,13 @@ def padr_cmd(slug: str, title: str, workspace_root: str | None, output_format: s
 @boundary
 def handoff_cmd(slug: str, direction_chosen: bool, workspace_root: str | None, output_format: str) -> None:
     """Hand the approved proposal SLUG off to a spec bundle and remove the proposal."""
-    result = handoff_proposal(resolve_root(workspace_root), slug, direction_chosen=direction_chosen)
+    root = resolve_root(workspace_root)
+    result = handoff_proposal(root, slug, direction_chosen=direction_chosen)
+    registered, scope_notices = auto_register(root, result.dir, source=SOURCE_HANDOFF)
+    result.notices += scope_notices
     if is_json(output_format):
-        echo_json(result.to_dict())
+        scope = registered_dict(registered.location, registered.record, registered.token) if registered else None
+        echo_json(result.to_dict() | {"scope": scope})
     else:
         click.echo(sentinel("HANDOFF", result.proposal, spec=result.spec, dir=result.dir, workflow=result.workflow))
         if result.target_docs:
@@ -146,6 +164,8 @@ def handoff_cmd(slug: str, direction_chosen: bool, workspace_root: str | None, o
                     reason=item.reason,
                 )
             )
+        if registered:
+            echo_registered(registered.location, registered.record, registered.token)
         if result.next_command:
             click.echo(f"[NEXT_CMD: {result.next_command}]")
     echo_notices(result.notices)

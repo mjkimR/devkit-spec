@@ -5,7 +5,7 @@ from pathlib import Path
 
 from conftest import Write
 from devkit.rules import RuleContext, evaluate_rules
-from rules.support import found, run
+from rules.support import found, namespaces_config, run
 
 from devkit_spec.rules.spec_format import SpecFormatRule
 
@@ -114,3 +114,72 @@ def test_fix_leaves_accepted_and_malformed_files_alone(workspace: Path, write: W
         "docs/capabilities/CAP-A-int.md",
     }
     assert all((workspace / path).read_text() == text for path, text in texts.items())
+
+
+def test_namespace_docs_roots_are_checked(workspace: Path, write: Write) -> None:
+    write(".devkit/config.toml", namespaces_config("api"))
+    capability = write("docs/packages/api/capabilities/auth/CAP-AUTH-x.md", "# X\n")
+    write("docs/packages/api/stories/auth/US-x.md", "---\nid: US-x\ntitle: X\n---\n")
+    for path in (
+        "docs/packages/api/architecture/ARCH-x.md",
+        "docs/packages/api/capabilities/auth/materials/notes.md",
+        "docs/packages/web/capabilities/CAP-WEB-x.md",
+    ):
+        write(path, "# out of scope\n")
+    assert sorted((file, message) for file, _, message in found(run(RULE, workspace))) == [
+        (
+            "docs/packages/api/capabilities/auth/CAP-AUTH-x.md",
+            "document has no YAML frontmatter block (--- ... --- on the first line)",
+        ),
+        ("docs/packages/api/stories/auth/US-x.md", "frontmatter is missing the required field 'status'"),
+    ]
+    assert [file for file, _, _ in found(run(RULE, workspace, "docs/packages/api/stories/auth/US-x.md"))] == [
+        "docs/packages/api/stories/auth/US-x.md"
+    ]
+    assert found(run(RULE, workspace, fix=True)) == []
+    assert capability.read_text().startswith("---\nid: CAP-AUTH-x\ntitle: X\nstatus: draft\n")
+
+
+def _anchor(document_id: str, header: str = "") -> str:
+    return f"---\nid: {document_id}\ntitle: T\nstatus: draft\n{header}---\n# T\n"
+
+
+def test_namespace_field_names_global_or_a_registered_namespace(workspace: Path, write: Write) -> None:
+    write(".devkit/config.toml", namespaces_config("api"))
+    write("docs/proposals/PROP-a/proposal.md", _anchor("PROP-a", "namespace: api\n"))
+    write("docs/proposals/PROP-b/proposal.md", _anchor("PROP-b", "namespace: global\n"))
+    write("docs/proposals/PROP-c/proposal.md", _anchor("PROP-c", "namespace: web\n"))
+    write("docs/proposals/PROP-d/proposal.md", _anchor("PROP-d"))
+    write("specs/2026-10/20261013-e/spec.md", _anchor("SPEC-e", "namespace: 3\n"))
+    write("specs/2026-10/20261013-e/plan.md", "---\nid: PLAN-e\nnamespace: web\n---\n")
+    write("specs/2026-10/20261013-f/spec.md", "---\nid: SPEC-f\ntitle: T\nstatus: completed\nnamespace: web\n---\n")
+    violations = run(RULE, workspace)
+    assert found(violations) == [
+        ("docs/proposals/PROP-c/proposal.md", 5, "frontmatter namespace 'web' is not global or a registered namespace"),
+        ("specs/2026-10/20261013-e/spec.md", 5, "frontmatter field 'namespace' must be a string"),
+    ]
+    assert violations[0].remediation.startswith("Set namespace to one of global, api (registered in")
+    assert not any(v.fixable for v in violations)
+    # A completed spec is work history: checked only when named.
+    assert [v.file for v in run(RULE, workspace, "specs/2026-10/20261013-f/spec.md")] == [
+        "specs/2026-10/20261013-f/spec.md"
+    ]
+
+
+def test_namespace_fields_are_rechecked_when_the_config_changes(workspace: Path, write: Write) -> None:
+    config = write(".devkit/config.toml", namespaces_config("api", "web"))
+    write("docs/proposals/PROP-a/proposal.md", _anchor("PROP-a", "namespace: web\n"))
+    write("specs/2026-10/20261013-b/spec.md", _anchor("SPEC-b", "namespace: web\n"))
+    write("specs/2026-10/20261013-c/spec.md", "---\nid: SPEC-c\ntitle: T\nstatus: completed\nnamespace: web\n---\n")
+    write("docs/stories/US-other.md", _anchor("US-other"))
+    assert run(RULE, workspace, ".devkit/config.toml") == []
+    config.write_text(namespaces_config("api"), encoding="utf-8")
+    assert run(RULE, workspace, "docs/stories/US-other.md") == []
+    assert [v.file for v in run(RULE, workspace, ".devkit/config.toml")] == [
+        "docs/proposals/PROP-a/proposal.md",
+        "specs/2026-10/20261013-b/spec.md",
+    ]
+    excluded = RuleContext(
+        workspace_root=workspace, changed_files=[".devkit/config.toml"], exclude=("docs/proposals/**",)
+    )
+    assert [v.file for v in evaluate_rules(excluded, [RULE]).violations] == ["specs/2026-10/20261013-b/spec.md"]

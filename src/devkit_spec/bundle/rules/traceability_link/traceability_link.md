@@ -23,8 +23,9 @@ Missing targets, duplicate IDs, wrong ID kinds and malformed fields are reported
 
 ## Scope
 
-Materials are not checked. Only the repository-wide `docs/stories/` and `docs/capabilities/` trees are read;
-namespace documents (`docs/packages/<name>/...`) are not supported yet. Like every devkit rule, a violation is
+Materials are not checked. Stories and capabilities are read from `docs/stories/` and `docs/capabilities/` and from
+the same directories of each package registered in `[[tool.spec.namespaces]]` (`docs/packages/<name>/stories/`,
+`.../capabilities/`); links may cross packages, since IDs are repository-wide. Like every devkit rule, a violation is
 reported only in the files the run targets: a commit checks the files it changes, `devkit rules check` without
 targets the whole workspace.
 

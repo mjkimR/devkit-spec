@@ -12,8 +12,8 @@ block list in its style), in current documents only and within the targets when 
 a link is fixed only when both IDs are declared by exactly one document and the field is absent or a list. Missing
 targets, duplicate IDs and wrong ID kinds are ``RULE-document-reference``'s.
 
-Not ported yet: namespace documents (``docs/packages/<name>/stories``, ``.../capabilities``); only the global
-``docs/`` tree is checked.
+Stories and capabilities of a namespace docs root (``docs/packages/<name>/stories/``, ``.../capabilities/``) are
+checked as the global ones, and links cross namespaces freely: IDs are repository-wide.
 """
 
 from __future__ import annotations
@@ -26,8 +26,10 @@ from devkit.core.frontmatter import locate
 from devkit.rules import Phase, RuleContext, Severity, Violation
 from devkit.rules.rules import BaseRule
 
+from devkit_spec.config import Namespace
 from devkit_spec.documents import Document, DocumentIndex, Reference
-from devkit_spec.rules import FIX_COMMAND, document_index, is_material, reportable
+from devkit_spec.namespaces import living_path
+from devkit_spec.rules import FIX_COMMAND, document_index, is_material, namespaces, reportable
 
 RULE_ID = "RULE-traceability-link"
 STORIES_DIRECTORY = "docs/stories/"
@@ -62,11 +64,11 @@ def _lists(document: Document, field: str, document_id: str) -> bool:
     return any(ref.target.strip() == document_id for ref in _links(document, field))
 
 
-def _gaps(index: DocumentIndex) -> list[_Gap]:
+def _gaps(index: DocumentIndex, registered: tuple[Namespace, ...]) -> list[_Gap]:
     """Every one-sided link, stories before capabilities, each reported once per target document."""
-    current = [d for d in index.documents if not is_material(d)]
-    stories = [d for d in current if d.path.startswith(STORIES_DIRECTORY)]
-    capabilities = [d for d in current if d.path.startswith(CAPABILITIES_DIRECTORY)]
+    current = [(d, living_path(registered, d.path)) for d in index.documents if not is_material(d)]
+    stories = [d for d, path in current if path.startswith(STORIES_DIRECTORY)]
+    capabilities = [d for d, path in current if path.startswith(CAPABILITIES_DIRECTORY)]
     gaps: list[_Gap] = []
     seen: set[tuple[str, str]] = set()
     for sources, targets, field, back, label in (
@@ -100,7 +102,7 @@ class TraceabilityLinkRule(BaseRule):
     def check(self, ctx: RuleContext) -> list[Violation]:
         index = document_index(ctx)
         found: list[Violation] = []
-        for gap in _gaps(index):
+        for gap in _gaps(index, namespaces(ctx)):
             source, target = gap.source, gap.target
             fixable = gap.fixable(index)
             if reportable(ctx, index, target):
@@ -133,7 +135,7 @@ class TraceabilityLinkRule(BaseRule):
     def fix(self, ctx: RuleContext) -> list[str]:
         index = document_index(ctx)
         additions: dict[str, dict[str, list[str]]] = {}
-        for gap in _gaps(index):
+        for gap in _gaps(index, namespaces(ctx)):
             target = gap.target
             if index.is_historical(target) or not ctx.is_file_targeted(target.path) or not gap.fixable(index):
                 continue

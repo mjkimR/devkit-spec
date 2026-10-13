@@ -11,6 +11,14 @@ recheck.
 Reporting follows devkit's targeting: a violation is reported for a file only
 when ``ctx.is_file_targeted`` accepts it. Files of completed spec bundles are
 work history and are checked only when named as explicit targets.
+
+Document namespaces (``[[tool.spec.namespaces]]``) are read with
+``namespaces(ctx)``: a namespace docs root ``docs/packages/<name>/`` holds
+Living Spec documents under the same conventions as ``docs/``. A malformed
+``[tool.spec]`` table is not a violation: ``SpecConfigError`` propagates and
+fails the run (``RULES_EXECUTION_FAILED``, exit 2), as devkit treats its own
+malformed configuration, because no document can be checked against a
+namespace registry that cannot be read.
 """
 
 from __future__ import annotations
@@ -19,6 +27,7 @@ from pathlib import Path
 
 from devkit.rules import RuleContext
 
+from devkit_spec.config import Namespace, read_spec_config
 from devkit_spec.documents import SOURCE_DIRECTORIES, Document, DocumentIndex
 
 FIX_COMMAND = "devkit rules fix"
@@ -38,6 +47,11 @@ def document_index(ctx: RuleContext) -> DocumentIndex:
         for path in ctx.cache.find_files(root / directory, extensions=(".md",))
     ]
     return DocumentIndex.load(root, files=files, read=read)
+
+
+def namespaces(ctx: RuleContext) -> tuple[Namespace, ...]:
+    """The document namespaces of the run's workspace; raises ``SpecConfigError`` for a malformed ``[tool.spec]``."""
+    return read_spec_config(ctx.workspace_root).namespaces
 
 
 def explicitly_targeted(ctx: RuleContext, path: str) -> bool:

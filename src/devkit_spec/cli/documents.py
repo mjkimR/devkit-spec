@@ -15,7 +15,7 @@ Text output (paths are relative to the workspace root):
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -35,12 +35,47 @@ from devkit.core.cli import (
 from devkit.core.errors import ArgumentError
 
 from devkit_spec.cli.output import echo_page, page, sentinel
+from devkit_spec.config import Namespace, read_spec_config
 from devkit_spec.documents import Document, DocumentIndex, Kind, Reference
+from devkit_spec.entrypoints.paths import overlaps
+from devkit_spec.namespaces import Selection, namespace_resolver, select
 
 WORKSPACE = workspace_option()
 LIMIT = click.option("--limit", "-n", type=int, default=20, show_default=True, help="Items per page; 0 for all")
 OFFSET = click.option("--offset", type=int, default=0, show_default=True, help="Items to skip")
 _KIND_ORDER = {kind: position for position, kind in enumerate(Kind)}
+
+
+NAMESPACE = click.option(
+    "--namespace", default=None, help="Show this namespace and the global documents; global shows only those"
+)
+ALL_NAMESPACES = click.option("--all-namespaces", is_flag=True, help="Show every namespace")
+
+
+@dataclass(frozen=True)
+class NamespaceScope:
+    """The namespaces of the workspace and the selection a browsing command applies."""
+
+    namespaces: tuple[Namespace, ...]
+    selection: Selection
+    namespace_of: Callable[[Document], str]
+
+    @classmethod
+    def of(cls, index: DocumentIndex, name: str | None, every: bool) -> NamespaceScope:
+        namespaces = read_spec_config(index.root).namespaces
+        selection = select(namespaces, index.root, Path.cwd(), name, every)
+        return cls(namespaces, selection, namespace_resolver(index, namespaces))
+
+    def accepts(self, document: Document) -> bool:
+        return self.selection.matches(self.namespace_of(document))
+
+    def fields(self, document: Document) -> dict[str, str]:
+        """``namespace=`` for text output, only in a workspace that has namespaces."""
+        return {"namespace": self.namespace_of(document)} if self.namespaces else {}
+
+    @staticmethod
+    def args(name: str | None, every: bool) -> list[str]:
+        return ["--namespace", name] if name is not None else ["--all-namespaces"] if every else []
 
 
 def _load(workspace_root: str | None) -> DocumentIndex:
@@ -181,6 +216,14 @@ class _RefGroup:
 @click.option("--area", "-a", default=None, help="Keep documents whose frontmatter area contains this text")
 @click.option("--query", "query", default=None, help="Keep documents whose ID or title contains this text")
 @click.option("--history", is_flag=True, help="Include the files of completed spec bundles")
+@click.option(
+    "--file",
+    "file",
+    default=None,
+    help="Keep documents whose frontmatter entrypoints overlap this workspace-relative file or directory",
+)
+@NAMESPACE
+@ALL_NAMESPACES
 @LIMIT
 @OFFSET
 @WORKSPACE
@@ -192,6 +235,9 @@ def list_cmd(
     area: str | None,
     query: str | None,
     history: bool,
+    file: str | None,
+    namespace: str | None,
+    all_namespaces: bool,
     limit: int,
     offset: int,
     workspace_root: str | None,
@@ -199,11 +245,13 @@ def list_cmd(
 ) -> None:
     """List documents of the given KINDs (default: all), current ones only unless --history.
 
-    KIND is one of: capability, story, architecture, decision, proposal, proposal-decision, spec, plan, tasks,
-    reconcile, feedback, material.
+    --file finds the documents that own a code path through their ``entrypoints``. KIND is one of: capability, story, architecture, decision, proposal, proposal-decision, spec, plan, tasks,
+    reconcile, feedback, material. In a workspace with namespaces, the namespace of the current directory (plus the
+    global documents) is shown unless --namespace or --all-namespaces says otherwise.
     """
     _check_page(limit, offset)
     index = _load(workspace_root)
+    scope = NamespaceScope.of(index, namespace, all_namespaces)
     statuses = {part.strip().lower() for part in status.split(",") if part.strip()} if status else set()
     wanted = {Kind(kind) for kind in kinds}
     selected = [
@@ -214,6 +262,8 @@ def list_cmd(
         and (not statuses or document.status.lower() in statuses)
         and (not area or area.lower() in document.area.lower())
         and (not query or query.lower() in document.id.lower() or query.lower() in document.title.lower())
+        and scope.accepts(document)
+        and (file is None or _overlaps(document, file))
     ]
     selected.sort(key=lambda document: (_KIND_ORDER[document.kind], document.id, document.path))
     shown = page(selected, offset, limit)
@@ -224,8 +274,14 @@ def list_cmd(
                 "total": len(selected),
                 "offset": offset,
                 "limit": limit,
+                "namespace": scope.selection.name,
                 "documents": [
-                    document.to_dict() | {"historical": index.is_historical(document), "tasks": tasks[document.path]}
+                    document.to_dict()
+                    | {
+                        "namespace": scope.namespace_of(document),
+                        "historical": index.is_historical(document),
+                        "tasks": tasks[document.path],
+                    }
                     for document in shown
                 ],
                 "notices": [notice.to_dict() for notice in index.problems],
@@ -241,16 +297,26 @@ def list_cmd(
                     status=document.status,
                     path=document.path,
                     tasks=tasks[document.path],
+                    **scope.fields(document),
                     title=document.title,
                 )
             )
         args = ["list", *kinds]
-        for flag, given in (("--status", status), ("--area", area), ("--query", query)):
+        for flag, given in (("--status", status), ("--area", area), ("--query", query), ("--file", file)):
             if given is not None:
                 args += [flag, given]
         args += ["--history"] if history else []
+        args += scope.args(namespace, all_namespaces)
         echo_page(len(selected), offset, limit, len(shown), [*args, *_paging_args(workspace_root, limit)])
     _finish(index.problems)
+
+
+def _overlaps(document: Document, path: str) -> bool:
+    """Whether one of the document's ``entrypoints`` is ``path``, under it, or a directory containing it."""
+    entrypoints = document.frontmatter.get("entrypoints")
+    if not isinstance(entrypoints, list):
+        return False
+    return any(isinstance(entry, str) and overlaps(entry, path) for entry in entrypoints)
 
 
 def _tasks(root: Path, document: Document) -> str | None:

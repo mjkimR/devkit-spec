@@ -21,6 +21,7 @@ from devkit.core.cli import (
 from devkit.core.errors import ArgumentError
 from devkit.search import SearchMode
 
+from devkit_spec.cli.documents import ALL_NAMESPACES, NAMESPACE, NamespaceScope
 from devkit_spec.cli.output import fields_line, sentinel
 from devkit_spec.documents import DocumentIndex, Kind
 from devkit_spec.search import DEFAULT_LIMIT, DEFAULT_MIN_SIMILARITY, search_documents
@@ -36,6 +37,8 @@ from devkit_spec.search import DEFAULT_LIMIT, DEFAULT_MIN_SIMILARITY, search_doc
     help="Only this kind (repeatable)",
 )
 @click.option("--history", is_flag=True, help="Include the files of completed spec bundles")
+@NAMESPACE
+@ALL_NAMESPACES
 @click.option(
     "--mode",
     type=click.Choice([str(mode) for mode in SearchMode]),
@@ -58,6 +61,8 @@ def search_cmd(
     words: tuple[str, ...],
     kinds: tuple[str, ...],
     history: bool,
+    namespace: str | None,
+    all_namespaces: bool,
     mode: str,
     limit: int,
     min_similarity: float,
@@ -74,6 +79,7 @@ def search_cmd(
         )
     query = " ".join(words)
     index = DocumentIndex.load(resolve_root(workspace_root))
+    scope = NamespaceScope.of(index, namespace, all_namespaces)
     result = search_documents(
         index,
         query,
@@ -82,6 +88,7 @@ def search_cmd(
         mode=SearchMode(mode),
         limit=limit,
         min_similarity=min_similarity,
+        accept=scope.accepts,
     )
     if is_json(output_format):
         echo_json(
@@ -89,6 +96,7 @@ def search_cmd(
                 "query": result.query,
                 "expanded": result.expanded,
                 "mode": str(result.mode),
+                "namespace": scope.selection.name,
                 "hits": [hit.document.to_dict() | {"score": hit.score, "pinned": hit.pinned} for hit in result.hits],
                 "notices": [notice.to_dict() for notice in index.problems],
             }
@@ -107,6 +115,7 @@ def search_cmd(
                     kind=document.kind,
                     status=document.status,
                     path=document.path,
+                    **scope.fields(document),
                     title=document.title,
                 )
             )

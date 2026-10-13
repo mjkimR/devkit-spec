@@ -38,6 +38,11 @@ The first segment of `{slug}` must contain a letter: `CAP-HARN-001-foo` and `US-
 
 Chapter numbers follow arc42's reading order, not allocation order. A deep-dive outside the chapters is `ARCH-{slug}`.
 
+In a monorepo, a package registered in `[[tool.spec.namespaces]]` of `.devkit/config.toml` keeps its Living Spec
+under `docs/packages/<name>/` with the same layout: `docs/packages/<name>/capabilities/{area}/CAP-{AREA}-{slug}.md`,
+`docs/packages/<name>/stories/{area}/US-{slug}.md`, `docs/packages/<name>/architecture/ARCH-{slug}.md`. IDs are
+repository-wide, so a slug is unique across `docs/` and every package.
+
 ## Violations
 
 - A path off the convention above (wrong depth, an undated or misdated partition, a sequence-number slug, chapter 09
@@ -51,7 +56,7 @@ Chapter numbers follow arc42's reading order, not allocation order. A deep-dive 
 - An ADR, spec or Living Spec ID that another file's path also derives: slugs are unique per document type across
   partitions and areas (feedback slugs only within their bundle). Rename one slug.
 - A date- or number-based reference in the frontmatter or prose of any Markdown file under `docs/` (except
-  `docs/materials/`) or `specs/`: `SPEC-20261006`, `FB-20261006`, `ADR-0006`, `PADR-0001`, `US-010`, `CAP-HARN-007`,
+  `docs/materials/` and a package's `docs/packages/<name>/materials/`) or `specs/`: `SPEC-20261006`, `FB-20261006`, `ADR-0006`, `PADR-0001`, `US-010`, `CAP-HARN-007`,
   or `ARCH-06` without a slug. Reference documents as `` `ADR-{slug}` ``, `` `SPEC-{slug}` ``,
   `` `CAP-{AREA}-{slug}` ``, `` `US-{slug}` ``, `` `ARCH-{NN}-{slug}` ``. Code blocks, indented code, inline code,
   HTML comments and escapes are not checked; Markdown link labels and targets are.
@@ -67,5 +72,4 @@ Chapter numbers follow arc42's reading order, not allocation order. A deep-dive 
 
 Fields are read from their top-level frontmatter lines as written. Files of completed spec bundles are work history:
 checked only when named as explicit targets, and never rewritten. Like every devkit rule, a violation is reported only
-in the files the run targets, while duplicates are detected across the whole workspace. Package document roots
-(`docs/packages/<name>/`) are not identifier targets yet; their references are checked.
+in the files the run targets, while duplicates are detected across the whole workspace, packages included.

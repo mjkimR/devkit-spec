@@ -4,7 +4,7 @@ from pathlib import Path
 
 from conftest import Write
 from devkit.rules import RuleContext
-from rules.support import found, run
+from rules.support import found, namespaces_config, run
 
 from devkit_spec.rules.traceability_link import TraceabilityLinkRule
 
@@ -115,3 +115,19 @@ def test_materials_are_skipped(workspace: Path, write: Write) -> None:
     write("docs/stories/materials/US-m.md", _doc("US-m", "capabilities: [CAP-A-one]\n"))
     write("docs/capabilities/a/CAP-A-one.md", _doc("CAP-A-one"))
     assert run(RULE, workspace) == []
+
+
+def test_namespace_documents_link_like_global_ones(workspace: Path, write: Write) -> None:
+    story = "docs/packages/api/stories/auth/US-api-login.md"
+    cap = "docs/packages/api/capabilities/auth/CAP-API-login.md"
+    write(story, _doc("US-api-login", "capabilities:\n  - CAP-API-login\n  - CAP-TEST-contract\n"))
+    write(cap, _doc("CAP-API-login", "stories: []\n"))
+    write(CAP, _doc("CAP-TEST-contract", "stories: [US-api-login]\n"))
+    assert run(RULE, workspace) == []
+
+    write(".devkit/config.toml", namespaces_config("api"))
+    assert found(run(RULE, workspace)) == [
+        (cap, 1, f"CAP-API-login is missing the reverse story link to US-api-login ({story})")
+    ]
+    assert found(run(RULE, workspace, fix=True)) == []
+    assert "stories: [US-api-login]\n" in (workspace / cap).read_text()

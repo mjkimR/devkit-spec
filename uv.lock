@@ -138,6 +138,7 @@ version = "0.1.0"
 source = { editable = "../devkit/packages/devkit" }
 dependencies = [
     { name = "click" },
+    { name = "devkit-advisory" },
     { name = "pyyaml" },
     { name = "tomlkit" },
 ]
@@ -152,6 +153,7 @@ search = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1.7" },
+    { name = "devkit-advisory", editable = "../devkit/packages/devkit-advisory" },
     { name = "devkit-embed", marker = "extra == 'search'", editable = "../devkit/packages/devkit-embed" },
     { name = "numpy", marker = "extra == 'search'", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0.1" },
@@ -162,6 +164,11 @@ provides-extras = ["search"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.0.0" }]
+
+[[package]]
+name = "devkit-advisory"
+version = "0.1.0"
+source = { editable = "../devkit/packages/devkit-advisory" }
 
 [[package]]
 name = "devkit-embed"

@@ -20,6 +20,9 @@ terminate the user's session.
   in place; history belongs in Git, ADRs and dated materials. Temporary checklists and task lists belong in `specs/`.
 - A feature spec is `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` with `spec.md`, `plan.md` and `tasks.md`. Completed specs stay
   as work history; read current contracts and active specs (`devkit spec list spec`) before drafting new work.
+- In a monorepo, packages may keep their own Living Spec under `docs/packages/<name>/` (namespaces). `list` and
+  `search` default to the current directory's namespace plus the global documents; IDs, `resolve` and `refs` are
+  repository-wide. Use `--all-namespaces` for cross-package impact.
 - Refer to ID-bearing documents by full ID (`` `CAP-...` ``), never by Markdown path. `devkit spec resolve <ID>` gives
   the path, `devkit spec refs <ID> --direction out|in` the references.
 - Agents MUST NOT implement Non-Goals or add unrequested features, refactors or speculative scope; unstated assumptions

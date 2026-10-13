@@ -136,6 +136,12 @@ id = "spec-feedback"
 kind = "skill"
 source = "skills/spec-feedback"
 
+# Derive capability/story entrypoints from spec bundles, review them and write the chosen ones.
+[[assets]]
+id = "spec-entrypoints"
+kind = "skill"
+source = "skills/spec-entrypoints"
+
 # The docs/ skeleton (Living Spec directories, arc42 chapters, glossary, search synonyms): written once where absent,
 # then project-owned. Opt-in preset, so an existing docs/ tree never receives files it did not ask for.
 [[assets]]
@@ -150,6 +156,12 @@ target = "docs"
 id = "reconcile-contract"
 kind = "rule"
 source = "rules/reconcile_contract"
+
+# Every entrypoints path of a capability or story is an existing workspace file or directory.
+[[assets]]
+id = "code-entrypoints"
+kind = "rule"
+source = "rules/code_entrypoints"
 
 # Starting points for new documents, read by path (.devkit/managed/spec/templates/<kind>.md).
 [[assets]]
@@ -222,6 +234,7 @@ assets = [
     "task-coverage",
     "spec-lifecycle",
     "reconcile-contract",
+    "code-entrypoints",
     "templates",
     "spec",
     "spec-next",
@@ -236,6 +249,7 @@ assets = [
     "spec-scout",
     "spec-rule",
     "spec-feedback",
+    "spec-entrypoints",
     "s-lane",
     "direct-delivery",
     "bugfix",

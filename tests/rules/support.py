@@ -16,3 +16,8 @@ def run(rule: Rule, root: Path, *targets: str, fix: bool = False) -> list[Violat
 def found(violations: list[Violation]) -> list[tuple[str, int, str]]:
     """``(file, line, message)`` of the violations that remain (not fixed)."""
     return [(v.file, v.line, v.message) for v in violations if not v.fixed]
+
+
+def namespaces_config(*names: str) -> str:
+    """``.devkit/config.toml`` registering a namespace per name, with source path ``packages/<name>``."""
+    return "".join(f'[[tool.spec.namespaces]]\nname = "{name}"\npath = "packages/{name}"\n\n' for name in names)

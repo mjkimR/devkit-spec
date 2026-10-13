@@ -115,3 +115,25 @@ def test_invalid_documents_are_warnings(docs: Path, write: Write) -> None:
     assert result.exit_code == 0 and "(SPEC_DOCUMENT_INVALID)" in result.stderr
     assert _spec("--strict", "list", workspace=docs).exit_code == 2  # --strict belongs to the command, not the group
     assert _spec("list", "--strict", workspace=docs).exit_code == 1
+
+
+def test_list_by_entrypoint_overlap(workspace: Path, write: Write) -> None:
+    write(
+        "docs/capabilities/core/CAP-CORE-a.md",
+        _doc("CAP-CORE-a", status="active", entrypoints="[src/app/search/, src/cli.py]"),
+    )
+    write("docs/stories/core/US-b.md", _doc("US-b", status="active", entrypoints="[src/app/search/rank.py]"))
+    write("docs/stories/core/US-c.md", _doc("US-c", status="active"))
+
+    def ids(path: str) -> list[str]:
+        return [
+            d["id"]
+            for d in json.loads(_spec("list", "--file", path, "--format", "json", workspace=workspace).stdout)[
+                "documents"
+            ]
+        ]
+
+    assert ids("src/app/search/rank.py") == ["CAP-CORE-a", "US-b"]
+    assert ids("src/app") == ["CAP-CORE-a", "US-b"]
+    assert ids("src/cli.py") == ["CAP-CORE-a"]
+    assert ids("src/other.py") == []

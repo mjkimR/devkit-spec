@@ -4,7 +4,8 @@
 path it would create), then:
 
 1. writes ``specs/<YYYY-MM>/<YYYYMMDD>-<slug>/`` with ``spec.md``, ``plan.md`` and ``tasks.md`` carried from the
-   proposal body, each marked as a skeleton, and binds ``spec.md`` to the proposal's ``handoff_workflow``
+   proposal body, each marked as a skeleton (``spec.md`` keeps the proposal's ``namespace``, which must be
+   ``global`` or registered), and binds ``spec.md`` to the proposal's ``handoff_workflow``
    (default ``direct-delivery``; ``kind: bugfix`` for ``bugfix``). A spec bound to ``bugfix`` gets ``spec.md`` only, with the proposal's target area and
    boundaries in its carried notes;
 2. copies ``target-docs.md`` into the spec bundle;
@@ -33,6 +34,7 @@ from devkit.core import FrontmatterError
 from devkit.core.frontmatter import parse
 from devkit.workflow import Binding
 
+from devkit_spec.config import GLOBAL
 from devkit_spec.documents import DocumentIndex, parse_document
 from devkit_spec.errors import (
     ProposalCleanupWarning,
@@ -66,6 +68,7 @@ from devkit_spec.proposals.scaffold import (
     bundle_dir,
     check_spec_conflict,
     clean_slug,
+    known_namespaces,
     require_slug,
     single_file,
 )
@@ -83,6 +86,7 @@ from devkit_spec.proposals.specs import (
 
 HANDOFF_WORKFLOW = "handoff_workflow"
 """The proposal frontmatter key naming the workflow its spec follows (``workflow`` is devkit's own binding)."""
+NAMESPACE = "namespace"
 ACCEPTED = "accepted"
 DIRECTION_STATUSES = ("draft", "reviewing")
 
@@ -198,6 +202,7 @@ def handoff_proposal(
         raise ProposalNotApprovedError(
             f"proposal PROP-{slug} has status {status or '-'}; handoff needs {needed}", target_files=[proposal_rel]
         )
+    namespace = _namespace(root, meta, proposal_rel)
     index = DocumentIndex.load(root)
     check_spec_conflict(index, slug)
     binding, unbound = resolve_binding(root, meta.get(HANDOFF_WORKFLOW), proposal_rel, field=HANDOFF_WORKFLOW)
@@ -243,6 +248,7 @@ def handoff_proposal(
         carried=carried,
         meta=meta,
         kind=spec_kind(binding),
+        namespace=namespace,
         target_docs_ref=target_docs_ref,
     )
     if bugfix:
@@ -304,6 +310,28 @@ def handoff_proposal(
         notices.append(ProposalCleanupWarning(f"{rel} could not be removed: {exc}", target_files=[rel]))
     return _result(
         root, slug, target_dir, binding, unbound, target_docs_text, materials_target, decisions, report, notices
+    )
+
+
+def _namespace(root: Path, meta: dict[str, Any], proposal_rel: str) -> str | None:
+    """The proposal's ``namespace``, carried to ``spec.md``; ``None`` when it has none.
+
+    Raises ``ProposalInvalidError`` when it is not a string naming ``global`` or a registered namespace, and
+    ``SpecConfigError`` when ``[tool.spec]`` is malformed.
+    """
+    if NAMESPACE not in meta:
+        return None
+    value = meta[NAMESPACE]
+    known = [GLOBAL] if value == GLOBAL else known_namespaces(root)
+    if isinstance(value, str) and value in known:
+        return value
+    raise ProposalInvalidError(
+        f"{proposal_rel}: namespace {value!r} is not global or a registered namespace",
+        target_files=[proposal_rel],
+        fix=(
+            f"Set the proposal's namespace to one of {', '.join(known)} (registered in [[tool.spec.namespaces]] of"
+            " .devkit/config.toml), or remove the field to hand it off as global, then rerun the handoff"
+        ),
     )
 
 

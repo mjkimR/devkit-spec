@@ -6,7 +6,8 @@ handed-off ``PROP-<slug>`` maps to exactly one ``SPEC-<slug>``.
 
 ``proposal.md`` is the anchor of a devkit workflow unit: a new proposal is bound to workflow ``incubated-delivery``
 when the project has it. ``workflow`` and ``workflow_hash`` are that binding; the workflow the spec follows after
-handoff is ``handoff_workflow``.
+handoff is ``handoff_workflow``. ``namespace`` names the document namespace (``devkit_spec.namespaces``) the bundle
+belongs to; without it the bundle is global, and handoff carries it to ``spec.md``.
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ import yaml
 from devkit.advisory import AdvisoryError
 from devkit.workflow import write_binding
 
+from devkit_spec.config import GLOBAL, read_spec_config
 from devkit_spec.documents import DocumentIndex
 from devkit_spec.errors import (
     ProposalExistsError,
@@ -29,6 +31,7 @@ from devkit_spec.errors import (
     ProposalUnboundNotice,
     ProposalWorkflowError,
 )
+from devkit_spec.namespaces import require
 from devkit_spec.proposals.binding import PROPOSAL_WORKFLOW, resolve_binding
 
 PROPOSALS = "docs/proposals"
@@ -60,6 +63,22 @@ def yaml_scalar(value: str) -> str:
     """``value`` as a YAML scalar for a frontmatter line, quoted only when YAML needs it (``A: B`` titles)."""
     dumped = yaml.safe_dump(value, allow_unicode=True, width=10**6)
     return dumped.removesuffix("\n...\n").removesuffix("\n")
+
+
+def known_namespaces(root: Path) -> list[str]:
+    """``global`` and the namespaces registered in the project at ``root`` (``SpecConfigError`` when malformed)."""
+    return [GLOBAL, *(namespace.name for namespace in read_spec_config(root).namespaces)]
+
+
+def require_namespace(root: Path, namespace: str | None) -> str | None:
+    """``namespace`` when it is ``global`` or registered in the project at ``root``; ``None`` when omitted.
+
+    Raises ``ArgumentError`` (``--namespace``) for any other name, and ``SpecConfigError`` for a malformed
+    ``[tool.spec]`` table when the name is not ``global``.
+    """
+    if namespace is None or namespace == GLOBAL:
+        return namespace
+    return require(read_spec_config(root).namespaces, namespace)
 
 
 def bundle_dir(root: Path, slug: str) -> Path:
@@ -120,18 +139,21 @@ def create_proposal(
     target_area: str | None = None,
     milestone: str | None = None,
     handoff_workflow: str | None = None,
+    namespace: str | None = None,
     with_target_docs: bool = False,
     today: date | None = None,
 ) -> CreatedProposal:
     """Scaffold ``docs/proposals/PROP-<slug>/`` under the workspace ``root`` and bind ``proposal.md``.
 
-    ``handoff_workflow`` is written only when given; handoff resolves it. ``proposal.md`` is bound to
-    ``incubated-delivery`` when it resolves and validates, else left unbound with a ``SPEC_PROPOSAL_UNBOUND`` notice.
-    Raises ``ProposalSlugError`` for a slug without letters or digits, ``ProposalExistsError`` when the bundle or a
-    single-file proposal of the slug exists, ``ProposalSlugConflictError`` when ``SPEC-<slug>`` exists.
+    ``handoff_workflow`` and ``namespace`` are written only when given; handoff resolves the workflow and carries the
+    namespace. ``proposal.md`` is bound to ``incubated-delivery`` when it resolves and validates, else left unbound
+    with a ``SPEC_PROPOSAL_UNBOUND`` notice. Raises ``ProposalSlugError`` for a slug without letters or digits,
+    ``ArgumentError`` for a ``namespace`` that is neither ``global`` nor registered, ``ProposalExistsError`` when the
+    bundle or a single-file proposal of the slug exists, ``ProposalSlugConflictError`` when ``SPEC-<slug>`` exists.
     """
     root = root.resolve()
     slug = require_slug(slug)
+    namespace = require_namespace(root, namespace)
     title = (title or "").strip() or slug
     area = (target_area or "").strip() or DEFAULT_TARGET_AREA
     area = area if area.endswith("/") else area + "/"
@@ -149,7 +171,9 @@ def create_proposal(
     (bundle / DECISIONS).mkdir(parents=True)
     (bundle / MATERIALS).mkdir()
     proposal = bundle / PROPOSAL_FILE
-    text = _proposal(slug, title, area, (milestone or "").strip(), (handoff_workflow or "").strip(), created)
+    text = _proposal(
+        slug, title, area, (milestone or "").strip(), (handoff_workflow or "").strip(), namespace or "", created
+    )
     proposal.write_text(text, encoding="utf-8")
     if binding is not None:
         write_binding(proposal, binding)
@@ -175,7 +199,10 @@ def create_proposal(
     return result
 
 
-def _proposal(slug: str, title: str, area: str, milestone: str, handoff_workflow: str, created: str) -> str:
+def _proposal(
+    slug: str, title: str, area: str, milestone: str, handoff_workflow: str, namespace: str, created: str
+) -> str:
+    namespace_line = f"namespace: {yaml_scalar(namespace)}\n" if namespace else ""
     milestone_line = f"milestone: {yaml_scalar(milestone)}\n" if milestone else ""
     handoff_line = (
         f"handoff_workflow: {yaml_scalar(handoff_workflow)}"
@@ -188,7 +215,7 @@ title: {yaml_scalar(title)}
 status: draft                         # draft | reviewing | accepted | rejected
 created_at: {created}
 target_area: {yaml_scalar(area)}
-priority: high                        # critical | high | medium | low
+{namespace_line}priority: high                        # critical | high | medium | low
 size: M                               # S | M | L | XL
 {milestone_line}boundaries:
   owns:
@@ -228,6 +255,9 @@ title: Target Living Spec Structure for PROP-{slug}
 status: draft
 proposal: PROP-{slug}
 created_at: {created}
+# The Living Spec files this proposal changes, one "- file: <workspace-relative path>" each;
+# devkit spec scope compare reads them to find overlaps with other work.
+targets: []
 ---
 
 # [Blueprint] PROP-{slug}: Target Living Spec Structure for {title}

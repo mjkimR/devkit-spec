@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from conftest import Write
 from devkit.rules import RuleContext, Violation, evaluate_rules
-from rules.support import found, run
+from rules.support import found, namespaces_config, run
 
 from devkit_spec.rules.id_convention import IdConventionRule
 
@@ -353,3 +353,65 @@ def test_completed_bundles_are_checked_only_when_targeted(workspace: Path, write
         'Frontmatter id is "SPEC-old" but the path requires "SPEC-done"',
         'Date- or number-based identifier reference "ADR-0001"',
     ]
+
+
+def _living(document_id: str, area: str = "") -> str:
+    area_line = f"area: {area}\n" if area else ""
+    return f"---\nid: {document_id}\n{area_line}title: T\nstatus: active\n---\n# T\n"
+
+
+def test_namespace_docs_roots_follow_the_living_spec_conventions(workspace: Path, write: Write) -> None:
+    write(".devkit/config.toml", namespaces_config("api"))
+    root = "docs/packages/api"
+    write(f"{root}/capabilities/auth/CAP-AUTH-login.md", _living("CAP-AUTH-login", "auth"))
+    write(f"{root}/stories/auth/US-sign-in.md", _living("US-sign-in", "billing"))
+    write(f"{root}/architecture/ARCH-05-building-blocks.md", _living("ARCH-05-other"))
+    write(f"{root}/capabilities/CAP-AUTH-flat.md", _living("CAP-AUTH-flat", "auth"))
+    write(f"{root}/capabilities/auth/README.md", "# Capabilities\n")
+    write("docs/capabilities/auth/CAP-AUTH-login.md", _living("CAP-AUTH-login", "auth"))
+    write("docs/packages/web/capabilities/CAP-WEB-unregistered.md", "# not a namespace root\n")
+    write(f"{root}/materials/notes.md", "Old US-010 survey\n")
+    write(f"{root}/notes.md", "See US-010\n")
+    violations = run(RULE, workspace)
+    assert sorted((v.file, v.message) for v in violations if not v.fixed) == [
+        (
+            "docs/capabilities/auth/CAP-AUTH-login.md",
+            f"Identifier CAP-AUTH-login is duplicated across docs/capabilities/auth/CAP-AUTH-login.md,"
+            f" {root}/capabilities/auth/CAP-AUTH-login.md",
+        ),
+        (
+            f"{root}/architecture/ARCH-05-building-blocks.md",
+            'Frontmatter id is "ARCH-05-other" but the path requires "ARCH-05-building-blocks"',
+        ),
+        (
+            f"{root}/capabilities/CAP-AUTH-flat.md",
+            "Invalid partition path: Capability must be stored at"
+            f" {root}/capabilities/{{area}}/CAP-{{AREA}}-{{slug}}.md",
+        ),
+        (
+            f"{root}/capabilities/auth/CAP-AUTH-login.md",
+            f"Identifier CAP-AUTH-login is duplicated across docs/capabilities/auth/CAP-AUTH-login.md,"
+            f" {root}/capabilities/auth/CAP-AUTH-login.md",
+        ),
+        (f"{root}/notes.md", 'Date- or number-based identifier reference "US-010"'),
+        (f"{root}/stories/auth/US-sign-in.md", 'Frontmatter area is "billing" but the directory requires "auth"'),
+    ]
+    area = next(v for v in violations if v.message.startswith("Frontmatter area"))
+    assert f"move the file to {root}/stories/billing/" in area.remediation
+
+    fixed = run(RULE, workspace, f"{root}/stories/auth/US-sign-in.md", fix=True)
+    assert found(fixed) == [] and "area: auth\n" in _read(workspace, f"{root}/stories/auth/US-sign-in.md")
+
+
+def test_namespace_docs_roots_need_registration(workspace: Path, write: Write) -> None:
+    write("docs/packages/api/capabilities/CAP-AUTH-flat.md", "# flat\n")
+    assert run(RULE, workspace) == []
+    write(".devkit/config.toml", namespaces_config("api"))
+    assert [v.file for v in run(RULE, workspace)] == ["docs/packages/api/capabilities/CAP-AUTH-flat.md"]
+
+
+def test_malformed_namespace_config_fails_the_run(workspace: Path, write: Write) -> None:
+    write(".devkit/config.toml", '[[tool.spec.namespaces]]\nname = "global"\npath = "x"\n')
+    result = evaluate_rules(RuleContext(workspace_root=workspace), [RULE])
+    assert [error.code for error in result.errors] == ["RULES_EXECUTION_FAILED"]
+    assert "tool.spec.namespaces[0]" in str(result.errors[0])

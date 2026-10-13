@@ -46,11 +46,22 @@ setup = "uv sync"           # run in each new worktree
 
 [tool.spec]
 worktree = true             # route 2 and above (formal specs, proposals) run in a task worktree
+
+[[tool.spec.namespaces]]    # monorepo packages with their own Living Spec under docs/packages/<name>/
+name = "api"
+path = "services/api"
+
+[tool.spec.scope]           # the work-scope registry (devkit spec scope); every key is optional
+shared_path = "/srv/scope"  # absolute; default: devkit-spec-scope/ in the Git common directory
+namespace = "team"          # default: a hash of the Git common directory
+timeout = 10                # seconds per registry command, 1 to 300
 ```
+
+`[tool.spec.scope]` is described in [Work scope](scope.md#6-configuration).
 
 | Code | Level | Class | Condition |
 | --- | --- | --- | --- |
-| `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecConfigError` | `[tool.spec]` is not a table, has an unknown key, or `worktree` is not a boolean. |
+| `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecConfigError` | `[tool.spec]` is not a table, has an unknown key, `worktree` is not a boolean, or a namespace entry is malformed (keys other than `name` and `path`, an invalid or `global` name, an unsafe path, a name or path registered twice), or `[tool.spec.scope]` is not a table, has an unknown key, a relative `shared_path`, a `namespace` that is not a plain name, or a `timeout` outside 1 to 300 whole seconds. |
 
 devkit's own errors pass through: `CONFIG_INVALID` (an unreadable file), `WORKFLOW_CONFIG_INVALID`,
 `WORKTREE_CONFIG_INVALID`.

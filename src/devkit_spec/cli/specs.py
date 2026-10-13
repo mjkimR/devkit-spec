@@ -33,6 +33,11 @@ from devkit_spec.proposals import create_spec
     help="Workflow spec.md is bound to (bugfix adds kind: bugfix) [default: direct-delivery]",
 )
 @click.option(
+    "--namespace",
+    default=None,
+    help="Document namespace of the bundle: global or a registered package [default: none, global]",
+)
+@click.option(
     "--date",
     "day",
     type=click.DateTime(formats=["%Y-%m-%d"]),
@@ -46,13 +51,19 @@ def spec_new_cmd(
     slug: str,
     title: str | None,
     workflow: str | None,
+    namespace: str | None,
     day: datetime | None,
     workspace_root: str | None,
     output_format: str,
 ) -> None:
     """Create the spec bundle specs/<YYYY-MM>/<YYYYMMDD>-<SLUG>/ (SPEC, PLAN and TASKS skeletons) and bind spec.md."""
     created = create_spec(
-        resolve_root(workspace_root), slug, title=title, workflow=workflow, day=day.date() if day else None
+        resolve_root(workspace_root),
+        slug,
+        title=title,
+        workflow=workflow,
+        namespace=namespace,
+        day=day.date() if day else None,
     )
     if is_json(output_format):
         echo_json(created.to_dict())

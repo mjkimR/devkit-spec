@@ -59,4 +59,5 @@ plan: PLAN-<feature-slug>
 - [ ] Every task has a `_Boundary:` line and a `_Requirements:` line; every acceptance scenario is covered (`devkit rules check <dir>` reports no `RULE-task-coverage` violation).
 - [ ] No review or sync task: those are workflow stages, not tasks.
 - [ ] The skeleton marker line `<!-- devkit:skeleton -->` is removed from `tasks.md`.
+- [ ] In a registered task worktree, `devkit spec scope update --spec <dir>` gave the registry the task boundaries (`SPEC_SCOPE_TOKEN_MISSING`: not registered, skip). `[SCOPE_ACK]` overlaps inform the orchestrator; they are not a gate.
 - [ ] `devkit workflow next --unit <dir>` shows the exit of `specify` (or `plan-tasks`) met: no skeleton marker left in the planning files and `lint-clean`; otherwise it names what is still unmet.

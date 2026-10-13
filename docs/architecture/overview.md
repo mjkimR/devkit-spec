@@ -41,7 +41,8 @@ Where each specrig component goes. "devkit" means the capability already exists 
 | `workflow` (`next`, `show`, `bind`, `validate`, `checks`, `envelope`) | devkit workflow | |
 | Workflows s-lane, direct-delivery, bugfix, incubated-delivery | `spec` bundle, `kind = "workflow"` | specrig-specific checks become `workflow-check` assets. |
 | `worktree start\|finish\|status` | devkit worktree | |
-| Scope registry and journal (`scope`), proposal cleanup on finish | `devkit spec scope` | Attached to the worktree lifecycle through `devkit.worktree`'s `before_remove`. |
+| Scope comparison, registry and journal (`scope`) | `devkit spec scope` | Same contract with a Python local file adapter; the skills call `update`, `release` and `sweep` where specrig's `workflow next --scope-ack` and `worktree finish` did, and `proposal handoff` registers in a task worktree. [Work scope](../scope.md). |
+| Proposal cleanup on `worktree finish` | `devkit.worktree`'s `before_remove` | Not ported yet. |
 | `git.worktree` route policy | `spec` bundle guidance | Which routes run in a worktree. |
 | `config show`, `.specrig/config.yml` | `devkit spec policy`, `.devkit/config.toml` | Approvals map to `[workflow.approvals]` (gates `intent`, `direction`, `integration`), the feedback sweep to `[workflow.stages]`, `pull_request` and branch cleanup to `[worktree]`; SDD-only keys (`git.worktree`) go to `[tool.spec]`. [Policy](../policy.md). |
 | `list`, `resolve`, `refs` (document catalog) | `devkit spec list\|resolve\|refs` | |
@@ -88,6 +89,8 @@ package; the deployed file stays a stable one-liner.
 - [Rules reference](../rules/reference.md): the rules the bundle ships.
 - [Workflows overview](../workflows/overview.md): the four delivery workflows, their gates and the role contracts.
 - [Document search](../search.md): `devkit spec search` and its policy.
+- [Code entrypoints](../entrypoints.md): `entrypoints` frontmatter, `RULE-code-entrypoints`, `devkit spec entrypoints`.
+- [Work scope](../scope.md): `devkit spec scope`, comparing work scopes and the registry shared between worktrees.
 - [Project policy](../policy.md): `devkit spec policy` and `[tool.spec]`.
 - [Proposals overview](../proposals/overview.md) and [reference](../proposals/reference.md): proposals, PADRs and
   handoff (`devkit spec proposal`), and new spec bundles (`devkit spec new`).
