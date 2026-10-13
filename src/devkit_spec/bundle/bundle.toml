@@ -1,0 +1,65 @@
+schema = 1
+name = "spec"
+version = "0.1.0"
+default_preset = "core"
+auto_select = true
+
+# Normative wording, measurable contracts, non-goals and policy exceptions.
+[[assets]]
+id = "contract-authoring"
+kind = "instruction"
+source = "instructions/contract-authoring.md"
+
+# Documents reference each other by exact, resolvable full IDs.
+[[assets]]
+id = "document-reference"
+kind = "rule"
+source = "rules/document_reference"
+
+# Paths, IDs and heading tokens follow the slug conventions; no date- or number-based references.
+[[assets]]
+id = "id-convention"
+kind = "rule"
+source = "rules/id_convention"
+
+# Capabilities, stories and proposals carry id, title and status frontmatter.
+[[assets]]
+id = "spec-format"
+kind = "rule"
+source = "rules/spec_format"
+
+# Story and capability links are bidirectional.
+[[assets]]
+id = "traceability-link"
+kind = "rule"
+source = "rules/traceability_link"
+
+# Every acceptance criterion of a spec is covered by a task, and tasks cite only defined ones.
+[[assets]]
+id = "task-coverage"
+kind = "rule"
+source = "rules/task_coverage"
+
+# A spec's status agrees with its reconcile record and task checklist.
+[[assets]]
+id = "spec-lifecycle"
+kind = "rule"
+source = "rules/spec_lifecycle"
+
+# Starting points for new documents, read by path (.devkit/managed/spec/templates/<kind>.md).
+[[assets]]
+id = "templates"
+kind = "document"
+source = "templates"
+
+[presets.core]
+assets = [
+    "contract-authoring",
+    "document-reference",
+    "id-convention",
+    "spec-format",
+    "traceability-link",
+    "task-coverage",
+    "spec-lifecycle",
+    "templates",
+]

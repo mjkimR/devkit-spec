@@ -1,0 +1,75 @@
+[project]
+name = "devkit-spec"
+version = "0.1.0"
+description = "Spec-driven development on devkit: the spec bundle and the devkit spec commands"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1.7",
+    "devkit>=0.1,<0.2",
+]
+
+# The bundle: deployed by `devkit sync` (auto_select).
+[project.entry-points."devkit.bundles"]
+spec = "devkit_spec"
+
+# The command group mounted under devkit: `devkit spec ...`.
+[project.entry-points."devkit.commands"]
+spec = "devkit_spec.cli:cli"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.390",
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.9.0",
+]
+
+[tool.uv.sources]
+# devkit is developed next to this repository (../devkit); CI clones it there too.
+devkit = { path = "../devkit/packages/devkit", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/devkit_spec"]
+
+[tool.ruff]
+exclude = [".git", ".venv", "build", "dist"]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["F403", "E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
+include = ["src", "tests"]
+extraPaths = ["tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+addopts = ["--import-mode=importlib"]
+log_level = "INFO"
+
+[tool.coverage.run]
+branch = true
+source = ["src/devkit_spec"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
