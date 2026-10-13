@@ -595,7 +595,7 @@
     },
     ".agents/skills/spec/SKILL.md": {
       "mode": 420,
-      "sha256": "1d01a9486c8900fcc4402075f9bf97e4d3c7b7bf2c7b7e21aabf96d0cdf1eb49"
+      "sha256": "aa85ccf5230521c7f1f884f86598ea826914b62aed99d542d2536157e7a8df2b"
     },
     ".agents/skills/spec/references/completion.md": {
       "mode": 420,
@@ -719,7 +719,7 @@
     },
     ".claude/skills/spec/SKILL.md": {
       "mode": 420,
-      "sha256": "1d01a9486c8900fcc4402075f9bf97e4d3c7b7bf2c7b7e21aabf96d0cdf1eb49"
+      "sha256": "aa85ccf5230521c7f1f884f86598ea826914b62aed99d542d2536157e7a8df2b"
     },
     ".claude/skills/spec/references/completion.md": {
       "mode": 420,
@@ -783,7 +783,7 @@
     },
     ".devkit/managed/devkit/instructions/consumption.md": {
       "mode": 420,
-      "sha256": "e531c61244a604e11875e3ada6608beb15f296dbfcae1653ea924bbce36bf35b"
+      "sha256": "2afd8e8915a93c68d1407049cc54049248acdea116ee8777db7522d999511dd1"
     },
     ".devkit/managed/devkit/instructions/devkit-run.md": {
       "mode": 420,
@@ -1019,7 +1019,7 @@
     },
     ".devkit/managed/spec/skills/spec/SKILL.md": {
       "mode": 420,
-      "sha256": "1d01a9486c8900fcc4402075f9bf97e4d3c7b7bf2c7b7e21aabf96d0cdf1eb49"
+      "sha256": "aa85ccf5230521c7f1f884f86598ea826914b62aed99d542d2536157e7a8df2b"
     },
     ".devkit/managed/spec/skills/spec/references/completion.md": {
       "mode": 420,

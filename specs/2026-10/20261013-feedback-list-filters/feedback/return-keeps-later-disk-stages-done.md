@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: noise
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-13
 ---
 
@@ -34,3 +34,5 @@ created_at: 2026-10-13
 [DONE: intent direction specify build-verify review-refine living-spec-draft]
 [STAGE: collect-feedback human_gate=- role=developer isolation=none]
 ```
+
+- **Disposition**: devkit packages/devkit/src/devkit/workflow/evaluation/evaluate.py: a return voids the envelopes recorded before it for its target stage and later ones; `CAP-DLV-delivery-workflows` and the spec skill state it

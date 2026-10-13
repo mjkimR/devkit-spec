@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: noise
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-13
 ---
 
@@ -29,3 +29,5 @@ created_at: 2026-10-13
 ```text
 [CHECK: lint-clean class=lint evaluated=true detail="20 violation(s): specs/...:54 RULE-document-reference no document has the ID FB-a; ... (20 entries)"]
 ```
+
+- **Disposition**: devkit packages/devkit/src/devkit/workflow/evaluation/evaluate.py: the `lint-clean` detail quotes the first three violations and counts the rest, naming `devkit rules check <unit>`

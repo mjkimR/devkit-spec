@@ -61,7 +61,8 @@ sequence.
    `devkit workflow answer --unit <dir> --request gate:<gate> --action accept|decline`, written only after the
    user's explicit answer. Under `auto` the gate passes by policy (`source=policy`) and the executor MUST report the
    delegation as the authority, never as a human approval. Neither grants new commit, merge, publication or deletion
-   authority. `devkit workflow return --unit <dir> --to <stage>` voids the approvals of that stage and later ones.
+   authority. `devkit workflow return --unit <dir> --to <stage>` voids the approvals of that stage and later ones,
+   and the envelopes recorded for them before the return: a post-review defect needs a new review round.
 5. **G1 always needs the user's intent**: goal, scope and verification are confirmed by the user; the intent gate
    opens once the anchor exists.
 6. **G2 is conditional**: it fires for uncertain choices or changes to an existing agreement, never for
@@ -232,7 +233,7 @@ Stages delegate to `reviewer` (`review-refine`), `reconciler` (`living-spec-draf
 | `devkit workflow next --unit <dir> [--given <check>]...` | Current stage, unmet checks, `[NEXT_SKILL]`, `[WAITING]`, `[DELEGATE]`, `[SKIPPED]`. |
 | `devkit workflow show <id>` / `--unit <dir>` | Render a definition. |
 | `devkit workflow answer --unit <dir> --request gate:<gate> --action accept\|decline` | Record a gate decision. |
-| `devkit workflow return --unit <dir> --to <stage>` | Go back; voids later approvals. |
+| `devkit workflow return --unit <dir> --to <stage>` | Go back; voids later approvals and earlier envelopes of those stages. |
 | `devkit workflow bind --unit <dir> --workflow <id>` | Bind an unbound unit, or rebind after `WORKFLOW_DRIFT`. |
 | `devkit workflow validate` | Validate definitions; `SHARED_STAGE_MISMATCH` across definitions. |
 | `devkit workflow list` | List units of every layout. |
