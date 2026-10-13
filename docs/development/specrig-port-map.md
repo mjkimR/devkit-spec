@@ -1,15 +1,9 @@
----
-id: MAT-specrig-port-map
-title: specrig port map
-summary: Dated record of where each specrig component went when specrig was rebuilt on devkit, whether into devkit, into the spec bundle or devkit spec commands of devkit-spec, or dropped.
-created_at: 2026-10-13
----
+# specrig Port Map
 
-# [MAT-specrig-port-map] specrig port map
-
-> **Purpose**: a record, as of 2026-10-13, of the component mapping behind `ADR-rebuild-specrig-on-devkit`. specrig
-> (the Go predecessor, private repository `mjkimR/specrig`) is the reference for behaviour being ported; this table is
-> where each of its components went. The current contracts are the capabilities, not this record.
+Where each component of specrig (the Go predecessor, private repository `mjkimR/specrig`) went when it was rebuilt on
+devkit (`ADR-rebuild-specrig-on-devkit`): into devkit, into the `spec` bundle or the `devkit spec` commands, or
+dropped. specrig is the reference for behaviour being ported; this map stays current until the port is complete, and a
+change that ports or drops a component updates its row. The contracts themselves are the capabilities.
 
 "devkit" means the capability already exists in devkit and nothing is ported. "Dropped" means no successor.
 

@@ -27,12 +27,13 @@ Review `docs/architecture/` and the capabilities the feature touches (`devkit sp
 
 ## Step 5: Output standard
 
-Keep the frontmatter lines `devkit spec new` or `devkit spec proposal handoff` wrote (`id`, `workflow`, `workflow_hash`); fill in the rest.
+Keep the frontmatter lines `devkit spec new` or `devkit spec proposal handoff` wrote (`id`, `workflow`, `workflow_hash`, and `summary` when given); fill in the rest.
 
 ```markdown
 ---
 id: SPEC-<feature-slug>
 title: <Feature Title>
+summary: "<one or two English sentences: what the spec changes>"
 status: draft # draft | planned | in-progress | completed
 created: <YYYY-MM-DD>
 related_capabilities:

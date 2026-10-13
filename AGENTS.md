@@ -8,7 +8,7 @@ Spec-driven development on devkit: the `spec` bundle and the `devkit spec` comma
 - devkit is the SDD-agnostic foundation; this package owns everything spec-driven: the document model (Living Spec, feature specs, IDs, references), its rules, workflows, skills and commands. A capability that is not specific to spec-driven development belongs in devkit (`../devkit`), not here.
 - Use devkit only through its public surface: each module's `__init__` exports and `devkit.core.cli`. Never import devkit's private helpers or copy them.
 - Commands are mounted under `devkit` through the `devkit.commands` entry point ([Command Plugins](https://github.com/mjkimR/devkit/blob/main/docs/architecture/command-plugins.md)); bundle assets are declared in `src/devkit_spec/bundle/bundle.toml`.
-- specrig (the Go predecessor, private repository `mjkimR/specrig`) is the reference for behavior being ported; [`MAT-specrig-port-map`](docs/materials/2026-10/20261013-specrig-port-map.md) records where each of its components went. Port semantics, not code structure, and drop what devkit already covers.
+- specrig (the Go predecessor, private repository `mjkimR/specrig`) is the reference for behavior being ported; [specrig port map](docs/development/specrig-port-map.md) records where each of its components went. Port semantics, not code structure, and drop what devkit already covers.
 - Write all documentation, guide material and bundle assets in English.
 - Do not commit `.env`, log secrets/PII, or commit/push without explicit instructions.
 

@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-13
 ---
 
@@ -30,3 +30,5 @@ created_at: 2026-10-13
 [GIT_POLICY: worktree=yes pull_request=yes delete_branch=yes setup=-]   (base, before the S-Lane)
 --merge  Fast-forward the base onto the branch ... ([worktree] pull_request = false)
 ```
+
+- **Disposition**: src/devkit_spec/bundle/skills/spec/references/worktree.md: S-Lane; policy is read in the base, so a policy change lands there first

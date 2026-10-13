@@ -183,7 +183,7 @@ stage of `s-lane` runs `spec-review`, `spec-sync` and, unless `collect-feedback`
 Runner checks are never evaluated by `next`; they are declared with `--given lint-ci-clean` / `--given merged` once
 CI and the merge (or, without a runner, the local cumulative check) report. `revision-ancestor(red green)` is
 available to a project that wants stricter bugfix ordering. Each check replaces a specrig check; the mapping is
-recorded in `MAT-specrig-port-map`.
+recorded in [specrig port map](../../development/specrig-port-map.md).
 
 ### 4.5 Envelopes
 

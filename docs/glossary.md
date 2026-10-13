@@ -87,4 +87,4 @@ term's contract, the last column names it. Search synonyms for these terms live 
 | **Advisory** | An Agent Advisory Protocol block on stderr (`[ERROR]`, `[WARN]`, `[NOTICE]`) with a stable code and an `[ACTION]` directive. | `ARCH-08-cross-cutting` |
 | **Snapshot run** | A rule run on a Git snapshot: `devkit rules check --staged` (the commit gate) or `--ci --base <ref>`; rules see the snapshot through `ctx.cache` and the diff through `ctx.snapshot`. | `ARCH-08-cross-cutting` |
 | **Commit gate** | devkit's Git hooks; its `verify-commands` gate runs `devkit rules check --staged` before a commit. | `ARCH-06-runtime-view` |
-| **specrig** | The retired Go predecessor of devkit-spec. | `MAT-specrig-port-map` |
+| **specrig** | The retired Go predecessor of devkit-spec. | [specrig port map](development/specrig-port-map.md) |

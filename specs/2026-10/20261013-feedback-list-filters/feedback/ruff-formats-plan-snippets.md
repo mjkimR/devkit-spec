@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: noise
 recurring: false
-status: open
+status: dismissed
 created_at: 2026-10-13
 ---
 
@@ -30,3 +30,5 @@ created_at: 2026-10-13
 1 file would be reformatted, 224 files already formatted
 error: recipe `lint-check` failed on line 20 with exit code 1
 ```
+
+- **Disposition**: `just lint` formats the snippets automatically and keeps them valid Python; no exclusion needed

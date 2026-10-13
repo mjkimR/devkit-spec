@@ -20,7 +20,7 @@ document; refer to it by its ID (`devkit spec resolve <ID>` gives the path).
 | 11 | Risks and Technical Debts | (none) | |
 | 12 | Glossary | [glossary.md](../glossary.md) | |
 
-The specrig-to-devkit component map is the dated material `MAT-specrig-port-map`.
+The specrig-to-devkit component map is the [specrig port map](../development/specrig-port-map.md).
 
 ## 2. Conventions
 

@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-13
 ---
 
@@ -30,3 +30,5 @@ created_at: 2026-10-13
 spec SKILL.md: `devkit spec new <slug> [--title "..."]` creates specs/<YYYY-MM>/<YYYYMMDD>-<slug>/ and binds it
 spec-specify SKILL.md: devkit spec new <slug> --title "<Title>" --summary "<English sentence>"
 ```
+
+- **Disposition**: src/devkit_spec/bundle/skills/spec/SKILL.md, src/devkit_spec/bundle/skills/spec-specify/references/feature.md: S-Lane; the router shows `--summary` and the output standard a `summary` line

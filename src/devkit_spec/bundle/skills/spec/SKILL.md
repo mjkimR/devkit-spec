@@ -5,7 +5,7 @@ description: Main entry skill for development intent; conversational router and 
 
 # spec: Conversational Router & Pair Programmer
 
-Use this skill for any general development task, feature request, troubleshooting, or operational workflow. `spec` acts as the **central human-agent interaction router**, directing natural language intents to the appropriate spec-driven delivery skills or operational playbooks using **progressive disclosure**.
+Use this skill for any development task, feature request, troubleshooting, or operational workflow. `spec` acts as the **central human-agent interaction router**, directing natural language intents to the appropriate spec-driven delivery skills or operational playbooks using **progressive disclosure**.
 
 Read `devkit spec policy` before routing work. Use the effective approval and Git policy with [completion](references/completion.md). Explicit user instructions and authorization already given take precedence; `auto` removes an additional gate question inside the requested scope, without granting authority for new Git or external actions. A policy command error stops policy-dependent work.
 
@@ -32,7 +32,7 @@ Check the nature of the request against the routes of the spec constitution (`de
 | Intent Category | Selected Route | Action / Sub-Skill |
 | :--- | :--- | :--- |
 | **Low uncertainty + Low risk** (<15m) | **Route 1: S-Lane** → workflow `s-lane` | Direct modification without planning artifacts (`devkit workflow show s-lane`; there is no unit, so follow its stages in the session). Run relevant checks and mandatory Living Spec reconciliation. A small, low-risk defect takes this lane too. |
-| **New feature / high contract impact** | **Route 2: Direct delivery** → workflow `direct-delivery` | `devkit spec new <slug> [--title "..."]` creates `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` and binds it, then execute `spec-specify` ➔ `spec-plan` ➔ `spec-tasks`. |
+| **New feature / high contract impact** | **Route 2: Direct delivery** → workflow `direct-delivery` | `devkit spec new <slug> --title "..." --summary "..."` creates and binds `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/`, then run `spec-specify` ➔ `spec-plan` ➔ `spec-tasks`. |
 | **Defect with contract impact or uncertainty** (observed behavior contradicts an existing contract; larger than an S-Lane fix) | **Formal bugfix** (Route 2 weight) → workflow `bugfix` | `devkit spec new <slug> --workflow bugfix`, then `spec-specify` (its bugfix reference: characterize, reproduce with a `red` envelope, fix and verify with a `green` envelope) ➔ `spec-plan` ➔ `spec-tasks`. |
 | **High uncertainty + local review** | **Route 3: Incubated** → workflow `incubated-delivery` | `devkit spec proposal new <slug>` scaffolds `docs/proposals/PROP-<slug>/` bound to `incubated-delivery` (`--handoff-workflow bugfix` for a defect). On acceptance, run `devkit spec proposal handoff <slug>` (`--direction-chosen` when the user chose a `draft` or `reviewing` proposal's direction); it binds the new spec bundle to the proposal's `handoff_workflow`, default `direct-delivery`. Then run the `spec-next` skill's post-handoff link check. |
 | **High uncertainty + team PR review** | **Route 4: Full RFC** → workflow `incubated-delivery` | Draft the proposal bundle on a PR branch before spec handoff. Handoff and the post-handoff link check follow Route 3. |

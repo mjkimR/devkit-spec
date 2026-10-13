@@ -88,4 +88,4 @@ semantics, not code structure.
   (`ADR-scope-maintenance-through-skills`); some specrig features were dropped (derived-data cache, web viewer,
   per-kind listing filters).
 - **Follow-ups**: a generic capability devkit-spec needs is added to devkit first. Where each specrig component went:
-  `MAT-specrig-port-map`.
+  [specrig port map](../../development/specrig-port-map.md).

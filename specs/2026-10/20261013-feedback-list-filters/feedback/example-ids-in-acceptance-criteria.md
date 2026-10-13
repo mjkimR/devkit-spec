@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-13
 ---
 
@@ -30,3 +30,5 @@ created_at: 2026-10-13
 [VIOLATION: RULE-document-reference ... file=specs/2026-10/20261013-feedback-list-filters/spec.md line=81 ... message="no document has the ID FB-e"]
 [SUMMARY: errors=20 warnings=0 infos=0 fixed=0]
 ```
+
+- **Disposition**: src/devkit_spec/bundle/skills/spec-specify/SKILL.md: S-Lane; example and fixture IDs are written as plain text

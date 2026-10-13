@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-13
 ---
 
@@ -33,3 +33,5 @@ created_at: 2026-10-13
 $ git -C <base> status -sb
 ## main...origin/main [ahead 1]
 ```
+
+- **Disposition**: src/devkit_spec/bundle/skills/spec-integrate/SKILL.md: S-Lane; Step 1 pulls the base and merges the base checkout's branch

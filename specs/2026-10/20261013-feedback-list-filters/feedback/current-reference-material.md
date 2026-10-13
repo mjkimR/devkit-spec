@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: noise
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-13
 ---
 
@@ -30,3 +30,5 @@ created_at: 2026-10-13
 living-spec-writing: Change history belongs in Git, append-only ADRs ... and dated `docs/materials/`.
 AGENTS.md: [`MAT-specrig-port-map`] records where each of its components went.
 ```
+
+- **Disposition**: docs/development/specrig-port-map.md: S-Lane; the map moved out of materials as a current development document; references, the accepted ADR included, became links (one-off exception approved by the user during the migration)

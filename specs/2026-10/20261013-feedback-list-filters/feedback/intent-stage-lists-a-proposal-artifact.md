@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: noise
 recurring: false
-status: open
+status: dismissed
 created_at: 2026-10-13
 ---
 
@@ -30,3 +30,5 @@ created_at: 2026-10-13
 [STAGE: intent name="G1 intent" human_gate=intent ...]
 [ARTIFACTS: docs/proposals/PROP-<slug>/proposal.md specs/<YYYY-MM>/<YYYYMMDD>-<slug>/]
 ```
+
+- **Disposition**: not a defect: the proposal path applies to units handed off from a proposal, which Routes 3 and 4 bind to direct-delivery or bugfix
