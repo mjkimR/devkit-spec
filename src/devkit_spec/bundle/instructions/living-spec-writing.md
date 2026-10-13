@@ -14,7 +14,7 @@ description: Read before authoring, editing or reviewing docs/ or specs/ documen
 
 ## Completed Specs and Traceability
 
-- A spec with `status: completed` remains in place as work history. It is not a default discovery or orientation target; read `docs/capabilities/` and `docs/stories/` for the current contract. Later behavior changes start a new spec. Editing a completed spec is not prohibited.
+- A spec with `status: completed` remains in place as work history. It is not a default discovery or orientation target; read `docs/capabilities/` and `docs/stories/` for the current contract. Later behavior changes start a new spec. Editing a completed spec is not prohibited. `RULE-spec-lifecycle` keeps its status consistent with its tasks and reconcile record.
 - Stories and capabilities form an orthogonal M:N relationship. Link them through YAML `stories:` in capabilities and `capabilities:` in stories, both ways (`RULE-traceability-link`); do not physically nest either inside the other.
 
 ## Summaries
@@ -26,6 +26,6 @@ description: Read before authoring, editing or reviewing docs/ or specs/ documen
 
 ## References
 
-- Refer to ID-bearing internal documents with full IDs in prose and exact IDs in relationship fields; omit Markdown paths.
+- Refer to ID-bearing internal documents with full IDs in prose and exact IDs in relationship fields; omit Markdown paths. IDs are path-derived slugs, never dates or sequence numbers (`RULE-id-convention`).
 - Keep external URLs, images, code paths and documents without IDs as ordinary links. Code examples, non-ID inline code and H1 self IDs are not reference edges.
 - Use `devkit spec resolve <ID> [<ID>...]` to find repository-relative paths and `devkit spec refs <ID> --direction out|in` for reference discovery; `RULE-document-reference` checks every reference.

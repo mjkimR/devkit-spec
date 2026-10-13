@@ -74,7 +74,8 @@ class DocumentSummaryRule(BaseRule):
             phase=Phase.LINTER,
             severity=Severity.ERROR,
             settings=DocumentSummarySettings(),
-            guide="document_summary.md",
+            guide="guide.md",
+            related=("spec:living-spec-writing",),
         )
 
     def validate_settings(self, settings: DocumentSummarySettings) -> None:

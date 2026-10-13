@@ -246,10 +246,20 @@ max_length = 300
 ### 4.3 Packaging
 
 Each rule is a class in `devkit_spec.rules.<name>` (`ADR-rules-implemented-in-the-package`). The bundle deploys
-`rules/<name>/<name>.py`, a thin subclass (devkit instantiates only classes a rule file defines), and the guide
-`rules/<name>/<name>.md`, to `.devkit/managed/spec/rules/<name>/`. Keeping the logic in the package means one tested
-implementation and a deployed file that never changes when the rule does. `devkit_spec.rules` exposes
-`document_index(ctx)`, `namespaces(ctx)` and the targeting helpers the rules share.
+`rules/<name>/rule.py`, a thin subclass (devkit instantiates only classes a rule file defines), and the guide
+`rules/<name>/guide.md`, to `.devkit/managed/spec/rules/<name>/`. Keeping the logic in the package means one tested
+implementation and a deployed file that never changes when the rule does. A rule whose judgment lives in a bundle
+instruction names it in `related` (`spec:living-spec-writing` for the reference, traceability, summary, identifier and
+lifecycle rules, `spec:contract-authoring` for `RULE-task-coverage`), and `devkit rules explain` prints its deployed
+path. `devkit_spec.rules` exposes `document_index(ctx)`, `namespaces(ctx)` and the targeting helpers the rules share.
+
+A rule's tests live in its folder, `rules/<name>/tests/test_rule.py`, and deploy with it. They load the rule with
+`devkit.rules.testing.load_rule(__file__)`, which loads the folder as devkit loads the deployed copy (the `rule.py`
+subclass, so the deployed file and the `devkit_spec.rules.<name>` implementation are tested together), and evaluate
+it with `check(RULE, tmp_path, files, ...)`; they use nothing from the repository's `tests/`. `devkit rules test
+RULE-<id>` runs the deployed copy's tests in an isolated pytest run (no project configuration or `conftest.py`), and
+without IDs every rule's tests. The repository's own `pytest` collects the same files under
+`src/devkit_spec/bundle/rules/`.
 
 ### 4.4 Error Codes
 

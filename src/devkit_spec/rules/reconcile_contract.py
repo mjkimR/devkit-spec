@@ -102,7 +102,7 @@ class ReconcileContractRule(BaseRule):
             description="A reconcile.md record has an id, a pending or resolved status and well-formed targets.",
             phase=Phase.LINTER,
             severity=Severity.ERROR,
-            guide="reconcile_contract.md",
+            guide="guide.md",
         )
 
     def check(self, ctx: RuleContext) -> list[Violation]:

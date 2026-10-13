@@ -179,7 +179,8 @@ class TaskCoverageRule(BaseRule):
             description="Acceptance criteria IDs of active specs and the task references in tasks.md cover each other.",
             phase=Phase.LINTER,
             severity=Severity.ERROR,
-            guide="task_coverage.md",
+            guide="guide.md",
+            related=("spec:contract-authoring",),
         )
 
     def check(self, ctx: RuleContext) -> list[Violation]:
@@ -225,7 +226,7 @@ class TaskCoverageRule(BaseRule):
         status = frontmatter.get("status")
         if (
             isinstance(status, str)
-            and status.strip() == COMPLETED
+            and status.strip().lower() == COMPLETED
             and not (explicitly_targeted(ctx, spec_path) or explicitly_targeted(ctx, tasks_path))
         ):
             return

@@ -50,7 +50,7 @@ class CodeEntrypointsRule(BaseRule):
             description="Every entrypoints path of a capability or story is an existing workspace file or directory.",
             phase=Phase.LINTER,
             severity=Severity.ERROR,
-            guide="code_entrypoints.md",
+            guide="guide.md",
         )
 
     def check(self, ctx: RuleContext) -> list[Violation]:

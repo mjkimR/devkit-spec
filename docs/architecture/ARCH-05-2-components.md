@@ -75,7 +75,7 @@ flowchart LR
 | **`config`** | Reading and validating `[tool.spec]` (`worktree`, `namespaces`, `scope`) | `CAP-DLV-project-policy` |
 | **`errors`** | Every `SPEC_` advisory as an `AdvisoryError` subclass with its level and protocol fields | `ARCH-08-cross-cutting` |
 | **`cli`** (`documents`, `search`, `specs`, `proposals`, `entrypoints`, `scope`, `policy`, `output`) | The `devkit spec` group: options, sentinel and JSON rendering, the only place that prints | `CAP-HARN-command-mount` |
-| **`bundle/`** | The asset sources and `bundle.toml`; `bundle/rules/<name>/<name>.py` files only subclass the package's rules | `CAP-HARN-agent-guidance` |
+| **`bundle/`** | The asset sources and `bundle.toml`; `bundle/rules/<name>/rule.py` files only subclass the package's rules, `guide.md` beside each | `CAP-HARN-agent-guidance` |
 
 ---
 

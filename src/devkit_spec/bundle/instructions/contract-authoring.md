@@ -16,5 +16,5 @@ description: Read before authoring or reviewing specifications, acceptance crite
 
 - Unstated assumptions are not permissions. Respect MUST NOT constraints and declared Non-Goals.
 - A Non-Goal states its **Scope Excluded**: exactly what will not be built. Add **Rationale** and **When to Reconsider** only when they help later decisions; do not fill them for form.
-- Replace vague qualifiers such as "handle errors properly" or "ensure high performance" with exact, checkable contracts for the interface: exit codes, status/error codes, output lines, payload structures and Given/When/Then acceptance scenarios.
+- Replace vague qualifiers such as "handle errors properly" or "ensure high performance" with exact, checkable contracts for the interface: exit codes, status/error codes, output lines, payload structures and Given/When/Then acceptance scenarios. Each scenario carries an ID that tasks cover (`RULE-task-coverage`).
 - Documentation code snippets and JSON payloads are non-normative examples unless explicitly designated as normative schemas.

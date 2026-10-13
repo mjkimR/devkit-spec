@@ -18,7 +18,7 @@ created_at: 2026-10-13
 ## 1. Context & Problem Statement
 
 devkit's rule engine loads `kind = "rule"` assets from the synchronized copies of a bundle
-(`.devkit/managed/<bundle>/rules/<name>/<name>.py`) and instantiates the rule classes a rule file defines; the guide
+(`.devkit/managed/<bundle>/rules/<name>/rule.py`) and instantiates the rule classes a rule file defines; the guide
 beside the file is what `devkit rules explain` prints. The spec rules share a substantial library: the document index,
 the Markdown scanner, namespaces and the entrypoint path contract. Where should the rule code live?
 
@@ -36,8 +36,8 @@ the Markdown scanner, namespaces and the entrypoint path contract. Where should 
 ## 3. Considered Options
 
 ### Option 1: Logic in `devkit_spec.rules`, thin subclass files in the bundle (Selected)
-- **Overview**: each `bundle/rules/<name>/<name>.py` imports the package's rule class and subclasses it; the guide
-  `<name>.md` sits beside it.
+- **Overview**: each `bundle/rules/<name>/rule.py` imports the package's rule class and subclasses it; the guide
+  `guide.md` sits beside it.
 - **Pros**:
   - Rules are ordinary package modules, covered by the package's tests.
   - The rules share `document_index(ctx)` and the other helpers through normal imports.

@@ -15,7 +15,8 @@ Rules are not prompt instructions or advisory text. They are fast, deterministic
 
 ### Principle 1: A project rule ships in the project's own bundle
 - A rule the repository keeps is a `kind = "rule"` asset of its **in-repository bundle** (a content package under `tools/<repo>-devkit/`, installed as a dev dependency; devkit's `in-repo-bundle` instruction, listed by `devkit get-context devkit`, describes the setup). `devkit sync` deploys it under `.devkit/managed/<bundle>/`, records it in `.devkit/installation.json`, and `devkit rules` loads it without flags.
-- One directory per rule asset: `rules/<name>/<name>.py` (one or more `BaseRule` subclasses; every `.py` file of the asset is loaded) and `rules/<name>/<name>.md` (the guide `devkit rules explain` prints and violations cite).
+- One directory per rule asset: `rules/<name>/rule.py` (one or more `BaseRule` subclasses, `guide="guide.md"`; every `.py` file of the asset is loaded except under `tests/`), `rules/<name>/guide.md` (the guide `devkit rules explain` prints and violations cite, in devkit's guide sections) and `rules/<name>/tests/test_rule.py` (the rule's tests, deployed with it).
+- An instruction or playbook holding the rule's judgment or procedure is named with `related=("<bundle>:<asset-id>",)`; `devkit rules explain` prints its path, the guide's Remediation says when to read it, and the instruction names the rule by ID without repeating its checks.
 - `devkit rules check --rules-dir <dir>` loads unrecorded rule files for a local experiment; the commit gate never runs them. Promote a finished experiment into the bundle.
 - Never edit `.devkit/managed/` (a changed copy is a `RULES_LOAD_FAILED` loading error). A distributed rule is tuned only in `[rules]` of `.devkit/config.toml`; replacing its content is `devkit override create`.
 - Prefix the ID with the repository name (`RULE-myrepo-no-todo`) unless shadowing an upstream rule of the same ID is the intent: a later-loaded rule with an earlier rule's ID replaces it.
@@ -41,13 +42,13 @@ Rules are not prompt instructions or advisory text. They are fast, deterministic
 4. **Targets and settings**: which files the rule reads, and which limits or paths a project may tune (typed settings, [config](references/config.md)).
 
 ### Step 2: Create the rule files and register the asset
-Write `rules/<name>/<name>.py` and `rules/<name>/<name>.md` in the bundle source, then add the asset to its `bundle.toml` and to the preset the project selects. Templates: [templates](references/templates.md).
+Write `rules/<name>/rule.py` and `rules/<name>/guide.md` in the bundle source, then add the asset to its `bundle.toml` and to the preset the project selects. Templates: [templates](references/templates.md).
 
 ### Step 3: Implement the check (and fix)
 Read files only through `ctx.cache` (`find_files`, `read_text`, `get_frontmatter`, `get_links`, `get_catalog`), so the snapshot gates evaluate exactly the staged or CI tree. Report a file only when `ctx.is_file_targeted(rel)` is true: it applies the run's targets and `[rules] exclude`. Read settings with `ctx.settings(self, rel)`. Give each `Violation` a message and an actionable `remediation`. Template: [templates](references/templates.md#rule-file).
 
 ### Step 4: Write tests
-Tests live in the bundle package's `tests/`, never in the rule directory (every `.py` file there is loaded as a rule file). Cover a valid case, a violation, targeting and exclusion, the fix, and idempotency (a second fix changes nothing). Template: [templates](references/templates.md#tests).
+Tests live in the rule's folder, `rules/<name>/tests/test_rule.py` (no `__init__.py`), and use only `devkit.rules.testing`: `load_rule(__file__)` loads the folder as devkit loads the deployed copy, `check(RULE, tmp_path, files, targets=..., fix=..., settings=...)` evaluates it. They run in isolation (no project `conftest.py`), so keep helpers in the file. Cover a valid case, a violation, targeting, settings, the fix, and idempotency (a second fix changes nothing). Template: [templates](references/templates.md#tests).
 
 ### Step 5: Validate against devkit
 ```bash
@@ -55,6 +56,7 @@ devkit rules check --rules-dir <bundle>/rules     # trial before deployment
 devkit sync                                       # deploy and record the receipt
 devkit rules phases                               # default and effective phase
 devkit rules explain RULE-<id>                    # settings and the guide as deployed
+devkit rules test RULE-<id>                       # the deployed copy's tests, isolated
 devkit rules check                                # whole workspace; --phase hygiene for hygiene rules
 devkit rules fix --dry-run && devkit rules fix    # fixable findings, then the repair
 ```

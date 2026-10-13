@@ -1,9 +1,24 @@
-# RULE-id-convention
+# [RULE-id-convention] Slug Identifier Convention
+
+## 1. Overview
 
 A document's ID is a slug derived from its path. Dates order dated documents in their partitions; they are never part
-of an ID, and neither are sequence numbers (they collide across parallel branches and make references ambiguous).
+of an ID, and neither are sequence numbers: they collide across parallel branches and make references ambiguous.
 
-## Dated Partitions: ADR, Change Spec, Feedback
+- **Phase and severity**: `linter`, `error`. Shipped by the `spec` bundle (preset `core`).
+- **What is checked**: the identifier targets below (path, frontmatter ID, `area`, heading token, uniqueness), and
+  every Markdown file under `docs/` and `specs/` for date- or number-based references. `README.md` files are not
+  identifier targets, but their references are checked.
+- **What is not**: references in `docs/materials/` and a namespace's `docs/packages/<name>/materials/`; references
+  inside code blocks, indented code, inline code, HTML comments and escapes. Markdown link labels and targets are
+  checked.
+- **How fields are read**: from their top-level frontmatter lines as written (`id:`, `reconcile_id:`, `area:`), so a
+  header YAML rejects is still checked.
+- **Targeting**: violations are reported in the targeted files, while duplicates are detected across the whole
+  workspace, namespaces included. Files of completed spec bundles (`spec.md` `completed`) are work history: checked
+  only when named as explicit targets, and never rewritten.
+
+### Dated Partitions: ADR, Change Spec, Feedback
 
 | Document | Path | ID |
 | :--- | :--- | :--- |
@@ -15,7 +30,7 @@ of an ID, and neither are sequence numbers (they collide across parallel branche
 `{slug}` and `{name}` are kebab-case, and the `{YYYY-MM}` partition must match the date prefix. A feedback file
 inside a bundle has no date prefix.
 
-## Living Spec: Capability, Story, Architecture
+### Living Spec: Capability, Story, Architecture
 
 The ID is the file stem:
 
@@ -43,33 +58,49 @@ under `docs/packages/<name>/` with the same layout: `docs/packages/<name>/capabi
 `docs/packages/<name>/stories/{area}/US-{slug}.md`, `docs/packages/<name>/architecture/ARCH-{slug}.md`. IDs are
 repository-wide, so a slug is unique across `docs/` and every package.
 
-## Violations
+## 2. Cause of Violation
 
-- A path off the convention above (wrong depth, an undated or misdated partition, a sequence-number slug, chapter 09
-  or 12, a capability or story outside an area directory). `README.md` files are not checked here. Nothing else is
-  reported for the file until it is moved.
-- No frontmatter.
-- A frontmatter `id` (`reconcile_id` in `reconcile.md`) other than the path requires, or a capability's or story's
-  `area` other than its directory. `devkit rules fix` sets them (inserting a missing one).
-- A first `# ` heading whose `[ID]` or `` `ID` `` token is not the ID (a plan, tasks or reconcile heading may also name
-  `SPEC-{slug}`). `devkit rules fix` rewrites the token.
-- An ADR, spec or Living Spec ID that another file's path also derives: slugs are unique per document type across
-  partitions and areas (feedback slugs only within their bundle). Rename one slug.
-- A date- or number-based reference in the frontmatter or prose of any Markdown file under `docs/` (except
-  `docs/materials/` and a package's `docs/packages/<name>/materials/`) or `specs/`: `SPEC-20261006`, `FB-20261006`, `ADR-0006`, `PADR-0001`, `US-010`, `CAP-HARN-007`,
-  or `ARCH-06` without a slug. Reference documents as `` `ADR-{slug}` ``, `` `SPEC-{slug}` ``,
-  `` `CAP-{AREA}-{slug}` ``, `` `US-{slug}` ``, `` `ARCH-{NN}-{slug}` ``. Code blocks, indented code, inline code,
-  HTML comments and escapes are not checked; Markdown link labels and targets are.
+- A path off the convention above (wrong depth, an undated or misdated partition, a non-kebab-case name, a dated
+  feedback name inside a bundle, a sequence-number slug, chapter 09 or 12, a capability or story outside an area
+  directory): `Invalid partition path: <what the path must be>`. Nothing else is reported for the file until it is
+  moved.
+- No frontmatter (or one never closed): `Missing YAML frontmatter; expected <field>: <ID>`.
+- A frontmatter `id` (`reconcile_id` in `reconcile.md`) other than the path requires (fixable): `Frontmatter <field>
+  is "<declared>" but the path requires "<ID>"`.
+- A capability's or story's `area` other than its directory (fixable): `Frontmatter area is "<area>" but the
+  directory requires "<directory>"`.
+- A first `# ` heading whose first `[ID]` or `` `ID` `` token is not the ID (fixable; a plan, tasks or reconcile
+  heading may also name `SPEC-{slug}`): `Heading token [<token>] does not match identifier <ID>[ or <ID>]`.
+- An ADR, spec or Living Spec ID that another file's path also derives: `Identifier <ID> is duplicated across
+  <paths>`. Slugs are unique per document type across partitions and areas. Feedback IDs are not compared here; two
+  files declaring the same `FB-` ID are reported by `RULE-document-reference`.
+- A date- or number-based reference in the frontmatter or prose: `Date- or number-based identifier reference
+  "<reference>"`, for `SPEC-20261006`, `FB-20261006`, `ADR-0006`, `PADR-0001`, `US-010`, `CAP-HARN-007`, or `ARCH-06`
+  (also `ARCH-05-2`) without a slug.
 
-## Remediation
+## 3. Remediation
 
-1. Move the file to the required path. `devkit rules fix` never moves files; `devkit spec resolve <ID>` finds a
-   document by ID.
-2. Run `devkit rules fix` to align `id` / `reconcile_id`, `area` and the heading token with the path.
-3. Replace date- or number-based references with the slug ID by hand.
+1. Move the file to the required path (for a Living Spec document, the ID is the file stem; for a dated document, use
+   the decision or start date). `devkit rules fix` never moves files; `devkit spec resolve <ID>` finds a document by
+   ID.
+2. **Autofix**: `devkit rules fix` sets the `id` / `reconcile_id` and `area` lines (inserting a missing one: the ID as
+   the first header line, `area` after the `id` line) and rewrites the heading token (in a spec bundle file, to
+   `SPEC-{slug}`). It never moves a file, never renames a duplicate slug, never rewrites a reference, needs the
+   frontmatter to exist for the field fixes, and skips completed spec bundles and files that are not valid UTF-8.
+   It writes only the targets when the run names any.
+3. Add missing frontmatter with the ID, `title` and `status`; rename one of two duplicate slugs.
+4. Replace date- or number-based references with the slug ID by hand, written as `` `ADR-{slug}` ``,
+   `` `SPEC-{slug}` ``, `` `CAP-{AREA}-{slug}` ``, `` `US-{slug}` `` or `` `ARCH-{NN}-{slug}` `` in prose.
 
-## Scope
+Read the `spec:living-spec-writing` instruction (References) when rewriting a reference: it says where a full ID, an
+exact field ID or an ordinary link belongs; `devkit rules explain` prints its path as a `[RELATED: ...]` line.
 
-Fields are read from their top-level frontmatter lines as written. Files of completed spec bundles are work history:
-checked only when named as explicit targets, and never rewritten. Like every devkit rule, a violation is reported only
-in the files the run targets, while duplicates are detected across the whole workspace, packages included.
+## 4. Configuration
+
+The rule has no settings. Namespaces come from `[[tool.spec.namespaces]]` in `.devkit/config.toml`; project policy
+(`[rules] exclude`, `[rules.severity_overrides]`, `[rules.phase_overrides]`) applies as to every rule.
+
+## 5. Exceptions
+
+There is no inline suppression. Quote an old date- or number-based identifier inside inline code or a code block, or
+keep it in a `materials/` directory; `[rules] exclude` removes a file from every rule.

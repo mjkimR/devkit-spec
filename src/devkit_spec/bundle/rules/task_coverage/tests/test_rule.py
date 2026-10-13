@@ -1,15 +1,14 @@
+"""``RULE-task-coverage``, loaded from this folder as devkit loads the deployed copy."""
+
 from __future__ import annotations
 
 from pathlib import Path
 
 import pytest
-from conftest import Write
-from devkit.rules import RuleContext, evaluate_rules
-from rules.support import found, run
+from devkit.rules import RuleContext, Violation, evaluate_rules
+from devkit.rules.testing import check, load_rule, write_files
 
-from devkit_spec.rules.task_coverage import TaskCoverageRule
-
-RULE = TaskCoverageRule()
+RULE = load_rule(__file__)
 BUNDLE = "specs/2026-10/20261001-feature"
 SPEC = f"{BUNDLE}/spec.md"
 TASKS = f"{BUNDLE}/tasks.md"
@@ -27,12 +26,15 @@ TEMPLATE_TASKS = (
 MISSING_01 = "acceptance criteria without a task: AC-01"
 
 
-def _messages(workspace: Path, write: Write, spec: str, tasks: str) -> list[str]:
-    write(SPEC, spec)
-    write(TASKS, tasks)
-    violations = run(RULE, workspace)
+def _found(violations: list[Violation]) -> list[tuple[str, int, str]]:
+    """``(file, line, message)`` of the violations that remain (not fixed)."""
+    return [(v.file, v.line, v.message) for v in violations if not v.fixed]
+
+
+def _messages(root: Path, spec: str, tasks: str) -> list[str]:
+    violations = check(RULE, root, {SPEC: spec, TASKS: tasks})
     assert all(v.rule_id == "RULE-task-coverage" and v.remediation and v.line >= 1 for v in violations)
-    return [message for _, _, message in found(violations)]
+    return [message for _, _, message in _found(violations)]
 
 
 @pytest.mark.parametrize(
@@ -49,8 +51,8 @@ def _messages(workspace: Path, write: Write, spec: str, tasks: str) -> list[str]
         pytest.param(SPEC_TWO, TEMPLATE_TASKS, id="tasks-template"),
     ],
 )
-def test_covered_pairs_pass(workspace: Path, write: Write, spec: str, tasks: str) -> None:
-    assert _messages(workspace, write, spec, tasks) == []
+def test_covered_pairs_pass(tmp_path: Path, spec: str, tasks: str) -> None:
+    assert _messages(tmp_path, spec, tasks) == []
 
 
 @pytest.mark.parametrize(
@@ -95,14 +97,16 @@ def test_covered_pairs_pass(workspace: Path, write: Write, spec: str, tasks: str
         pytest.param(SPEC_ONE, "- [ ] Task\n- _Requirements: AC-01_", MISSING_01, id="unindented"),
     ],
 )
-def test_coverage_problems(workspace: Path, write: Write, spec: str, tasks: str, expected: str) -> None:
-    assert any(expected in message for message in _messages(workspace, write, spec, tasks))
+def test_coverage_problems(tmp_path: Path, spec: str, tasks: str, expected: str) -> None:
+    assert any(expected in message for message in _messages(tmp_path, spec, tasks))
 
 
-def test_violation_locations(workspace: Path, write: Write) -> None:
-    write(SPEC, SPEC_TWO + "### Again [AC-02]\n")
-    write(TASKS, "- [ ] Unknown [AC-99] [AC-98]\n  - _Requirements: AC-01, x_\n")
-    assert found(run(RULE, workspace)) == [
+def test_violation_locations(tmp_path: Path) -> None:
+    files = {
+        SPEC: SPEC_TWO + "### Again [AC-02]\n",
+        TASKS: "- [ ] Unknown [AC-99] [AC-98]\n  - _Requirements: AC-01, x_\n",
+    }
+    assert _found(check(RULE, tmp_path, files)) == [
         (SPEC, 4, "duplicate acceptance criterion ID AC-02"),
         (TASKS, 2, "invalid requirement ID 'x'"),
         (TASKS, 1, "acceptance criteria without a task: AC-02"),
@@ -116,51 +120,47 @@ def test_violation_locations(workspace: Path, write: Write) -> None:
         pytest.param("---\nstatus: planned\n---\n" + SPEC_ONE, "without a task: AC-01", id="active"),
         pytest.param("---\nstatus: completed\n---\n", None, id="completed"),
         pytest.param("---\nstatus: 'completed'\n---\n", None, id="quoted-status"),
+        pytest.param("---\nstatus: Completed\n---\n", None, id="status-case"),
         pytest.param(SPEC_ONE + "status: completed\n", "without a task: AC-01", id="body-status"),
         pytest.param("---\nstatus: [\n---\n", "invalid spec frontmatter", id="invalid-yaml"),
         pytest.param("---\nstatus: planned\n", "invalid spec frontmatter", id="unclosed-yaml"),
     ],
 )
-def test_spec_status(workspace: Path, write: Write, spec: str, expected: str | None) -> None:
-    messages = _messages(workspace, write, spec, "")
+def test_spec_status(tmp_path: Path, spec: str, expected: str | None) -> None:
+    messages = _messages(tmp_path, spec, "")
     if expected is None:
         assert messages == []
     else:
         assert any(expected in message for message in messages)
 
 
-def test_missing_spec_and_specs_before_tasks(workspace: Path, write: Write) -> None:
-    write("specs/2026-10/20261002-planned/spec.md", SPEC_ONE)
-    assert run(RULE, workspace) == []
-    write(TASKS, "- [ ] Task [AC-01]\n")
-    assert found(run(RULE, workspace)) == [(SPEC, 1, "the paired spec.md cannot be read: it does not exist")]
+def test_missing_spec_and_specs_before_tasks(tmp_path: Path) -> None:
+    assert check(RULE, tmp_path, {"specs/2026-10/20261002-planned/spec.md": SPEC_ONE}) == []
+    assert _found(check(RULE, tmp_path, {TASKS: "- [ ] Task [AC-01]\n"})) == [
+        (SPEC, 1, "the paired spec.md cannot be read: it does not exist")
+    ]
 
 
-def test_no_specs_directory(workspace: Path) -> None:
-    assert run(RULE, workspace) == []
+def test_no_specs_directory(tmp_path: Path) -> None:
+    assert check(RULE, tmp_path) == []
 
 
-def test_pair_is_checked_when_either_file_is_targeted(workspace: Path, write: Write) -> None:
-    write(SPEC, SPEC_TWO)
-    write(TASKS, "- [ ] First [AC-01]\n")
-    write("docs/unrelated.md", "# unrelated\n")
+def test_pair_is_checked_when_either_file_is_targeted(tmp_path: Path) -> None:
+    write_files(tmp_path, {SPEC: SPEC_TWO, TASKS: "- [ ] First [AC-01]\n", "docs/unrelated.md": "# unrelated\n"})
     expected = [(TASKS, 1, "acceptance criteria without a task: AC-02")]
-    assert found(run(RULE, workspace, SPEC)) == expected
-    assert found(run(RULE, workspace, TASKS)) == expected
-    assert run(RULE, workspace, "docs/unrelated.md") == []
+    assert _found(check(RULE, tmp_path, targets=[SPEC])) == expected
+    assert _found(check(RULE, tmp_path, targets=[TASKS])) == expected
+    assert check(RULE, tmp_path, targets=["docs/unrelated.md"]) == []
 
 
-def test_completed_pairs_are_checked_only_when_explicitly_targeted(workspace: Path, write: Write) -> None:
-    write(SPEC, "---\nstatus: completed\n---\n" + SPEC_ONE)
-    write(TASKS, "")
-    assert run(RULE, workspace) == []
-    assert found(run(RULE, workspace, TASKS)) == [(TASKS, 1, MISSING_01)]
-    assert found(run(RULE, workspace, SPEC)) == [(TASKS, 1, MISSING_01)]
+def test_completed_pairs_are_checked_only_when_explicitly_targeted(tmp_path: Path) -> None:
+    assert check(RULE, tmp_path, {SPEC: "---\nstatus: completed\n---\n" + SPEC_ONE, TASKS: ""}) == []
+    assert _found(check(RULE, tmp_path, targets=[TASKS])) == [(TASKS, 1, MISSING_01)]
+    assert _found(check(RULE, tmp_path, targets=[SPEC])) == [(TASKS, 1, MISSING_01)]
 
 
-def test_excluded_files_are_not_reported(workspace: Path, write: Write) -> None:
-    write(SPEC, SPEC_TWO + "### Again [AC-02]\n")
-    write(TASKS, "- [ ] First [AC-01]\n")
-    ctx = RuleContext(workspace_root=workspace, changed_files=[SPEC], exclude=("specs/**/tasks.md",))
+def test_excluded_files_are_not_reported(tmp_path: Path) -> None:
+    write_files(tmp_path, {SPEC: SPEC_TWO + "### Again [AC-02]\n", TASKS: "- [ ] First [AC-01]\n"})
+    ctx = RuleContext(workspace_root=tmp_path, changed_files=[SPEC], exclude=("specs/**/tasks.md",))
     result = evaluate_rules(ctx, [RULE])
-    assert found(result.violations) == [(SPEC, 4, "duplicate acceptance criterion ID AC-02")]
+    assert _found(result.violations) == [(SPEC, 4, "duplicate acceptance criterion ID AC-02")]

@@ -345,7 +345,8 @@ class IdConventionRule(BaseRule):
             ),
             phase=Phase.LINTER,
             severity=Severity.ERROR,
-            guide="id_convention.md",
+            guide="guide.md",
+            related=("spec:living-spec-writing",),
         )
 
     def check(self, ctx: RuleContext) -> list[Violation]:

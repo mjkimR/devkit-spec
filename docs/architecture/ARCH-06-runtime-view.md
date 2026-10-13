@@ -114,7 +114,7 @@ sequenceDiagram
     participant Git
     participant Gate as devkit gate (pre-commit)
     participant Rules as devkit rules
-    participant RuleFile as .devkit/managed/spec/rules/<name>/<name>.py
+    participant RuleFile as .devkit/managed/spec/rules/<name>/rule.py
     participant Impl as devkit_spec.rules
     participant Index as DocumentIndex
 

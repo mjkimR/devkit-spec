@@ -4,7 +4,7 @@ Spec-driven development on devkit: the `spec` bundle and the `devkit spec` comma
 
 ## Architecture and Boundaries
 
-- One package (`src/devkit_spec/`) managed with `uv` and `just`; tests live in `tests/`, never under `src/`. Keep `justfile` recipes thin; shared shell logic belongs in `scripts/`.
+- One package (`src/devkit_spec/`) managed with `uv` and `just`; tests live in `tests/`, never under `src/`, except a spec rule's own tests in its folder (`src/devkit_spec/bundle/rules/<name>/tests/`, run with `devkit rules test`). Keep `justfile` recipes thin; shared shell logic belongs in `scripts/`.
 - devkit is the SDD-agnostic foundation; this package owns everything spec-driven: the document model (Living Spec, feature specs, IDs, references), its rules, workflows, skills and commands. A capability that is not specific to spec-driven development belongs in devkit (`../devkit`), not here.
 - Use devkit only through its public surface: each module's `__init__` exports and `devkit.core.cli`. Never import devkit's private helpers or copy them.
 - Commands are mounted under `devkit` through the `devkit.commands` entry point ([Command Plugins](https://github.com/mjkimR/devkit/blob/main/docs/architecture/command-plugins.md)); bundle assets are declared in `src/devkit_spec/bundle/bundle.toml`.

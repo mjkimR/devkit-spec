@@ -20,8 +20,8 @@ the same constitution, skills, workflows and rules it ships.
   first, then use it through devkit's public surface (`ARCH-03-context`).
 - Never import devkit's private helpers; never copy them.
 - Libraries never print; only `src/devkit_spec/cli/` writes output (`ARCH-08-cross-cutting`).
-- Rule logic lives in `src/devkit_spec/rules/`; `src/devkit_spec/bundle/rules/<name>/<name>.py` stays a one-line
-  subclass with its guide beside it (`ADR-rules-implemented-in-the-package`).
+- Rule logic lives in `src/devkit_spec/rules/`; `src/devkit_spec/bundle/rules/<name>/rule.py` stays a one-line
+  subclass with its guide `guide.md` beside it (`ADR-rules-implemented-in-the-package`).
 - No external consumers exist yet: breaking changes to the bundle, the commands and the APIs are made in place,
   without migrations or deprecation shims.
 - Port specrig behaviour by semantics, not code structure, and drop what devkit already covers
@@ -50,9 +50,15 @@ Run lint, type checks and relevant tests before completing a code change:
 | Tests | `just test [pytest args]` |
 | Test coverage | `just test-cov` |
 | Governance rules | `just rules-check` (`devkit rules check`) |
+| Spec rule tests (deployed copies) | `uv run --no-active devkit rules test [RULE-<id>...]` |
 | Everything CI runs | `just ci` |
 
-Recipes stay thin; shared shell logic belongs in `scripts/`. Tests live in `tests/`, never under `src/`.
+Recipes stay thin; shared shell logic belongs in `scripts/`. Tests live in `tests/`, never under `src/`, with one
+exception: a spec rule's tests live in its folder, `src/devkit_spec/bundle/rules/<name>/tests/test_rule.py`, and deploy
+with the rule (`CAP-GOV-spec-rules`). They are self-contained: `devkit.rules.testing` loads and evaluates the rule, and
+no `tests/conftest.py` fixture is available to them. `just test` collects them with the rest; after
+`uv run --no-active devkit sync`, `devkit rules test` runs the deployed copies' tests in isolation, as a consumer
+would (arguments after `--` go to pytest).
 
 ## 5. Commits
 

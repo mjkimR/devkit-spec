@@ -96,7 +96,8 @@ class TraceabilityLinkRule(BaseRule):
             description="Stories and capabilities record their M:N links in both directions by exact ID.",
             phase=Phase.LINTER,
             severity=Severity.ERROR,
-            guide="traceability_link.md",
+            guide="guide.md",
+            related=("spec:living-spec-writing",),
         )
 
     def check(self, ctx: RuleContext) -> list[Violation]:

@@ -63,7 +63,8 @@ class DocumentReferenceRule(BaseRule):
             description="Documents reference each other by exact, resolvable full IDs, written as `ID` in prose.",
             phase=Phase.LINTER,
             severity=Severity.ERROR,
-            guide="document_reference.md",
+            guide="guide.md",
+            related=("spec:living-spec-writing",),
         )
 
     def check(self, ctx: RuleContext) -> list[Violation]:

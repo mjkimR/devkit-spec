@@ -8,8 +8,9 @@ Read this at Step 2 of the `spec-rule` skill. Starting points for a new rule ass
 bundle/
   bundle.toml
   rules/final_newline/
-    final_newline.py      # BaseRule subclass(es); every .py file of the asset is loaded
-    final_newline.md      # guide: `devkit rules explain`, cited by violations
+    rule.py               # BaseRule subclass(es); every .py file outside tests/ is loaded
+    guide.md              # guide: `devkit rules explain`, cited by violations
+    tests/test_rule.py    # the rule's tests, deployed with it (no __init__.py)
 ```
 
 ```toml
@@ -25,31 +26,37 @@ assets = ["final-newline"]
 
 ## Guide
 
+devkit's guide sections, read by an agent that just hit a violation:
+
 ```markdown
-# RULE-myrepo-final-newline
+# [RULE-myrepo-final-newline] Final Newline
 
-One paragraph: what the rule protects and why a violation matters.
+## 1. Overview
 
-## Violations
+What the rule guarantees and why; phase and severity; which files it checks and which not.
 
-The concrete file state that triggers the rule, and the file and line it is reported on.
+## 2. Cause of Violation
 
-## Remediation
+Each condition reported, with its message and where it is reported.
 
-Step-by-step fix; what `devkit rules fix` does and what must be fixed by hand.
+## 3. Remediation
 
-## Settings
+What `devkit rules fix` does, and what must be fixed by hand.
 
-| Key | Default | Meaning |
-| --- | --- | --- |
-| `paths` | `["docs/**"]` | Workspace-relative patterns of checked files |
-| `extensions` | `[".md"]` | Checked file extensions |
+## 4. Configuration
 
-## Examples
+| Setting | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `paths` | list of patterns | `["docs/**"]` | Checked files |
+| `extensions` | list of suffixes | `[".md"]` | Checked extensions |
 
-Incorrect: ...
+## 5. Exceptions
 
-Correct: ...
+How a justified exception is recorded (path override, `[rules] exclude`, severity override).
+
+## 6. Examples
+
+Optional.
 ```
 
 ## Rule file
@@ -82,7 +89,7 @@ class FinalNewlineRule(BaseRule):
             phase=Phase.LINTER,
             severity=Severity.ERROR,
             settings=FinalNewlineSettings(),
-            guide="final_newline.md",  # relative to this file
+            guide="guide.md",  # relative to the module defining the class
         )
 
     def validate_settings(self, settings: FinalNewlineSettings) -> None:
@@ -135,71 +142,40 @@ class FinalNewlineRule(BaseRule):
 
 The evaluator sets each violation's effective `severity` and `phase`; the rule does not pass them. A rule without settings omits `settings`, `validate_settings` and the `ctx.settings` call. A hygiene rule meant to become a linter rule declares `phase=Phase.HYGIENE, promote_to=Phase.LINTER`.
 
-For a larger rule, keep the implementation in the bundle package (`<package>/rules/final_newline.py`, importable and type-checked) and let the deployed file only subclass it, as the `spec` bundle's rules do; the guide stays beside the deployed file.
+For a larger rule, keep the implementation in the bundle package (`<package>/rules/final_newline.py`, importable and type-checked) and let the deployed `rule.py` only subclass it, as the `spec` bundle's rules do; `guide.md` stays beside the deployed file.
 
 ## Tests
 
-In the bundle package's `tests/`, never under `bundle/rules/`. Covers scope and targeting, the fix, idempotency, and project settings with `[rules] exclude` through the CLI.
+`rules/final_newline/tests/test_rule.py`. `devkit rules test RULE-myrepo-final-newline` runs it isolated (no project `conftest.py` or pytest configuration), so it imports only `devkit.rules.testing` and the environment's packages.
 
 ```python
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
-from click.testing import CliRunner
-from devkit.cli import cli
-from devkit.rules import RuleContext, RuleRegistry, evaluate_rules
+from devkit.rules.testing import check, load_rule
 
-RULES_DIR = Path(__file__).parents[1] / "src/<package>/bundle/rules"
-RULE_ID = "RULE-myrepo-final-newline"
-
-
-def _rules() -> list:
-    registry = RuleRegistry()
-    rules = registry.discover_from_files([RULES_DIR / "final_newline/final_newline.py"])
-    assert not registry.errors
-    return rules
-
-
-def _run(root: Path, *, fix: bool = False, targets: list[str] | None = None) -> list:
-    result = evaluate_rules(RuleContext(workspace_root=root, changed_files=targets, fix=fix), _rules())
-    assert not result.errors
-    return result.violations
+RULE = load_rule(__file__)  # the folder above tests/, loaded as devkit loads the deployed copy
 
 
 def test_reports_only_targeted_files_in_scope(tmp_path: Path) -> None:
-    (tmp_path / "docs").mkdir()
-    (tmp_path / "docs/ok.md").write_text("# Ok\n")
-    (tmp_path / "docs/bad.md").write_text("# Bad")
-    (tmp_path / "docs/other.md").write_text("# Other")
-    (tmp_path / "README.md").write_text("# Out of scope")
-    assert {v.file for v in _run(tmp_path)} == {"docs/bad.md", "docs/other.md"}
-    assert [v.file for v in _run(tmp_path, targets=["docs/bad.md"])] == ["docs/bad.md"]
+    files = {"docs/ok.md": "# Ok\n", "docs/bad.md": "# Bad", "docs/other.md": "# Other", "README.md": "# Out"}
+    assert {v.file for v in check(RULE, tmp_path, files)} == {"docs/bad.md", "docs/other.md"}
+    assert [v.file for v in check(RULE, tmp_path, targets=["docs/bad.md"])] == ["docs/bad.md"]
+    assert {v.file for v in check(RULE, tmp_path, exclude=["docs/other.md"])} == {"docs/bad.md"}
 
 
 def test_fix_repairs_and_is_idempotent(tmp_path: Path) -> None:
-    (tmp_path / "docs").mkdir()
-    (tmp_path / "docs/bad.md").write_text("# Bad")
-    assert [(v.file, v.fixed) for v in _run(tmp_path, fix=True)] == [("docs/bad.md", True)]
+    found = check(RULE, tmp_path, {"docs/bad.md": "# Bad"}, fix=True)
+    assert [(v.file, v.fixed) for v in found] == [("docs/bad.md", True)]
     assert (tmp_path / "docs/bad.md").read_text() == "# Bad\n"
-    assert _run(tmp_path, fix=True) == []
+    assert check(RULE, tmp_path, fix=True) == []
 
 
-def test_project_settings_and_exclude_apply(tmp_path: Path) -> None:
-    (tmp_path / ".devkit").mkdir()
-    (tmp_path / ".devkit/config.toml").write_text(
-        f'[rules]\nexclude = ["docs/legacy/**"]\n\n[rules.settings.{RULE_ID}]\npaths = ["docs/**", "guides/**"]\n'
-    )
-    for rel in ("docs/legacy/old.md", "guides/a.md"):
-        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
-        (tmp_path / rel).write_text("no newline")
-    result = CliRunner().invoke(
-        cli, ["rules", "check", "-w", str(tmp_path), "--rules-dir", str(RULES_DIR), "--format", "json"]
-    )
-    assert result.exit_code == 1, result.output
-    found = [v["file"] for v in json.loads(result.stdout)["violations"] if v["rule_id"] == RULE_ID]
-    assert found == ["guides/a.md"]
+def test_settings_apply_per_path(tmp_path: Path) -> None:
+    settings = {"paths": ["docs/**", "guides/**"], "overrides": [{"path": "guides/legacy/**", "extensions": [".txt"]}]}
+    files = {"guides/a.md": "x", "guides/legacy/b.md": "x"}
+    assert [v.file for v in check(RULE, tmp_path, files, settings=settings)] == ["guides/a.md"]
 ```
 
-`evaluate_rules` runs one fix pass and one recheck: a repaired finding comes back with `fixed=True`, and a second run returning nothing proves idempotency. Branch on `v.rule_id`, `v.file` and `v.fixable`, not on message text.
+`check` runs the real engine: settings go through the `[rules.settings.<id>]` parser (invalid values raise `RulesRunError`), and `fix=True` runs one fix pass and one recheck, so a repaired finding comes back with `fixed=True` and a second run returning nothing proves idempotency. `evaluate` returns the whole `EvaluationResult`. Branch on `v.rule_id`, `v.file` and `v.fixable`, not on message text.

@@ -83,9 +83,9 @@ The asset inventory and what each asset is for: `CAP-HARN-agent-guidance`.
   directories, writes the `spec-pointer` guidance into the `DEVKIT:START/END` block of `AGENTS.md` and seeds the
   docs skeleton once where absent. `devkit get-context spec` returns the constitution with the instructions' read
   conditions.
-- **devkit rules to the library**: each deployed rule file `.devkit/managed/spec/rules/<name>/<name>.py` subclasses the
+- **devkit rules to the library**: each deployed rule file `.devkit/managed/spec/rules/<name>/rule.py` subclasses the
   rule class of `devkit_spec.rules`; `devkit rules` instantiates that subclass and `devkit rules explain` prints the
-  guide beside it (`ADR-rules-implemented-in-the-package`). The package therefore has to be installed in the
+  `guide.md` beside it (`ADR-rules-implemented-in-the-package`). The package therefore has to be installed in the
   environment that runs `devkit rules`.
 - **devkit workflow to the bundle**: the workflow definitions are synchronized assets; `devkit workflow next`,
   `show` and `answer` evaluate them. devkit-spec binds new units through `devkit.workflow` (`Workspace`,

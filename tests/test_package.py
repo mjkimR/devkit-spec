@@ -27,6 +27,15 @@ RULES = (
     "RULE-code-entrypoints",
     "RULE-document-summary",
 )
+# The instructions holding each rule's judgment (``related``); the other rules declare none.
+RELATED = {
+    "RULE-document-reference": ("spec:living-spec-writing",),
+    "RULE-id-convention": ("spec:living-spec-writing",),
+    "RULE-traceability-link": ("spec:living-spec-writing",),
+    "RULE-spec-lifecycle": ("spec:living-spec-writing",),
+    "RULE-document-summary": ("spec:living-spec-writing",),
+    "RULE-task-coverage": ("spec:contract-authoring",),
+}
 PYPROJECT = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
 
@@ -71,7 +80,11 @@ def test_devkit_sync_deploys_the_default_preset_and_its_rules_run(tmp_path: Path
     assert "RULE-document-reference" in check.stdout and "no document has the ID US-missing" in check.stdout
     for rule in RULES:
         explain = _devkit("rules", "explain", rule, "-w", str(tmp_path))
-        assert explain.returncode == 0 and f"# {rule}" in explain.stdout, explain.stderr
+        assert explain.returncode == 0 and f"# [{rule}] " in explain.stdout, explain.stderr
+        for ref in RELATED.get(rule, ()):
+            name = ref.split(":", 1)[1]
+            line = f"[RELATED: {ref} kind=instruction path=.devkit/managed/spec/instructions/{name}.md]"
+            assert line in explain.stdout, explain.stdout
 
 
 def test_the_docs_skeleton_is_opt_in_and_passes_the_rules(tmp_path: Path) -> None:

@@ -129,7 +129,7 @@ class SpecFormatRule(BaseRule):
             description="Capabilities, stories and proposals carry YAML frontmatter with id, title and status.",
             phase=Phase.LINTER,
             severity=Severity.ERROR,
-            guide="spec_format.md",
+            guide="guide.md",
         )
 
     def check(self, ctx: RuleContext) -> list[Violation]:

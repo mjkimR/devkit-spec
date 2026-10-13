@@ -1,9 +1,15 @@
 """devkit_spec.rules: the governance rules of the spec bundle, run by ``devkit rules``.
 
-Each rule is a ``BaseRule`` subclass here; the bundle ships a thin rule file
-per rule (``bundle/rules/<name>/<name>.py``) that subclasses it, because
-``devkit rules`` instantiates only the classes a rule file defines, and the
-rule's guide beside it. The rules read documents through ``document_index``,
+Each rule is a ``BaseRule`` subclass here; the bundle ships one directory per
+rule, as devkit's own rules are laid out: ``bundle/rules/<name>/rule.py``, a
+thin subclass (``devkit rules`` instantiates only the classes a rule file
+defines), and ``guide.md`` beside it (``guide="guide.md"`` resolves relative to
+the deployed ``rule.py``). The rule's tests sit in ``tests/test_rule.py`` of
+the same folder and deploy with it: they load the folder with
+``devkit.rules.testing.load_rule``, so they exercise the deployed subclass and
+this implementation together, and ``devkit rules test`` runs them.
+``related`` names the bundle instructions that hold a rule's judgment. The
+rules read documents through ``document_index``,
 which goes through the run's workspace cache: a Git snapshot run
 (``check --staged``, ``--ci``) sees the snapshot, and a fix is seen by the
 recheck.

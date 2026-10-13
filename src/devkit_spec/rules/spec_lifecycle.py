@@ -68,7 +68,8 @@ class SpecLifecycleRule(BaseRule):
             ),
             phase=Phase.LINTER,
             severity=Severity.ERROR,
-            guide="spec_lifecycle.md",
+            guide="guide.md",
+            related=("spec:living-spec-writing",),
         )
 
     def check(self, ctx: RuleContext) -> list[Violation]:
@@ -144,7 +145,7 @@ def _evaluate(ctx: RuleContext, bundle: _Bundle) -> _Finding | None:
             return _Finding(
                 file,
                 f"Completed spec {bundle.spec} has no reconcile.md",
-                "Write reconcile.md with reconcile_id, feature, status: resolved and targets after syncing the"
+                "Write reconcile.md with reconcile_id, status: resolved and targets after syncing the"
                 " Living Spec, or set the spec status back to its real stage",
                 fixable=False,
             )
