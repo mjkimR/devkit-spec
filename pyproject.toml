@@ -21,6 +21,10 @@ spec = "devkit_spec"
 [project.entry-points."devkit.commands"]
 spec = "devkit_spec.cli:cli"
 
+# Post-finish extension: cleanup after `devkit worktree finish`: empty proposal directories and the finished task's scope record.
+[project.entry-points."devkit.post_finish"]
+spec = "devkit_spec.cleanup:after_finish"
+
 [dependency-groups]
 dev = [
     "pyright>=1.1.390",

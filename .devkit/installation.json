@@ -545,7 +545,7 @@
     },
     ".agents/skills/spec-integrate/SKILL.md": {
       "mode": 420,
-      "sha256": "fd7cd2f8f8a1e28b10be48c7d70eb819e67f52b57f6637bb0375cb3f6e2ee1b3"
+      "sha256": "565b84c3e423376fd0c614c829d57e512f122647503823aedb96c0f43d2ba699"
     },
     ".agents/skills/spec-next/SKILL.md": {
       "mode": 420,
@@ -617,7 +617,7 @@
     },
     ".agents/skills/spec/references/worktree.md": {
       "mode": 420,
-      "sha256": "a063b008a589595aa9c3c9ba7c182053b531e1031b9106156eaeee053c1826ef"
+      "sha256": "34a7042e09c4fe45db0c93b9c7e2e48b2372b7beb0d8b985583519bb32291387"
     },
     ".claude/agents/challenger.md": {
       "mode": 420,
@@ -669,7 +669,7 @@
     },
     ".claude/skills/spec-integrate/SKILL.md": {
       "mode": 420,
-      "sha256": "fd7cd2f8f8a1e28b10be48c7d70eb819e67f52b57f6637bb0375cb3f6e2ee1b3"
+      "sha256": "565b84c3e423376fd0c614c829d57e512f122647503823aedb96c0f43d2ba699"
     },
     ".claude/skills/spec-next/SKILL.md": {
       "mode": 420,
@@ -741,7 +741,7 @@
     },
     ".claude/skills/spec/references/worktree.md": {
       "mode": 420,
-      "sha256": "a063b008a589595aa9c3c9ba7c182053b531e1031b9106156eaeee053c1826ef"
+      "sha256": "34a7042e09c4fe45db0c93b9c7e2e48b2372b7beb0d8b985583519bb32291387"
     },
     ".codex/agents/challenger.toml": {
       "mode": 420,
@@ -981,7 +981,7 @@
     },
     ".devkit/managed/spec/skills/spec-integrate/SKILL.md": {
       "mode": 420,
-      "sha256": "fd7cd2f8f8a1e28b10be48c7d70eb819e67f52b57f6637bb0375cb3f6e2ee1b3"
+      "sha256": "565b84c3e423376fd0c614c829d57e512f122647503823aedb96c0f43d2ba699"
     },
     ".devkit/managed/spec/skills/spec-next/SKILL.md": {
       "mode": 420,
@@ -1053,7 +1053,7 @@
     },
     ".devkit/managed/spec/skills/spec/references/worktree.md": {
       "mode": 420,
-      "sha256": "a063b008a589595aa9c3c9ba7c182053b531e1031b9106156eaeee053c1826ef"
+      "sha256": "34a7042e09c4fe45db0c93b9c7e2e48b2372b7beb0d8b985583519bb32291387"
     },
     ".devkit/managed/spec/subagents/challenger.md": {
       "mode": 420,

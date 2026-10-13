@@ -2,13 +2,13 @@
 id: ADR-scope-maintenance-through-skills
 title: Maintain the work-scope registry through the skills
 summary: Because devkit's workflow next and worktree finish cannot call devkit-spec, the spec skills keep the scope registry current (register, update, sweep and prune), and cleanup runs scope sweep --apply after a successful worktree finish instead of releasing before it.
-status: accepted
+status: superseded
 created_at: 2026-10-13
 ---
 
 # [ADR-scope-maintenance-through-skills] Maintain the work-scope registry through the skills
 
-- **Status**: Accepted
+- **Status**: Superseded by `ADR-cleanup-after-worktree-finish`
 - **Date**: 2026-10-13
 - **Deciders**: @mjkimR
 - **Involved Components/Capabilities**: `CAP-COLL-work-scope-registry`, `CAP-HARN-agent-guidance`, `ARCH-06-runtime-view`

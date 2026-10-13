@@ -17,7 +17,7 @@ from __future__ import annotations
 import hashlib
 import secrets
 import uuid
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from typing import Protocol, runtime_checkable
 
 from devkit_spec.scope.deadline import Deadline
@@ -56,8 +56,17 @@ class Registry(Protocol):
         """Delete the record when ``token`` owns it; a missing record is a no-op."""
         ...
 
-    def sweep(self, namespace: str, apply: bool, expected: Mapping[str, int], deadline: Deadline) -> list[SweepResult]:
-        """Classify every record; with ``apply``, remove the stale ones whose revision ``expected`` still matches."""
+    def sweep(
+        self,
+        namespace: str,
+        apply: bool,
+        expected: Mapping[str, int],
+        deadline: Deadline,
+        *,
+        only: Collection[str] | None = None,
+    ) -> list[SweepResult]:
+        """Classify every record (only the tasks in ``only`` when given); with ``apply``, remove the stale ones whose
+        revision ``expected`` still matches."""
         ...
 
     def claim(self, token: str, record: Record, deadline: Deadline) -> Record:

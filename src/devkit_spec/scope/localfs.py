@@ -17,7 +17,7 @@ import os
 import socket
 import tempfile
 import time
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Collection, Iterator, Mapping
 from dataclasses import replace
 from pathlib import Path
 from typing import Protocol
@@ -335,7 +335,15 @@ class LocalRegistry:
                 )
             path.unlink()
 
-    def sweep(self, namespace: str, apply: bool, expected: Mapping[str, int], deadline: Deadline) -> list[SweepResult]:
+    def sweep(
+        self,
+        namespace: str,
+        apply: bool,
+        expected: Mapping[str, int],
+        deadline: Deadline,
+        *,
+        only: Collection[str] | None = None,
+    ) -> list[SweepResult]:
         results: list[SweepResult] = []
         with self._locked(namespace, deadline) as directory:
             for path in self._record_files(directory):
@@ -347,6 +355,8 @@ class LocalRegistry:
                     results.append(
                         SweepResult(path.name.removesuffix(RECORD_SUFFIX), path.name, Verdict.ERROR, exc.reason)
                     )
+                    continue
+                if only is not None and record.task_id not in only:
                     continue
                 result = SweepResult(
                     record.task_id, path.name, Verdict.ACTIVE, "", record.revision, record.spec, record.worktree

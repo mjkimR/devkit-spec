@@ -143,8 +143,8 @@ sequenceDiagram
 ## 5. Scenario 4: Worktree lifecycle with the scope registry
 
 Under `[tool.spec] worktree = true`, Route 2, Route 3 and bugfix tasks run in their own worktree; the skills keep the
-registry current because devkit's commands cannot call devkit-spec (`CAP-COLL-work-scope-registry`,
-`ADR-scope-maintenance-through-skills`).
+registry current, and devkit-spec's `devkit.post_finish` extension cleans up after a successful finish
+(`CAP-COLL-work-scope-registry`, `ADR-cleanup-after-worktree-finish`).
 
 ```mermaid
 sequenceDiagram
@@ -166,10 +166,10 @@ sequenceDiagram
     end
     Note over Agent: G3 integration approval
     Agent->>WT: worktree finish <slug> [--merge] (in the base)
-    WT-->>Agent: [WORKTREE_FINISHED: ...] or a refusal (task stays registered)
-    Agent->>Spec: scope sweep --apply (in the base)
-    Spec->>Reg: remove records whose worktree is gone (revision unchanged)
-    Agent->>Spec: proposal prune <slug> (in the base)
+    WT-->>Agent: [WORKTREE_FINISHED: ...] or a refusal (task stays registered, no extension)
+    WT->>Spec: post-finish extension (devkit.post_finish)
+    Spec->>Reg: remove the finished worktree's records (revision unchanged)
+    Spec-->>Agent: [NOTICE] removed scope record / empty proposal directory
 ```
 
 - `overlaps=` above 0 informs scheduling and integration order; it never blocks work.

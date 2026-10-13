@@ -210,9 +210,10 @@ The `spec-next` skill's post-handoff check follows up the reported lines.
 ### 4.8 Prune
 
 A handoff deletes the proposal in the worktree it runs in; merging that branch removes the tracked files from the
-base checkout but leaves their directories. `devkit spec proposal prune [<slug>]`, run in the base checkout after
-`devkit worktree finish`, removes `docs/proposals/PROP-<slug>/` (every `PROP-*` directory without a slug) when it
-holds no file at any depth (a symbolic link counts as a file). A directory holding any file is kept.
+base checkout but leaves their directories. `devkit spec proposal prune [<slug>]` removes `docs/proposals/PROP-<slug>/` (every `PROP-*` directory without a slug) when it
+holds no file at any depth (a symbolic link counts as a file). A directory holding any file is kept. devkit-spec's
+`devkit.post_finish` extension prunes the finished slug after a successful `devkit worktree finish`
+(`ADR-cleanup-after-worktree-finish`); the command remains for other checkouts and a failed extension.
 
 ### 4.9 Commands and Options
 
@@ -226,7 +227,7 @@ uv run devkit spec proposal new fast-engine --summary "Replaces the regex rule e
 uv run devkit spec proposal padr fast-engine "Use AST parser"        # decisions/PADR-use-ast-parser.md
 uv run devkit spec proposal handoff fast-engine                      # status: accepted
 uv run devkit spec proposal handoff fast-engine --direction-chosen   # draft/reviewing; the user chose the direction
-uv run devkit spec proposal prune [<slug>]                           # base checkout, after devkit worktree finish
+uv run devkit spec proposal prune [<slug>]                           # base checkout; finish's extension does it per slug
 ```
 
 | Option | Command | Meaning |

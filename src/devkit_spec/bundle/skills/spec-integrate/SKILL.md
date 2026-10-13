@@ -61,7 +61,7 @@ Who merges follows the policy. `pull_request=yes`: push the branch and open the 
 
 ### Step 6: Clean up after the confirmed merge
 - In the base checkout: `devkit worktree finish <slug>` (with `--merge` when `pull_request=no` and the merge is still to be done). It fast-forwards and pushes the base branch to its upstream when asked, removes the worktree, and deletes the branch when `delete_branch=yes`. A refusal (`WORKTREE_DIRTY`, `WORKTREE_UNMERGED`, `WORKTREE_MERGE_NOT_FF`, `WORKTREE_BASE_DIRTY`, `WORKTREE_BASE_BEHIND`, `WORKTREE_BRANCH_UNPUSHED`) stops the step that cannot proceed, and the same command resumes once it is resolved. A push that fails (`push=failed`, `WORKTREE_PUSH_FAILED`) or is rejected (`push=rejected`, `WORKTREE_PUSH_REJECTED`) does not stop the cleanup; `push=no-upstream` means nothing was pushed. Report what could not be removed or pushed and why.
-- After `devkit worktree finish` succeeds, run in the base `devkit spec scope sweep --apply` (the removed worktree's record is stale and is removed; finish first, so a refused finish leaves the task registered) and `devkit spec proposal prune <slug>` (the empty proposal directories the merged handoff left).
+- The finish's post-finish extension removes the task's scope record and empty proposal directories (`[NOTICE]` lines); on `POST_FINISH_EXTENSION_FAILED` run `devkit spec scope sweep --apply` and `devkit spec proposal prune <slug>`.
 
 ### Returns
 - Design choice not covered by the approval → G2 (`direction`).

@@ -58,9 +58,11 @@ integrated. It never grants or blocks a write, and it is not exclusive ownership
    see a partial record.
 8. **The journal is diagnostic**: it is never an input to an overlap, stale or stage verdict, and a failed append
    never changes an operation's result or exit code (only a `SPEC_SCOPE_JOURNAL_UNAVAILABLE` warning).
-9. **Sweep after finish**: the skills run `sweep --apply` in the base after `devkit worktree finish` succeeds, never
-   `release` before it, so a refused finish leaves the task registered. Rationale:
-   `ADR-scope-maintenance-through-skills`.
+9. **Cleanup after finish**: devkit-spec's `devkit.post_finish` extension (`devkit_spec.cleanup.after_finish`) runs in the
+   base after `devkit worktree finish` succeeds and removes the records whose worktree is the finished one, at the
+   revision it read (`sweep --apply` restricted to those tasks); other stale records stay for an explicit sweep.
+   Nothing is released before the finish, so a refused finish leaves the task registered. Rationale:
+   `ADR-cleanup-after-worktree-finish`.
 10. **Absolute shared path**: a configured `shared_path` MUST be absolute (a relative path would resolve to a
     different directory in each worktree).
 
@@ -212,8 +214,9 @@ devkit's `workflow next` and `worktree finish` know nothing of devkit-spec, so t
 - `spec-tasks` after writing `tasks.md`, and `spec-sync` after writing `reconcile.md`, run
   `devkit spec scope update --spec <dir>` in a registered worktree; `SPEC_SCOPE_TOKEN_MISSING` means the worktree
   takes no part and the step is skipped.
-- After `devkit worktree finish` succeeds, `devkit spec scope sweep --apply` in the base removes the record of the
-  removed worktree (now stale). `devkit spec scope release -w <worktree>` withdraws an abandoned task.
+- After `devkit worktree finish` succeeds, its post-finish extension removes the record of the removed worktree (item 9).
+  `devkit spec scope sweep --apply` removes other stale records; `devkit spec scope release -w <worktree>` withdraws
+  an abandoned task.
 
 ### 4.7 Configuration
 

@@ -1,0 +1,56 @@
+"""``devkit.post_finish`` extension: the spec cleanup after ``devkit worktree finish`` succeeded.
+
+devkit calls ``after_finish(base, result)`` in the base checkout once the task's branch is merged and its worktree
+removed. A project that deploys the ``spec`` bundle then needs two cleanups the merge cannot do:
+
+- ``docs/proposals/PROP-<slug>/``: a handoff deleted the proposal in the worktree; the merge removed its tracked
+  files here but leaves the empty directories (``prune_proposals``);
+- the task's work scope record: its worktree is gone, so the record is stale (``CAP-COLL-work-scope-registry``).
+  Only the records of the finished worktree are removed, at the revision read here, as ``scope sweep --apply``
+  would remove them; other stale records stay for an explicit sweep.
+
+Each cleanup returns one notice line per change. A project without the ``spec`` bundle is left alone.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from devkit.advisory import AdvisoryError
+
+from devkit_spec.errors import SpecError
+from devkit_spec.proposals.prune import prune_proposals
+from devkit_spec.scope.flow import journal, open_session, sweep_events
+from devkit_spec.scope.model import Verdict
+
+SOURCE = "post-finish"
+
+
+def after_finish(base: Path, result: dict[str, Any]) -> list[str | AdvisoryError] | None:
+    """Prune the slug's empty proposal directories and remove the finished worktree's scope records."""
+    if not (base / ".devkit" / "managed" / "spec").is_dir():
+        return None
+    lines: list[str | AdvisoryError] = []
+    slug = str(result.get("slug", ""))
+    try:
+        pruned = prune_proposals(base, slug)
+    except SpecError:  # a slug that cannot name a proposal has none to prune
+        pruned = []
+    lines += [f"removed empty proposal directory {path}" for path in pruned]
+    lines += _sweep(base, Path(str(result.get("path", ""))))
+    return lines or None
+
+
+def _sweep(base: Path, worktree: Path) -> list[str | AdvisoryError]:
+    session = open_session(base)
+    namespace = session.location.namespace
+    records, _ = session.registry.query(namespace, session.deadline)
+    finished = worktree.resolve()
+    expected = {r.task_id: r.revision for r in records if Path(r.worktree).resolve() == finished}
+    if not expected:
+        return []
+    results = session.registry.sweep(namespace, True, expected, session.deadline, only=set(expected))
+    notices: list[str | AdvisoryError] = list(journal(session.registry, namespace, sweep_events(results, SOURCE)))
+    removed = [result.task_id for result in results if result.verdict is Verdict.REMOVED]
+    return [f"removed the scope record of {task}" for task in removed] + notices
