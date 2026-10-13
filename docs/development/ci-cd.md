@@ -12,8 +12,8 @@ just ci        # lint-check, check (Pyright), test (pytest), rules-check (devkit
 
 - **Runner**: one Linux job. The repository is private, so macOS runner minutes are avoided; nothing in the package
   is platform-specific (`py3-none-any`).
-- **devkit checkout**: the job clones `https://github.com/mjkimR/devkit` to `../devkit` before `just init`, because
-  `pyproject.toml` takes devkit and devkit-embed from there as path sources.
+- **devkit**: `just init` installs it from the Git source pinned in `uv.lock` (`https://github.com/mjkimR/devkit.git`,
+  public), so the job needs no second checkout.
 - **Pull requests**: the governance check of a pull request judges the committed branch against its merge base:
 
   ```bash

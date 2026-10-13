@@ -34,9 +34,10 @@ dev = [
 ]
 
 [tool.uv.sources]
-# devkit is developed next to this repository (../devkit); CI clones it there too.
-devkit = { path = "../devkit/packages/devkit", editable = true }
-devkit-embed = { path = "../devkit/packages/devkit-embed", editable = true }
+# devkit comes from its GitHub main (no package index hosts it; the PyPI name belongs to another project).
+# These sources also apply when a consumer installs devkit-spec from Git.
+devkit = { git = "https://github.com/mjkimR/devkit.git", subdirectory = "packages/devkit" }
+devkit-embed = { git = "https://github.com/mjkimR/devkit.git", subdirectory = "packages/devkit-embed" }
 
 [build-system]
 requires = ["hatchling"]

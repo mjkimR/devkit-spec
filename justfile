@@ -5,7 +5,7 @@ set positional-arguments
 default:
     @just --list
 
-# Create or update the environment (devkit comes from ../devkit, editable)
+# Create or update the environment (devkit comes from its GitHub main, pinned in uv.lock)
 init:
     uv sync --no-active
 
@@ -37,3 +37,7 @@ rules-check *args:
 
 # Everything CI runs
 ci: lint-check check test rules-check
+
+# Run a command against an unpushed devkit checkout at ../devkit, e.g. `just local-devkit pytest`
+local-devkit *args:
+    uv run --no-active --with-editable ../devkit/packages/devkit --with-editable ../devkit/packages/devkit-advisory "$@"

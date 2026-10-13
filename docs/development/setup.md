@@ -11,13 +11,15 @@ How a contributor (person or AI coding agent) gets a working devkit-spec checkou
 
 ## 2. Clone Both Repositories
 
-devkit is developed next to this repository: `pyproject.toml` takes `devkit` from `../devkit/packages/devkit` and
-`devkit-embed` from `../devkit/packages/devkit-embed` as editable path sources, so a change on either side is visible
-to the other at once.
+devkit comes from its GitHub main: `pyproject.toml` takes `devkit` and `devkit-embed` from
+`https://github.com/mjkimR/devkit.git` as Git sources (`subdirectory = "packages/devkit"`, `"packages/devkit-embed"`),
+and `uv.lock` pins the commit. `uv lock --upgrade-package devkit` moves to the latest main. To try a devkit change
+before it is pushed, keep a devkit checkout at `../devkit` and run the command through `just local-devkit <command>`
+(for example `just local-devkit pytest`), which overlays that checkout as an editable install for one run.
 
 ```bash
-git clone https://github.com/mjkimR/devkit
-git clone https://github.com/mjkimR/devkit-spec   # beside it: ../devkit must exist
+git clone https://github.com/mjkimR/devkit-spec
+git clone https://github.com/mjkimR/devkit        # optional, beside it: only for `just local-devkit`
 cd devkit-spec
 just init                                         # uv sync --no-active
 ```

@@ -23,19 +23,29 @@ skills, two playbooks and the opt-in docs skeleton.
 ## Use in a project
 
 ```bash
-uv add --dev devkit devkit-spec   # by wheel URL or path until a release exists
+uv add --dev "devkit-spec @ git+https://github.com/mjkimR/devkit-spec"   # devkit comes with it (Git source)
 uv run devkit sync                # deploys the spec bundle (auto_select) with devkit's own bundles
 uv run devkit add spec:docs-skeleton  # optional: seed the docs/ skeleton (written once where absent, then project-owned)
 uv run devkit spec --version      # [VERSION: devkit-spec <version>]
+```
+
+The repository is private: Git must be able to read it. Locally `gh auth setup-git` (or any Git credential helper)
+is enough. Where only a token is available (CI, cloud agents), give Git the token through the environment, nothing
+written to disk; `uv.lock` keeps plain URLs:
+
+```bash
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0="url.https://x-access-token:${GITHUB_TOKEN}@github.com/.insteadOf"
+export GIT_CONFIG_VALUE_0="https://github.com/"
+uv sync --locked
 ```
 
 A project opts out of the bundle with `[presets] spec = false` in `.devkit/config.toml`.
 
 ## Development
 
-devkit is developed next to this repository: `pyproject.toml` takes it from `../devkit/packages/devkit` as an
-editable path dependency, so a change on either side is visible to the other at once. Clone
-`https://github.com/mjkimR/devkit` beside this checkout, then:
+devkit comes from its GitHub main through a Git source pinned in `uv.lock`; `just local-devkit <command>` tries
+an unpushed devkit checkout at `../devkit`. Then:
 
 ```bash
 just init        # uv sync

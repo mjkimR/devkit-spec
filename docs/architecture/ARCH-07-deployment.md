@@ -46,7 +46,7 @@ flowchart TD
 
 | Step | Command | Result |
 | :--- | :--- | :--- |
-| Install | `uv add --dev devkit devkit-spec` (by wheel path or URL until a release exists) | Both packages in the project environment; `devkit spec` is available through `devkit.commands` |
+| Install | `uv add --dev "devkit-spec @ git+https://github.com/mjkimR/devkit-spec"`; devkit and devkit-advisory follow through devkit-spec's Git sources (the private repository needs Git credentials: a credential helper, or a token given to Git through `GIT_CONFIG_*` environment variables) | Both packages in the project environment; `devkit spec` is available through `devkit.commands` |
 | Dense search (optional) | `uv add --dev 'devkit-spec[search]'` | Adds `devkit[search]` (numpy, tokenizers, the `devkit-embed` model); `devkit spec search --mode auto` then ranks hybrid |
 | Deploy | `uv run devkit sync` | The `core` preset of `spec` (declared `auto_select`) with devkit's own bundles; receipt in `.devkit/installation.json` |
 | Docs skeleton (optional) | `uv run devkit add spec:docs-skeleton` | Seeds the `docs/` skeleton once where files are absent; the files are project-owned afterwards (`ADR-docs-skeleton-is-opt-in`) |
@@ -75,10 +75,10 @@ flowchart TD
 
 ## 3. Development Environment
 
-devkit is developed next to this repository. `pyproject.toml` takes `devkit` from `../devkit/packages/devkit` and
-`devkit-embed` from `../devkit/packages/devkit-embed` as editable path sources (`[tool.uv.sources]`), so a change on
-either side is visible to the other at once. A contributor clones `https://github.com/mjkimR/devkit` beside this
-checkout and runs `just init` (`uv sync --no-active`). The repository consumes its own `spec` bundle through the
+`pyproject.toml` takes `devkit` and `devkit-embed` from `https://github.com/mjkimR/devkit.git` as Git sources
+(`[tool.uv.sources]`, subdirectories `packages/devkit` and `packages/devkit-embed`), pinned to a commit in `uv.lock`;
+a contributor runs `just init` (`uv sync --no-active`). An unpushed devkit change is tried with
+`just local-devkit <command>`, which overlays a checkout at `../devkit` for one run. The repository consumes its own `spec` bundle through the
 editable install (`.devkit/config.toml`: `spec = ["core", "docs-skeleton"]`). Details: [Local setup](../development/setup.md),
 [Development workflow](../development/workflow.md).
 
@@ -93,7 +93,7 @@ editable install (`.devkit/config.toml`: `spec = ["core", "docs-skeleton"]`). De
 ## 4. Continuous Integration
 
 CI runs the same recipe as a contributor, `just ci` (lint check, Pyright, pytest, `devkit rules check`), in one Linux
-job with devkit cloned at `../devkit`. The repository is private, so the job avoids macOS runners. The job definition
+job; devkit comes from the Git source in `uv.lock`. The repository is private, so the job avoids macOS runners. The job definition
 is not checked into this repository (no `.github/workflows/`). Details: [CI](../development/ci-cd.md).
 
 ---
