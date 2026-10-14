@@ -181,7 +181,7 @@ def test_rewrites_links_into_the_bundle(workspace: Path, write: Write) -> None:
     assert f"[blueprint](../../../{spec_rel}/target-docs.md)" in got
     assert f"[padr](../../decisions/{MONTH}/{STAMP}-pick-engine.md)" in got
     assert f"[mat](../../materials/{MONTH}/{STAMP}-linked/survey.md)" in got
-    assert f"[dir](../../../{spec_rel})" in got
+    assert f"[dir](../../../{spec_rel}/)" in got  # the trailing slash is kept
     assert "[decisions](../PROP-linked/decisions/)" in got
     # A link into the moved materials keeps pointing into them, as broken as before.
     assert f"[missing](../../materials/{MONTH}/{STAMP}-linked/absent/x.md)" in got
@@ -195,7 +195,7 @@ def test_rewrites_links_into_the_bundle(workspace: Path, write: Write) -> None:
     assert f"[back](../../../../{spec_rel}/spec.md)" in material
     assert f"[padr](../../../decisions/{MONTH}/{STAMP}-pick-engine.md#sec)" in material
     assert "[cap](../../../capabilities/lifecycle/CAP-X.md)" in material
-    assert f"[dirlink](../../../../{spec_rel})" in material
+    assert f"[dirlink](../../../../{spec_rel}/)" in material
     assert "[sibling](./notes.md)" in material
     assert (workspace / "specs/note.md").read_text(encoding="utf-8") == f"[p]({MONTH}/{STAMP}-linked/spec.md)\n"
     rewritten = {(r.path, r.line, r.old): r.new for r in result.rewritten if r.kind == "link"}

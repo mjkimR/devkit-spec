@@ -777,7 +777,7 @@
     },
     ".devkit/managed/advisory/bundle.toml": {
       "mode": 420,
-      "sha256": "a8ba8cfe0b1b6f8a3e55af6aa935a7395bdf075625ffc9dd461af657a66871cc"
+      "sha256": "e9913636f7939ef3658ba98f4a2afd0bc66419dee96064089222cfbad030766f"
     },
     ".devkit/managed/advisory/instructions/agent-advisory.md": {
       "mode": 420,
@@ -789,11 +789,11 @@
     },
     ".devkit/managed/devkit/bundle.toml": {
       "mode": 420,
-      "sha256": "103f47ead60b1095de359e4e06ca871b40103a2c86dc918ab3d8e660abc036b3"
+      "sha256": "202db55b9c1a361f225198bf31a5b6c1d624a060b84105c29836cc14815cea1c"
     },
     ".devkit/managed/devkit/instructions/consumption.md": {
       "mode": 420,
-      "sha256": "98d361c871bd00d292f06026ef5020ee1065766590ab0a430a547f960cdbbf1a"
+      "sha256": "2e5bf4344583d7c58aae7540f4a13c098dfc9251004cb602e91ac203aebc10df"
     },
     ".devkit/managed/devkit/instructions/devkit-run.md": {
       "mode": 420,
@@ -1108,15 +1108,15 @@
   "packages": [
     {
       "bundle": "advisory",
-      "bundle_version": "0.1.0",
+      "bundle_version": "0.1.1",
       "package": "devkit-agt",
-      "package_version": "0.1.0"
+      "package_version": "0.1.1"
     },
     {
       "bundle": "devkit",
-      "bundle_version": "0.1.0",
+      "bundle_version": "0.1.1",
       "package": "devkit-agt",
-      "package_version": "0.1.0"
+      "package_version": "0.1.1"
     },
     {
       "bundle": "spec",
@@ -1244,6 +1244,6 @@
   },
   "tool": {
     "package": "devkit-agt",
-    "version": "0.1.0"
+    "version": "0.1.1"
   }
 }

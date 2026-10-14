@@ -225,7 +225,7 @@ proposal as it was; their `feedback/` is scanned, since feedback stays current.
   copy, each PADR to its ADR, anything under a moved `materials/` to the same path under the moved directory
   (whether or not the file exists; a link into a `materials/` that was not moved is `unmapped`), each carried file to
   its new path, and the bundle directory to the spec bundle. URLs, root-relative and fragment-only links are left
-  alone; a `#fragment` or `?query` is kept. Files written for the bundle's location (the carried `spec.md`, the
+  alone; a `#fragment`, a `?query` and a trailing `/` are kept. Files written for the bundle's location (the carried `spec.md`, the
   copied blueprint, the promoted ADRs, the moved materials and carried files) have their links resolved from where
   they were written, so a link outside
   the bundle keeps its target and one that still resolves to the same file keeps its spelling.
