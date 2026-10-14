@@ -41,3 +41,10 @@ exclude = ["docs/decisions/**", "docs/proposals/**", "docs/materials/**", "specs
 #   shared_path = "/srv/devkit-spec-scope"  # example; string, an absolute directory (or one starting with ~); unset: devkit-spec-scope/ in the Git common directory; clones that share the path and the namespace share one registry
 #   namespace = "team"  # example; string of letters, digits, '.', '_' and '-', not starting with '.'; unset: a hash of the Git common directory
 #   timeout = 10  # integer from 1 to 300; seconds one registry command may wait
+
+## Capture repository-owned assets and upstream tools used to develop devkit-spec.
+[tool.spec.feedback]
+capture = "observed"
+coverage = "repo-and-upstream"
+detail = "detailed"
+reminder = "contextual"

@@ -122,7 +122,7 @@ devkit spec list feedback --status open --where severity=critical -n 0   # open 
 [REF: US-find-docs path=docs/stories/core/US-find-docs.md status=active fields=body,stories count=2]
 [REF: US-removed path=- status=- fields=body count=1]
 [DOCUMENT: SPEC-search kind=spec status=draft path=specs/2026-10/20261002-search/spec.md tasks=1/2 title="Search"]
-[DOCUMENT: FB-slow-sync kind=feedback status=open path=specs/2026-10/feedback/20261013-slow-sync.md tasks=- severity=critical scope=bundle target="devkit sync" title="Sync blocks"]
+[DOCUMENT: FB-slow-sync kind=feedback status=open path=specs/2026-10/feedback/20261013-slow-sync.md tasks=- severity=critical scope=upstream target="devkit sync" title="Sync blocks"]
 [PAGE: total=42 offset=0 limit=20 count=20 next=20]
 [NEXT_CMD: devkit spec list spec --limit 20 --offset 20]
 ```

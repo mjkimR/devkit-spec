@@ -13,6 +13,12 @@ worktree = true   # route 2 and above (formal specs, proposals) run in a task wo
 name = "api"
 path = "services/api"
 
+[tool.spec.feedback]
+capture = "observed"       # concrete observations recorded autonomously; or requested-only
+coverage = "repo"          # repository-owned tools and assets; or repo-and-upstream
+detail = "standard"        # brief, standard or detailed
+reminder = "contextual"    # contextual or off
+
 [tool.spec.scope]          # the work-scope registry (devkit spec scope); every key is optional
 shared_path = "/srv/scope" # absolute; default: devkit-spec-scope/ in the Git common directory
 namespace = "team"         # default: a hash of the Git common directory
@@ -40,6 +46,12 @@ PACKAGES_DIR = "docs/packages"
 SCOPE_NAMESPACE = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
 SCOPE_TIMEOUT_DEFAULT = 10
 SCOPE_TIMEOUT_RANGE = (1, 300)
+FEEDBACK_CHOICES = {
+    "capture": ("observed", "requested-only"),
+    "coverage": ("repo", "repo-and-upstream"),
+    "detail": ("brief", "standard", "detailed"),
+    "reminder": ("contextual", "off"),
+}
 
 
 @dataclass(frozen=True)
@@ -68,10 +80,21 @@ class ScopeConfig:
 
 
 @dataclass(frozen=True)
+class FeedbackConfig:
+    """Repository-first observation policy consumed by the feedback skills through ``spec policy``."""
+
+    capture: str = "observed"
+    coverage: str = "repo"
+    detail: str = "standard"
+    reminder: str = "contextual"
+
+
+@dataclass(frozen=True)
 class SpecConfig:
     worktree: bool = True
     namespaces: tuple[Namespace, ...] = field(default=())
     scope: ScopeConfig = field(default=ScopeConfig())
+    feedback: FeedbackConfig = field(default=FeedbackConfig())
 
 
 def template() -> list[TemplateTable]:
@@ -130,6 +153,36 @@ def template() -> list[TemplateTable]:
             path=("scope",),
             help="The work-scope registry of `devkit spec scope`.",
         ),
+        TemplateTable(
+            tuple(
+                TemplateKey(
+                    key,
+                    getattr(defaults.feedback, key),
+                    help_text,
+                    kind=" | ".join(f'"{choice}"' for choice in FEEDBACK_CHOICES[key]),
+                )
+                for key, help_text in (
+                    (
+                        "capture",
+                        "observed records concrete observations autonomously; requested-only waits for explicit feedback requests",
+                    ),
+                    (
+                        "coverage",
+                        "repository-owned assets first; repo-and-upstream also covers tools used from upstream",
+                    ),
+                    (
+                        "detail",
+                        "brief: context and evidence; standard: kind-specific assessment; detailed: reproduction, versions and conditions",
+                    ),
+                    (
+                        "reminder",
+                        "contextual suggests a sweep for reusable observations; off disables optional reminders",
+                    ),
+                )
+            ),
+            path=("feedback",),
+            help="Feedback capture policy; explicit user feedback requests override autonomous capture and coverage limits.",
+        ),
     ]
 
 
@@ -139,15 +192,35 @@ def read_spec_config(root: Path) -> SpecConfig:
     table = tool.get(TABLE, {}) if isinstance(tool, dict) else None
     if not isinstance(table, dict):
         raise SpecConfigError("config tool.spec: expected a table")
-    unknown = sorted(set(table) - {"worktree", "namespaces", "scope"})
+    unknown = sorted(set(table) - {"worktree", "namespaces", "scope", "feedback"})
     if unknown:
         raise SpecConfigError(f"config tool.spec: unknown keys: {', '.join(unknown)}")
     worktree = table.get("worktree", True)
     if not isinstance(worktree, bool):
         raise SpecConfigError(f"config tool.spec.worktree: expected true or false, got {worktree!r}")
     return SpecConfig(
-        worktree=worktree, namespaces=_namespaces(table.get("namespaces", [])), scope=_scope(table.get("scope", {}))
+        worktree=worktree,
+        namespaces=_namespaces(table.get("namespaces", [])),
+        scope=_scope(table.get("scope", {})),
+        feedback=_feedback(table.get("feedback", {})),
     )
+
+
+def _feedback(value: object) -> FeedbackConfig:
+    where = "config tool.spec.feedback"
+    if not isinstance(value, dict):
+        raise SpecConfigError(f"{where}: expected a table")
+    unknown = sorted(set(value) - set(FEEDBACK_CHOICES))
+    if unknown:
+        raise SpecConfigError(f"{where}: unknown keys: {', '.join(unknown)}")
+    defaults = FeedbackConfig()
+    settings: dict[str, str] = {}
+    for key, choices in FEEDBACK_CHOICES.items():
+        entry = value.get(key, getattr(defaults, key))
+        if not isinstance(entry, str) or entry not in choices:
+            raise SpecConfigError(f"{where}.{key}: expected {' | '.join(choices)}, got {entry!r}")
+        settings[key] = entry
+    return FeedbackConfig(**settings)
 
 
 def _scope(value: object) -> ScopeConfig:

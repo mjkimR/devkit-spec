@@ -160,9 +160,9 @@ def feedback(workspace: Path, write: Write) -> Path:
         "docs/capabilities/core/CAP-CORE-a.md",
         _doc("CAP-CORE-a", status="open", stories="[US-x, US-y]"),
     )
-    _feedback(write, "a", severity="critical", scope="bundle", target='"devkit spec list"', recurring="true")
+    _feedback(write, "a", severity="critical", scope="upstream", target='"devkit spec list"', recurring="true")
     _feedback(write, "b", severity="blocked", scope="repo", created_at="2026-10-13", at="2026-10-13T05:25:43Z")
-    _feedback(write, "c", severity="noise", scope="bundle")
+    _feedback(write, "c", severity="noise", scope="upstream")
     _feedback(write, "d", severity="Critical", scope="repo")
     _feedback(write, "e", severity="workaround")
     _feedback(write, "f")
@@ -182,7 +182,7 @@ def test_where_keeps_documents_whose_field_is_one_of_the_values(feedback: Path) 
 
 def test_where_items_and_other_filters_combine_with_and(feedback: Path) -> None:
     # AC-02: a document without the field (the capability) never matches.
-    assert _ids(feedback, "--where", "severity=critical", "--where", "scope=bundle", "--status", "open") == ["FB-a"]
+    assert _ids(feedback, "--where", "severity=critical", "--where", "scope=upstream", "--status", "open") == ["FB-a"]
 
 
 def test_where_matches_booleans_and_list_elements(feedback: Path) -> None:
@@ -208,10 +208,10 @@ def test_feedback_is_ordered_by_severity_within_its_kind(feedback: Path) -> None
 
 def test_feedback_lines_and_records_carry_severity_scope_and_target(feedback: Path) -> None:
     # AC-06
-    lines = _spec("list", "--where", "scope=bundle", "--where", "severity=critical", workspace=feedback).stdout
+    lines = _spec("list", "--where", "scope=upstream", "--where", "severity=critical", workspace=feedback).stdout
     assert lines.splitlines()[0] == (
         "[DOCUMENT: FB-a kind=feedback status=open path=specs/2026-10/feedback/20261013-a.md tasks=- "
-        'severity=critical scope=bundle target="devkit spec list" title=a]'
+        'severity=critical scope=upstream target="devkit spec list" title=a]'
     )
     capability = _spec("list", "capability", workspace=feedback).stdout.splitlines()[0]
     assert "severity=" not in capability and "scope=" not in capability and "target=" not in capability
@@ -220,7 +220,7 @@ def test_feedback_lines_and_records_carry_severity_scope_and_target(feedback: Pa
     }
     assert (records["FB-a"]["severity"], records["FB-a"]["scope"], records["FB-a"]["target"]) == (
         "critical",
-        "bundle",
+        "upstream",
         "devkit spec list",
     )
     assert (records["FB-f"]["severity"], records["FB-f"]["scope"], records["FB-f"]["target"]) == (None, None, None)
@@ -248,3 +248,12 @@ def test_next_page_command_repeats_every_where(feedback: Path) -> None:
         "[NEXT_CMD: devkit spec list feedback --where severity=critical,blocked --where scope=repo "
         f"-w {feedback} --limit 1 --offset 1]"
     )
+
+
+def test_feedback_with_unknown_owner_remains_discoverable(feedback: Path, write: Write) -> None:
+    _feedback(write, "ambiguous-owner", severity="workaround", scope="unknown", target='"devkit workflow next"')
+    assert _ids(feedback, "feedback", "--status", "open", "--where", "scope=unknown") == ["FB-ambiguous-owner"]
+    payload = json.loads(
+        _spec("list", "feedback", "--where", "scope=unknown", "--format", "json", workspace=feedback).stdout
+    )
+    assert payload["documents"][0]["target"] == "devkit workflow next"

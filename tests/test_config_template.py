@@ -12,7 +12,7 @@ from devkit_spec.config import Namespace, ScopeConfig, SpecConfig, read_spec_con
 
 
 def test_the_template_renders() -> None:
-    assert [table.path for table in check_tables(template())] == [(), ("namespaces",), ("scope",)]
+    assert [table.path for table in check_tables(template())] == [(), ("namespaces",), ("scope",), ("feedback",)]
 
 
 def test_uncommented_defaults_are_the_defaults(workspace: Path, write: Write) -> None:

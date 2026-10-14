@@ -24,6 +24,7 @@ def test_defaults(workspace: Path) -> None:
         "[GATE_POLICY: direction policy=ask source=default]",
         "[GATE_POLICY: integration policy=ask source=default]",
         "[GIT_POLICY: worktree=yes pull_request=no delete_branch=yes setup=-]",
+        "[FEEDBACK_POLICY: capture=observed coverage=repo detail=standard reminder=contextual]",
     ]
 
 
@@ -37,7 +38,7 @@ def test_configured(workspace: Path, write: Write) -> None:
     assert "[GATE_POLICY: direction policy=auto source=config]" in lines
     assert "[GATE_POLICY: handoff policy=off source=config]" in lines
     assert "[STAGE_POLICY: collect-feedback state=off]" in lines
-    assert lines[-1] == '[GIT_POLICY: worktree=no pull_request=no delete_branch=yes setup="uv sync"]'
+    assert lines[-2] == '[GIT_POLICY: worktree=no pull_request=no delete_branch=yes setup="uv sync"]'
     payload = json.loads(_policy(workspace, "--format", "json").stdout)
     assert payload["git"] == {"worktree": False, "pull_request": False, "delete_branch": True, "setup": "uv sync"}
     assert payload["stages_off"] == ["collect-feedback"]

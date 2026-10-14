@@ -16,7 +16,7 @@ Read `devkit spec policy` before routing work. Use the effective approval and Gi
 1. **No Session Hijacking (`MUST NOT`)**:
    - The agent MUST NOT unilaterally declare the user's session finished or stop working on active tasks without user direction.
 2. **Contextual Retrospective Reminder (`SHOULD`)**:
-   - When a completed task yields reusable learnings or harness observations worth recording, the agent SHOULD suggest `/spec-feedback` for an optional session observation sweep. Simple proposal additions, wording edits, and routine completions do not warrant a reminder by themselves.
+   - Under `FEEDBACK_POLICY reminder=contextual`, reusable observations from completed work SHOULD prompt an optional `/spec-feedback` sweep. Under `reminder=off`, omit reminders. Routine completions, proposal additions and wording edits alone need no reminder.
 3. **Progressive Disclosure (`SHOULD`)**:
    - Load only the instructions for the current phase rather than every template, instruction or playbook up front.
 

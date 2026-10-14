@@ -1,0 +1,7 @@
+request: gate:intent
+kind: approve
+action: accept
+workflow: direct-delivery
+stage: intent
+note: User requested implementation of the agreed repository-first feedback settings.
+at: '2026-10-14T11:39:44.968885Z'

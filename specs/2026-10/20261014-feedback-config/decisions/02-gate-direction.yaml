@@ -1,0 +1,8 @@
+request: gate:direction
+kind: approve
+action: accept
+workflow: direct-delivery
+stage: direction
+note: User approved the proposed defaults and repo/upstream/unknown scope before requesting
+  implementation.
+at: '2026-10-14T11:39:45.275641Z'

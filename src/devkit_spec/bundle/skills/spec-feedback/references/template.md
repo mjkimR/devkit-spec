@@ -6,7 +6,7 @@ Read this when writing a feedback file (step 3 of the `spec-feedback` recording 
 ---
 id: FB-<name>
 title: <title>
-scope: repo                         # repo | bundle  (repo = this repository's rules, playbooks, docs or own bundle; bundle = the spec bundle and the devkit commands it drives)
+scope: repo                         # repo | upstream | unknown; ownership of the observed asset, filled by the agent
 kind: friction                      # friction | suggestion | change-request | question
 category: other                     # instruction-conflict | tool-error | spec-ambiguity | context-overflow | missing-capability | docs-mismatch | redundant-step | token-cost | other
 target: <asset path or command>     # e.g. the spec-specify skill, devkit spec list, CAP-<AREA>-<slug>
@@ -22,7 +22,7 @@ created_at: <YYYY-MM-DD>
 # [FB-<name>] <title>
 
 <!--
-One incident per file. Keep it concise enough to write within 1 minute.
+One incident per file. Use the configured detail level; brief/standard should take about 1 minute.
 If kind is friction / question, fill out Section 1 and remove Section 2.
 If kind is suggestion / change-request, fill out Section 2 and remove Section 1.
 Evidence must include only direct observations: instructions, doc excerpts, command outputs, file states. Do not quote user utterances.
@@ -53,3 +53,26 @@ If category is other, specify the nature in the first line below.
 <Directly observed instruction/doc excerpts, command output, or file state. Do not include user utterances.>
 ```
 ````
+
+## Configured detail
+
+Read `FEEDBACK_POLICY detail` from `devkit spec policy`. All levels keep complete frontmatter, one observation per
+file, direct Evidence, the agent's own assessment and no secrets, tokens or personal data.
+
+- **brief**: retain the applicable section with context/current procedure, actual observation or proposed change,
+  a short assessment and Evidence. Omit unused template bullets.
+- **standard**: fill the applicable kind-specific section and Evidence as shown above.
+- **detailed**: use standard detail and add the following section before Evidence. Fill missing facts with
+  `unknown`; do not fabricate output, version numbers or reproduction results. Use `not applicable` when a
+  field does not apply. Do not rerun risky or expensive commands just to complete the record.
+
+```markdown
+## Diagnostic Details
+
+- **Reproduction**: Observed steps and command, or unknown when not reproduced.
+- **Expected / Actual**: Expected behavior and the directly observed result.
+- **Versions**: Known tool/package versions or revision; unknown for unavailable versions.
+- **Conditions**: Relevant repository, configuration, host and occurrence conditions, without personal data.
+- **Workarounds Attempted**: Attempts and their outcomes, or not attempted.
+- **Related Assets**: Observed command, source paths, instructions or document IDs.
+```

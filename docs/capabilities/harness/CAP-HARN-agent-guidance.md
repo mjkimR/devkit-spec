@@ -1,7 +1,7 @@
 ---
 id: CAP-HARN-agent-guidance
 title: Agent Guidance Assets
-summary: The agent-facing content of the spec bundle that devkit sync deploys (constitution, instructions, the AGENTS.md guidance pointer, the spec* skills and their references, role contracts, playbooks, document templates and the opt-in docs skeleton) and the core and docs-skeleton presets that select it.
+summary: "Agent guidance deployed by the spec bundle: constitution, skills, instructions, roles, playbooks, templates and optional docs skeleton, including configurable repository-first feedback capture and hygiene."
 area: harness
 status: active
 created_at: 2026-10-13
@@ -148,6 +148,36 @@ final change report), `spec/references/worktree.md` (task worktree start, work, 
 `spec-delegate/references/hosts.md` (spawning a role on each host), `spec-specify/references/feature.md` and
 `bugfix.md`, `spec-feedback/references/sweep.md` and `template.md`, `spec-rule/references/config.md` and
 `templates.md`.
+
+### Feedback capture policy
+
+`spec-feedback` reads `FEEDBACK_POLICY` from `devkit spec policy` (`CAP-DLV-project-policy`). Repository-owned
+rules, skills, instructions, playbooks, workflows, roles, script/CLI tools, templates, overrides and Living Spec
+documents are the base targets. `coverage=repo-and-upstream` additionally covers upstream tools used in the
+session, including devkit and devkit-spec. Users describe the observation; agents never require tool ownership
+classification or frontmatter from them.
+
+- `capture=observed` records concrete observations autonomously; `requested-only` records only explicit requests.
+  Enabled workflow sweeps under requested-only write a passing policy-skip envelope without recording observations;
+  S-Lane reports the skip without an envelope. Stages switched off produce no sweep envelope.
+- Explicit observation and session sweep requests override autonomous capture, coverage and stage restrictions;
+  requested sweeps write no envelope.
+- `detail=brief` keeps context, observed result or proposed change, assessment and Evidence; `standard` fills the
+  kind-specific template. `detailed` adds reproduction, expected/actual results, versions, conditions, attempted
+  workarounds and related assets. Missing information is `unknown`; facts are never invented. Detailed capture
+  is not constrained by the brief/standard one-minute writing budget.
+- `reminder=contextual` suggests an optional sweep when reusable observations warrant it; `off` disables optional
+  reminders without changing required stages.
+
+Feedback uses `scope: repo | upstream | unknown`, determined by ownership rather than product name. An asset
+developed in this repository is `repo`, even if it is shipped to other repositories; an installed upstream copy
+is `upstream`. Uncertain ownership or cross-tool causes use `unknown` and stay eligible for recording. The
+observed `target` is separate from the eventual resolution destination. Deduplication covers the open backlog
+across all namespaces, including completed specs.
+
+Hygiene determines ownership and proposes local fixes or upstream report drafts; one observation may link several
+resolution destinations. External submission requires explicit authorization, and `forwarded` requires an actual
+report location. Pending ownership or submission leaves feedback open. Capture never changes feedback status.
 
 ### 4.5 Playbooks
 

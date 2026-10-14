@@ -1,9 +1,9 @@
 ---
 name: spec-feedback
-description: 'Record repository or spec-bundle observations: friction, inefficiency, guessed decisions and rule/playbook needs. Use for user feedback or session sweep requests (/spec-feedback). Requested sweeps ignore the collect-feedback stage switch and write no envelope.'
+description: 'Record repository-owned tool and asset observations, optionally including upstream tools: friction, inefficiency, guessed decisions and rule/playbook needs. Use for user feedback or session sweep requests (/spec-feedback). Requested sweeps ignore the collect-feedback stage switch and write no envelope.'
 ---
 
-# spec-feedback: Repository & Spec Bundle Feedback Capture
+# spec-feedback: Repository-First Feedback Capture
 
 One observation, one file, committed with the work. Feedback files are non-blocking: they stay `status: open` through completion and integration. Promoting, dismissing or forwarding them happens only in a separate feedback-hygiene session the user asks for; this skill only records.
 
@@ -20,10 +20,33 @@ Record when one of these is true. Agents are expected to record freely; the cost
 | `change-request` | A specific procedure or instruction should be changed in a specific way | bundle fix |
 | `question` | An instruction was ambiguous and you decided by guess; a human should confirm | guide or skill wording |
 
-Two scopes:
+Repository-owned assets are the base targets: rules, skills, instructions, playbooks, workflows, role contracts,
+script/CLI tools, templates, Living Spec documents and in-repository bundles, including project overrides.
 
-- `scope: repo`: the observation is about **this repository**: a rule it needs, a playbook it lacks, a mismatch in its own Living Spec, its own in-repository bundle.
-- `scope: bundle`: the observation is about **the `spec` bundle itself**: a skill, the spec constitution (`devkit get-context spec`), an instruction, a workflow, a role contract, a shipped rule or template, or a `devkit spec` / `devkit workflow` command it drives.
+Read `devkit spec policy` before recording. Its `FEEDBACK_POLICY` line (JSON `feedback`) controls autonomous capture:
+
+- `capture=observed`: record concrete observations as they arise and during enabled stage sweeps.
+- `capture=requested-only`: record only when the user explicitly requests feedback; stage sweeps produce policy-skip evidence.
+- `coverage=repo`: collect repository-owned assets by default.
+- `coverage=repo-and-upstream`: also collect upstream tools used in the work, including devkit, devkit-spec and other tools.
+- `detail=brief|standard|detailed`: follow the detail contract in the [template](references/template.md).
+- `reminder=contextual|off`: governs optional reminders from the router, not mandatory stage execution.
+
+Explicit requests to record an observation or sweep the session override autonomous capture, coverage and stage
+restrictions. They still follow evidence, detail, privacy and hygiene constraints. Never ask the user to classify a
+tool, choose its maintainer or supply frontmatter; the agent fills these fields from observations.
+
+Ownership scopes:
+
+- `scope: repo`: this repository owns the affected asset. A spec skill developed in devkit-spec is `repo`; an
+  installed copy used by another repository is `upstream`. A project override is `repo`.
+- `scope: upstream`: an installed or external tool or bundle owns the affected asset. devkit and devkit-spec can
+  both be recorded in the same backlog without separate intake procedures.
+- `scope: unknown`: ownership is uncertain or the issue spans repository and upstream assets. Record the observed
+  target and defer ownership to hygiene; uncertainty must not block relevant feedback capture.
+
+`target` identifies the observed command or asset, not the presumed resolution owner. Hygiene determines where
+it is fixed and may link one observation to several destinations.
 
 Do not record: ordinary task defects (fix them), rejected non-goals, or ideas with no concrete target.
 
@@ -37,7 +60,7 @@ Do not record: ordinary task defects (fix them), rejected non-goals, or ideas wi
    - Work without a spec bundle (S-Lane, investigation or review): `specs/<YYYY-MM>/feedback/<YYYYMMDD>-<name>.md`, current month, today's date.
    - Create the `feedback/` directory if it does not exist. Never write under `.devkit/` or `docs/`.
    - `<name>` is kebab-case and not used by another feedback file (`devkit spec resolve FB-<name>` finds none).
-3. **Write one file from the [feedback template](references/template.md).** Fill the frontmatter completely; set `id: FB-<name>` (no date) and the H1 `# [FB-<name>] <title>` (`devkit rules fix <file>` aligns both with the path). Keep the body to the section for your `kind` plus **Evidence** (quoted instruction text or a command-output excerpt). One minute of writing is the budget.
+3. **Write one file from the [feedback template](references/template.md).** Fill the frontmatter completely; set `id: FB-<name>` (no date) and the H1 `# [FB-<name>] <title>` (`devkit rules fix <file>` aligns both with the path). Keep the body to the section for your `kind` plus **Evidence** (quoted instruction text or a command-output excerpt). Use the configured detail level; brief and standard records should take about one minute. Detailed records prioritize useful evidence over that budget.
    - `target` is the most important field: the asset path or command a maintainer should open.
    - `origin: user` when the user raised the point; otherwise `agent`. A user-raised item is a flag, not a transcript: do not quote the user's words anywhere in the file.
    - **Evidence is what you observed yourself**: instruction or document text, command output, file state. The user's remark is not evidence. If the only support is "the user said so", the item is a `question`, not a `change-request`.
@@ -77,4 +100,4 @@ For a single observation, one line:
 
 ## 5. Sweep (stage or user request)
 
-For a workflow stage sweep (`collect-feedback`, or S-Lane's `report-session`) or an explicit user-requested session sweep, read the [sweep procedure](references/sweep.md). Requested sweeps ignore the stage switch (`[workflow.stages] collect-feedback = "off"`) and write no envelope. Deduplication covers the full open backlog: `devkit spec list feedback --status open -n 0`.
+For a workflow stage sweep (`collect-feedback`, or S-Lane's `report-session`) or an explicit user-requested session sweep, read the [sweep procedure](references/sweep.md). Requested sweeps override autonomous capture and coverage limits and ignore the stage switch (`[workflow.stages] collect-feedback = "off"`) and write no envelope. Deduplication covers the full open backlog: `devkit spec list feedback --status open --all-namespaces -n 0`.

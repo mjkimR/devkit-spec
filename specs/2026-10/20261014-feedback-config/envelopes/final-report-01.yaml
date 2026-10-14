@@ -1,0 +1,14 @@
+kind: final-report
+stage: final-change-report
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-14T11:47:53.922903Z'
+status: completed
+summary: Repository-first feedback defaults, configurable capture/detail/reminders, optional upstream coverage and policy output implemented. This worktree uses detailed repository-and-upstream capture.
+findings: []
+assumptions:
+- Changes are staged in feedback-config worktree; original checkout is not integrated and no commit was authorized.
+checks:
+  tests: PASS 689 tests; just ci
+  build: PASS uv build wheel and source distribution
+  lint: PASS just lint-check, just check, just rules-check --staged
