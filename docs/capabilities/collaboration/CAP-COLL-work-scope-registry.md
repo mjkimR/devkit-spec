@@ -137,9 +137,12 @@ sides. Ranking and weighting are the consumer's.
 - **Token**: saved in the worktree's own Git directory as `devkit-spec-scope-token` (mode 0600), never in the working
   tree or the registry; it is written to a temporary file and linked into place, so it is created exclusively and
   never read half-written.
-- **Atomicity**: an exclusive `flock` on `<shared>/<namespace>/.lock`; a record is published by writing a `.tmp-*`
-  file in the same directory and renaming it over the record. Temp files an interrupted publish left behind are
-  removed at the next lock acquisition, and the OS releases the lock of a process that died.
+- **Atomicity**: an exclusive `flock` on `<shared>/<namespace>/.lock` (devkit's `file_lock`; the lock file is created
+  with mode 0600, so the processes sharing a namespace run as one user, and a symbolic link or anything but a
+  regular file there is `SPEC_SCOPE_SHARED_PATH_UNAVAILABLE`);
+  a record (mode 0644) is published with devkit's `atomic_write_text`: a `.<record>.devkit-*.tmp` file in the same
+  directory, synced and renamed over the record. Temp files an interrupted publish left behind are removed at the
+  next lock acquisition, and the OS releases the lock of a process that died.
 - **Operations** (`devkit_spec.scope.Registry`; the local file adapter `LocalRegistry` is the only implementation):
   - `register`: creates the record; an existing task ID in the namespace is `SPEC_SCOPE_TASK_EXISTS`. A second record
     for the same worktree and host marks both `shared_worktree` (a `SPEC_SCOPE_SHARED_WORKTREE` warning).
@@ -154,8 +157,9 @@ sides. Ranking and weighting are the consumer's.
     stale record is removed (`removed`, `worktree-missing`) only if its revision still equals the one read before,
     else `error` with `stale-revision`.
   - `claim`: reserved for adapters that can publish exclusively; `SPEC_SCOPE_UNSUPPORTED`.
-- **Deadline**: each command runs under `[tool.spec.scope] timeout` (default 10 seconds): the lock wait and every Git
-  subprocess take the time left, and a Git process that outlives it is killed. Running out is `SPEC_SCOPE_TIMEOUT`
+- **Deadline**: each command runs under `[tool.spec.scope] timeout` (default 10 seconds), one devkit `Deadline` whose
+  expiry raises `SPEC_SCOPE_TIMEOUT`: the lock wait (`file_lock`) and every Git subprocess (`run_git`) take the time
+  left, and a Git process that outlives it is killed. Running out is `SPEC_SCOPE_TIMEOUT`
   (`[SCOPE_ACK: status=timeout]` for an update); retry an update whose outcome was not seen with `--request-id`.
 - **Journal**: each namespace keeps an append-only `journal.jsonl`, one JSON event per line, appended under the
   namespace lock with its own 5-second deadline, so an operation that timed out is still recorded. An event has `at`
@@ -263,7 +267,7 @@ A malformed table is `SPEC_CONFIG_INVALID` (`CAP-DLV-project-policy`).
 | `SPEC_SCOPE_TIMEOUT` | `ERROR` (`DEFER`) | `ScopeTimeoutError` | The lock or Git outlasted `timeout`. |
 | `SPEC_SCOPE_LOCK_UNSUPPORTED` | `ERROR` (`BLOCKED`) | `ScopeLockUnsupportedError` | No `fcntl.flock` on this platform. |
 | `SPEC_SCOPE_NAMESPACE_INVALID` | `ERROR` (`INPUT_ERROR`) | `ScopeNamespaceError` | An adapter call names an empty, dotted or nested namespace. |
-| `SPEC_SCOPE_SHARED_PATH_UNAVAILABLE` | `ERROR` (`INTERACTION`) | `ScopeSharedPathError` | The registry directory (or the token file) cannot be created, read or written. |
+| `SPEC_SCOPE_SHARED_PATH_UNAVAILABLE` | `ERROR` (`INTERACTION`) | `ScopeSharedPathError` | The registry directory (or the token file) cannot be created, read or written, or its `.lock` is not a regular file. |
 | `SPEC_SCOPE_UNSUPPORTED` | `ERROR` (`MAINTENANCE`) | `ScopeUnsupportedError` | The reserved `claim` operation was called. |
 | `SPEC_SCOPE_ACK_FAILED` | `ERROR` (`MAINTENANCE`) | `ScopeAckFailedError` | An update failed for a cause without its own code. |
 | `SPEC_SCOPE_RECORD_INVALID` | `WARNING` | `ScopeRecordInvalidWarning` | A record file cannot be read (an `ERROR` when it is this worktree's record during update or release). |

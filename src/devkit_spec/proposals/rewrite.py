@@ -1,7 +1,9 @@
 """Rewrite what pointed into a handed-off proposal: relative Markdown links and document ID references.
 
-``RelocationPlan`` says where each part of the proposal went. The rewriting never fails a handoff: a link or
-reference without a new target, and a file that cannot be read or written, become ``Unresolved`` entries.
+``RelocationPlan`` says where each part of the proposal went. Links are rewritten by devkit's
+``devkit.rules.relocate_links`` (the plan converted to a ``LinkRelocation``); ID references here. The rewriting
+never fails a handoff: a link or reference without a new target, and a file that cannot be read or written, become
+``Unresolved`` entries.
 
 Every Markdown file under ``docs/`` and ``specs/`` is scanned except the proposal itself, directories starting with
 ``.``, symbolic links and the files of completed spec bundles, which record the proposal as it was (their
@@ -11,7 +13,6 @@ feedback aside, which stays current).
 from __future__ import annotations
 
 import os
-import posixpath
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
@@ -19,7 +20,7 @@ from pathlib import Path
 
 from devkit.core import FrontmatterError
 from devkit.core.frontmatter import locate
-from devkit.rules import extract_links
+from devkit.rules import LinkRelocation, relocate_links
 
 from devkit_spec.documents import Document, DocumentIndex, Reference, parse_document, rewrite, visible_lines
 from devkit_spec.documents.ids import ID_SOURCE
@@ -28,13 +29,13 @@ from devkit_spec.documents.model import BODY
 
 LINK = "link"
 ID = "id"
-UNMAPPED = "unmapped"  # a link into the proposal with no new location
 REMOVED = "removed"  # a reference to the ID of a proposal document nothing replaced
 AMBIGUOUS = "ambiguous"  # several documents declare the ID, so it is not rewritten
 UNREADABLE = "unreadable"
 UNWRITABLE = "unwritable"
+# Links also report devkit's ``UnresolvedReason`` values: ``unmapped`` (a link into the proposal with no new
+# location), ``unreadable`` and ``unwritable``.
 
-_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 _CODE_SPAN_ID = re.compile(rf"`({ID_SOURCE})`")
 _BRACKET_ID = re.compile(rf"\[({ID_SOURCE})\]")
 
@@ -83,6 +84,25 @@ class RelocationPlan:
 
     def contains(self, path: str) -> bool:
         return path == self.proposal or path.startswith(self.proposal + os.sep)
+
+    def relocation(self) -> LinkRelocation:
+        """The plan as devkit's ``LinkRelocation``: the proposal is gone, ``dir_target`` is where a link to it
+        goes."""
+        files = _paths(self.exact)
+        if self.dir_target:
+            files[self.proposal] = self.dir_target
+        return LinkRelocation(
+            files=files,
+            directories=_paths(self.prefixes),
+            removed=(self.proposal,),
+            file_origins=_paths(self.moved_files),
+            directory_origins=_paths(self.moved),
+        )
+
+
+def _paths(mapping: dict[str, str]) -> dict[str | os.PathLike[str], str | os.PathLike[str]]:
+    """``mapping`` typed for ``LinkRelocation``, whose ``Mapping`` keys are invariant."""
+    return {old: new for old, new in mapping.items()}
 
 
 @dataclass
@@ -161,54 +181,17 @@ def _new_location(plan: RelocationPlan, target: str) -> str | None:
 
 
 def rewrite_links(root: Path, files: Iterable[str], plan: RelocationPlan, report: RewriteReport) -> None:
-    """Point relative links into the proposal at the new locations; links in moved files keep their targets."""
-    for file in files:
-        display = _display(root, file)
-        try:
-            text = _read(file)
-        except (OSError, UnicodeDecodeError):
-            report.unresolved.append(Unresolved(display, 0, LINK, "", UNREADABLE))
-            continue
-        here = os.path.dirname(file)
-        base = here
-        if file in plan.moved_files:
-            base = os.path.dirname(plan.moved_files[file])
-        else:
-            for new, old in plan.moved.items():
-                if here == new or here.startswith(new + os.sep):
-                    base = old + here[len(new) :]
-                    break
-        lines = text.split("\n")
-        edits: list[tuple[int, int, int, str]] = []
-        for link in extract_links(text):
-            target = link.target
-            cut = min((i for i in (target.find("#"), target.find("?")) if i >= 0), default=len(target))
-            path_part, suffix = target[:cut], target[cut:]
-            if not path_part or path_part.startswith("/") or _SCHEME.match(path_part):
-                continue
-            resolved = os.path.normpath(os.path.join(base, path_part))
-            inside = plan.contains(resolved)
-            if not inside and base == here:
-                continue
-            new_abs = _new_location(plan, resolved) if inside else resolved
-            if new_abs is None:
-                report.unresolved.append(Unresolved(display, link.line, LINK, target, UNMAPPED))
-                continue
-            new_rel = Path(os.path.relpath(new_abs, here)).as_posix()
-            if new_rel == posixpath.normpath(path_part):
-                continue  # the same file from the new location: keep the author's spelling
-            edits.append((link.line - 1, link.target_start, link.target_end, new_rel + suffix))
-            report.rewritten.append(Rewritten(display, link.line, LINK, target, new_rel + suffix))
-        if not edits:
-            continue
-        for index, start, end, replacement in sorted(edits, reverse=True):
-            lines[index] = lines[index][:start] + replacement + lines[index][end:]
-        try:
-            _write(file, "\n".join(lines))
-        except OSError:
-            report.unresolved.append(Unresolved(display, 0, LINK, "", UNWRITABLE))
-            continue
-        report.files.append(display)
+    """Point relative links into the proposal at the new locations; links in moved files keep their targets.
+
+    ``devkit.rules.relocate_links`` does the rewriting (atomic replacement of each changed file); a file it cannot
+    write is ``unwritable`` and its links are not reported as rewritten.
+    """
+    result = relocate_links(root, files, plan.relocation())
+    report.files.extend(result.files)
+    report.rewritten.extend(Rewritten(item.path, item.line, LINK, item.old, item.new) for item in result.rewritten)
+    report.unresolved.extend(
+        Unresolved(item.path, item.line, LINK, item.target, str(item.reason)) for item in result.unresolved
+    )
 
 
 def _parse(root: Path, path: str) -> Document | None:

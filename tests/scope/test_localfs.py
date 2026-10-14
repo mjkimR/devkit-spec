@@ -33,11 +33,11 @@ from devkit_spec.scope import (
     Stage,
     Verdict,
 )
-from devkit_spec.scope.localfs import TMP_PREFIX, Unlock
+from devkit_spec.scope.localfs import Unlock, is_temp
 
 
 def _no_temp(directory: Path) -> None:
-    assert [entry.name for entry in directory.iterdir() if entry.name.startswith(TMP_PREFIX)] == []
+    assert [entry.name for entry in directory.iterdir() if is_temp(entry.name)] == []
 
 
 @pytest.mark.parametrize("scenario", SCENARIOS, ids=lambda scenario: scenario.__name__)
@@ -127,11 +127,19 @@ def test_flock_timeout_and_recovery(tmp_path: Path) -> None:
     with pytest.raises(ScopeTimeoutError):
         fs.update(token, stored.revision, "r1", stored, Deadline(0.2))
     assert time.monotonic() - started < 2
-    (tmp_path / "ns" / f"{TMP_PREFIX}left-over").write_text("partial")  # an interrupted publish
+    (tmp_path / "ns" / ".a.json.devkit-left-over.tmp").write_text("partial")  # an interrupted publish
     unlock()
     updated = fs.update(token, stored.revision, "r2", stored, Deadline(5))
     assert updated.revision == 2
     _no_temp(tmp_path / "ns")
+
+
+def test_unsafe_lock_file_is_a_shared_path_error(tmp_path: Path) -> None:
+    (tmp_path / "ns").mkdir()
+    (tmp_path / "elsewhere").write_text("")
+    (tmp_path / "ns/.lock").symlink_to(tmp_path / "elsewhere")
+    with pytest.raises(ScopeSharedPathError):
+        registry(tmp_path).query("ns", Deadline(5))
 
 
 def test_threads_contend_on_the_lock(tmp_path: Path) -> None:

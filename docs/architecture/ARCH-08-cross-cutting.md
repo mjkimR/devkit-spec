@@ -118,7 +118,10 @@ The spec rules follow devkit's rule engine contract (`CAP-GOV-spec-rules`):
 - devkit-spec imports only each devkit module's exports (`devkit.core`, `devkit.core.frontmatter`, `devkit.core.cli`,
   `devkit.core.errors`, `devkit.advisory`, `devkit.rules`, `devkit.workflow`, `devkit.worktree`, `devkit.search`),
   never private helpers, and never copies them.
-- A capability that is not specific to spec-driven development is added to devkit first, then used here.
+- A capability that is not specific to spec-driven development is added to devkit first, then used here. The
+  SDD-agnostic building blocks come from devkit: Git calls (`run_git`), deadlines (`Deadline`, with a devkit-spec
+  error factory where a `SPEC_` code applies), file locks (`file_lock`), atomic writes (`atomic_write_text`),
+  empty-tree removal (`remove_empty_tree`), Markdown links (`extract_links`) and link relocation (`relocate_links`).
 - devkit is pinned to a minor range (`devkit>=0.1,<0.2`). While neither package has external consumers, breaking
   changes to the bundle, the commands and the APIs are made in place, without migrations or deprecation shims.
 

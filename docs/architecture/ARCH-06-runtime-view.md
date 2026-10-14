@@ -181,8 +181,9 @@ sequenceDiagram
 
 ## 6. Concurrency and Delivery Guarantees
 
-1. **Registry operations** hold an exclusive `flock` on `<shared>/<namespace>/.lock` for read, compare and write, and
-   publish a record by atomic rename; updates use optimistic revisions (`SPEC_SCOPE_STALE_REVISION`).
+1. **Registry operations** hold an exclusive `flock` on `<shared>/<namespace>/.lock` for read, compare and write
+   (devkit's `file_lock`), and publish a record by atomic rename (`atomic_write_text`); updates use optimistic
+   revisions (`SPEC_SCOPE_STALE_REVISION`).
 2. **Writers validate first**: `spec new` and `proposal handoff` check every input and target path before the first
    write and undo their writes on a file system failure; `entrypoints derive --apply` changes only the `entrypoints`
    block of each document and reports a document it cannot write (`SPEC_ENTRYPOINTS_APPLY_FAILED`) while writing the

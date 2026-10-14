@@ -19,7 +19,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from devkit.core import FrontmatterError, GitError
+from devkit.core import FrontmatterError, GitError, run_git
 from devkit.core.frontmatter import parse
 
 from devkit_spec.entrypoints import classify_boundary, entrypoint_bearing, normalize, parse_boundaries
@@ -30,7 +30,7 @@ from devkit_spec.errors import (
     ScopeSpecNotFoundError,
 )
 from devkit_spec.proposals.scaffold import PROPOSAL_FILE, PROPOSALS, TARGET_DOCS, clean_slug
-from devkit_spec.scope.deadline import Deadline, git, git_lines
+from devkit_spec.scope.deadline import Deadline, git_lines
 from devkit_spec.scope.model import Diff, Granularity, ScopePath, ScopeSet, Source, Stage, Unresolved
 
 RECONCILE = "reconcile.md"
@@ -234,7 +234,7 @@ def from_spec(root: Path, spec_dir: str) -> ScopeSet:
 def _fork_point(root: Path, base_ref: str, deadline: Deadline) -> str:
     """``git merge-base <base_ref> HEAD``; ``""`` when the ref does not resolve or shares no history with HEAD."""
     try:
-        return git(root, "merge-base", base_ref, "HEAD", deadline=deadline).decode().strip()
+        return run_git(root, "merge-base", base_ref, "HEAD", deadline=deadline).decode().strip()
     except GitError as exc:
         if exc.returncode is None:
             raise

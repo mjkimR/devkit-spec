@@ -43,7 +43,7 @@ flowchart LR
     config --> errors
 
     subgraph devkit ["devkit public surface"]
-        dcore["devkit.core<br>(frontmatter, run_git, errors)"]
+        dcore["devkit.core<br>(frontmatter, run_git, Deadline,<br>file_lock, atomic writes, errors)"]
         dcli["devkit.core.cli"]
         dadv["devkit.advisory"]
         drules["devkit.rules"]
@@ -70,8 +70,8 @@ flowchart LR
 | **`search`** | The search policy on devkit's ranking: candidates, ID and summary as embedded metadata, pinning, `docs/glossary.yaml` expansion | `CAP-DOCS-document-search` |
 | **`rules`** | The ten spec rules as `BaseRule` subclasses, the shared `document_index(ctx)` and `namespaces(ctx)` helpers, the targeting and history exclusions | `CAP-GOV-spec-rules`, `CAP-TRACE-code-entrypoints` |
 | **`entrypoints`** (`paths`, `bundle`, `derive`, `apply`) | The entrypoint path contract, reading `_Boundary` and `reconcile.md` targets of a spec bundle, deriving document-code pairs, writing chosen ones into frontmatter | `CAP-TRACE-code-entrypoints` |
-| **`proposals`** (`scaffold`, `binding`, `body`, `handoff`, `rewrite`, `specs`, `prune`) | Proposal and PADR scaffolding, workflow binding, carrying a proposal body into a spec, handoff with rollback, link and ID rewriting, spec bundle skeletons, pruning empty proposal directories | `CAP-DLV-proposal-incubation`, `CAP-DLV-spec-bundles` |
-| **`scope`** (`inputs`, `compare`, `model`, `registry`, `localfs`, `location`, `deadline`, `flow`) | Scope sets from proposals, spec bundles and Git, pairwise comparison, the local file registry with its journal, the registry location and owner token, the per-command deadline, a worktree's register/update/release | `CAP-COLL-work-scope-registry` |
+| **`proposals`** (`scaffold`, `binding`, `body`, `handoff`, `rewrite`, `specs`, `prune`) | Proposal and PADR scaffolding, workflow binding, carrying a proposal body into a spec, handoff with rollback, link rewriting (on devkit's `relocate_links`) and ID rewriting, spec bundle skeletons, pruning empty proposal directories (devkit's `remove_empty_tree`) | `CAP-DLV-proposal-incubation`, `CAP-DLV-spec-bundles` |
+| **`scope`** (`inputs`, `compare`, `model`, `registry`, `localfs`, `location`, `deadline`, `flow`) | Scope sets from proposals, spec bundles and Git, pairwise comparison, the local file registry with its journal (on devkit's `file_lock` and `atomic_write_text`), the registry location and owner token, the per-command deadline (devkit's `Deadline` raising `SPEC_SCOPE_TIMEOUT`), a worktree's register/update/release | `CAP-COLL-work-scope-registry` |
 | **`config`** | Reading and validating `[tool.spec]` (`worktree`, `namespaces`, `scope`) | `CAP-DLV-project-policy` |
 | **`errors`** | Every `SPEC_` advisory as an `AdvisoryError` subclass with its level and protocol fields | `ARCH-08-cross-cutting` |
 | **`cli`** (`documents`, `search`, `specs`, `proposals`, `entrypoints`, `scope`, `policy`, `output`) | The `devkit spec` group: options, sentinel and JSON rendering, the only place that prints | `CAP-HARN-command-mount` |

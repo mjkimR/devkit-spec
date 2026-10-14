@@ -1,11 +1,12 @@
 """The local file registry: one JSON record per task under ``<shared>/<namespace>/``, and the namespace's journal.
 
 - ``<task-id>.json`` (the task ID mapped to a safe file name) holds one ``Record``; ``.lock`` serializes every
-  operation of the namespace with ``flock`` (Linux and macOS; the OS releases it when the process dies);
-  ``journal.jsonl`` is the append-only event journal.
-- Each operation reads, compares and writes inside one lock hold. A record is published by writing a ``.tmp-*``
-  file in the same directory and renaming it over the record, so a reader never sees a partial record; temp files
-  an interrupted publish left behind are removed on the next lock acquisition.
+  operation of the namespace with ``devkit.core.file_lock`` (``flock``, Linux and macOS; the OS releases it when
+  the process dies); ``journal.jsonl`` is the append-only event journal.
+- Each operation reads, compares and writes inside one lock hold. A record is published with
+  ``devkit.core.atomic_write_text`` (a ``.<name>.devkit-*.tmp`` file in the same directory, synced and renamed over
+  the record), so a reader never sees a partial record; temp files an interrupted publish left behind are removed
+  on the next lock acquisition.
 - Network file systems are not supported: ``flock`` and rename atomicity are not guaranteed there.
 """
 
@@ -15,15 +16,13 @@ import contextlib
 import json
 import os
 import socket
-import tempfile
-import time
 from collections.abc import Callable, Collection, Iterator, Mapping
 from dataclasses import replace
 from pathlib import Path
 from typing import Protocol
 
 from devkit.advisory import Level
-from devkit.core import GitError
+from devkit.core import GitError, LockUnsupportedError, UnsafePathError, atomic_write_text, file_lock, run_git
 
 from devkit_spec.errors import (
     ScopeLockUnsupportedError,
@@ -36,7 +35,7 @@ from devkit_spec.errors import (
     ScopeTokenMismatchError,
     ScopeUnsupportedError,
 )
-from devkit_spec.scope.deadline import Deadline, git, timeout_error
+from devkit_spec.scope.deadline import Deadline
 from devkit_spec.scope.model import (
     SCHEMA_VERSION,
     Event,
@@ -50,10 +49,9 @@ from devkit_spec.scope.model import now as utc_now
 from devkit_spec.scope.registry import new_token, token_hash
 
 LOCK_FILE = ".lock"
-TMP_PREFIX = ".tmp-"
 JOURNAL_FILE = "journal.jsonl"
 RECORD_SUFFIX = ".json"
-_POLL = 0.01  # seconds between lock attempts
+RECORD_MODE = 0o644
 
 Unlock = Callable[[], None]
 
@@ -66,34 +64,23 @@ class Locker(Protocol):
 
 
 class FlockLocker:
-    """An exclusive ``flock`` on the namespace lock file, polled until the deadline."""
+    """An exclusive ``devkit.core.file_lock`` on the namespace lock file, waited for until the deadline.
+
+    A lock file that is a symbolic link or not a regular file is ``ScopeSharedPathError``; a platform without
+    ``flock`` is ``ScopeLockUnsupportedError``; other file system errors are raised as ``OSError``.
+    """
 
     def acquire(self, lock_file: Path, deadline: Deadline) -> Unlock:
+        stack = contextlib.ExitStack()
         try:
-            import fcntl
-        except ImportError as exc:  # pragma: no cover - not on Linux or macOS
-            raise ScopeLockUnsupportedError("fcntl.flock is not available on this platform") from exc
-        fd = os.open(lock_file, os.O_CREAT | os.O_RDWR, 0o644)
-        while True:
-            try:
-                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                break
-            except BlockingIOError:
-                remaining = deadline.remaining()
-                if remaining <= 0:
-                    os.close(fd)
-                    raise timeout_error("waiting for the namespace lock", deadline.seconds) from None
-                time.sleep(min(_POLL, remaining))
-            except OSError:
-                os.close(fd)
-                raise
-
-        def unlock() -> None:
-            with contextlib.suppress(OSError):
-                fcntl.flock(fd, fcntl.LOCK_UN)
-            os.close(fd)
-
-        return unlock
+            stack.enter_context(file_lock(lock_file, deadline=deadline, what="waiting for the namespace lock"))
+        except UnsafePathError as exc:
+            raise ScopeSharedPathError(
+                f"the scope registry cannot be used: {exc}", target_files=[str(lock_file)]
+            ) from exc
+        except LockUnsupportedError as exc:  # pragma: no cover - not on Linux or macOS
+            raise ScopeLockUnsupportedError(str(exc)) from exc
+        return stack.close
 
 
 def safe_name(identifier: str) -> str:
@@ -103,6 +90,12 @@ def safe_name(identifier: str) -> str:
     if not name:
         return "_"
     return f"_{name[1:]}" if name.startswith(".") else name
+
+
+def is_temp(name: str) -> bool:
+    """Whether ``name`` is a temp file of ``atomic_write_text`` (``.<record>.devkit-*.tmp``); records, the lock
+    file and the journal never are."""
+    return name.startswith(".") and ".devkit-" in name and name.endswith(".tmp")
 
 
 def valid_namespace(namespace: str) -> bool:
@@ -119,7 +112,7 @@ def _git_worktree_exists(path: str, deadline: Deadline) -> bool:
     if not path or not Path(path).is_dir():
         return False
     try:
-        return git(Path(path), "rev-parse", "--is-inside-work-tree", deadline=deadline).strip() == b"true"
+        return run_git(Path(path), "rev-parse", "--is-inside-work-tree", deadline=deadline).strip() == b"true"
     except GitError:
         return False
 
@@ -182,7 +175,7 @@ class LocalRegistry:
     def _clean_temp(directory: Path) -> None:
         with contextlib.suppress(OSError):
             for entry in directory.iterdir():
-                if entry.name.startswith(TMP_PREFIX):
+                if is_temp(entry.name):
                     with contextlib.suppress(OSError):
                         entry.unlink()
 
@@ -215,29 +208,14 @@ class LocalRegistry:
     @staticmethod
     def _write(path: Path, record: Record) -> None:
         data = json.dumps(record.to_dict(), indent=2, ensure_ascii=False) + "\n"
-        fd, name = tempfile.mkstemp(prefix=TMP_PREFIX, dir=path.parent)
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                handle.write(data)
-                handle.flush()
-                os.fsync(handle.fileno())
-            os.chmod(name, 0o644)
-            os.replace(name, path)
-        except BaseException:
-            with contextlib.suppress(OSError):
-                os.unlink(name)
-            raise
+        atomic_write_text(path, data, mode=RECORD_MODE)
 
     def _record_files(self, directory: Path) -> list[Path]:
         try:
             entries = sorted(directory.iterdir())
         except FileNotFoundError:
             return []
-        return [
-            entry
-            for entry in entries
-            if entry.name.endswith(RECORD_SUFFIX) and not entry.name.startswith(TMP_PREFIX) and entry.is_file()
-        ]
+        return [entry for entry in entries if entry.name.endswith(RECORD_SUFFIX) and entry.is_file()]
 
     def _read_all(self, directory: Path) -> tuple[list[Record], list[Problem]]:
         records: list[Record] = []

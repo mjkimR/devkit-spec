@@ -18,11 +18,11 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from devkit.core import GitError
+from devkit.core import GitError, run_git
 
 from devkit_spec.config import ScopeConfig
 from devkit_spec.errors import ScopeNotAWorktreeError
-from devkit_spec.scope.deadline import Deadline, git
+from devkit_spec.scope.deadline import Deadline
 
 SHARED_DIR = "devkit-spec-scope"
 TOKEN_FILE = "devkit-spec-scope-token"
@@ -55,8 +55,10 @@ def default_namespace(common_dir: Path) -> str:
 def locate(root: Path, config: ScopeConfig, deadline: Deadline) -> Location:
     """The registry location of the workspace at ``root``; ``ScopeNotAWorktreeError`` outside a Git work tree."""
     try:
-        inside = git(root, "rev-parse", "--is-inside-work-tree", deadline=deadline).strip()
-        output = git(root, "rev-parse", "--path-format=absolute", "--git-common-dir", "--git-dir", deadline=deadline)
+        inside = run_git(root, "rev-parse", "--is-inside-work-tree", deadline=deadline).strip()
+        output = run_git(
+            root, "rev-parse", "--path-format=absolute", "--git-common-dir", "--git-dir", deadline=deadline
+        )
     except GitError as exc:
         if exc.returncode is None:
             raise
@@ -78,7 +80,7 @@ def locate(root: Path, config: ScopeConfig, deadline: Deadline) -> Location:
 def head_revision(root: Path, deadline: Deadline) -> str:
     """The commit of ``HEAD``; ``""`` before the first commit."""
     try:
-        return git(root, "rev-parse", "--verify", "--quiet", "HEAD", deadline=deadline).decode().strip()
+        return run_git(root, "rev-parse", "--verify", "--quiet", "HEAD", deadline=deadline).decode().strip()
     except GitError as exc:
         if exc.returncode is None:
             raise
@@ -97,7 +99,7 @@ def load_token(path: Path) -> str | None:
 def _symbolic_head(cwd: Path, deadline: Deadline) -> str:
     """The branch ref ``HEAD`` points to in the Git directory or work tree at ``cwd``; ``""`` when detached."""
     try:
-        return git(cwd, "symbolic-ref", "--quiet", "HEAD", deadline=deadline).decode().strip()
+        return run_git(cwd, "symbolic-ref", "--quiet", "HEAD", deadline=deadline).decode().strip()
     except GitError as exc:
         if exc.returncode is None:
             raise

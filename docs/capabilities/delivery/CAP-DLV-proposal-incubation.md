@@ -201,7 +201,8 @@ symbolic links and the files of completed spec bundles (`spec.md` with `status: 
 proposal as it was; their `feedback/` is scanned, since feedback stays current.
 
 - **Relative Markdown links** (inline links and images outside code, devkit's `extract_links`) that resolve into the
-  proposal are pointed at the new locations: `proposal.md` (or the single file) to `spec.md`, `target-docs.md` to its
+  proposal are pointed at the new locations by devkit's `relocate_links`, which replaces each changed file
+  atomically: `proposal.md` (or the single file) to `spec.md`, `target-docs.md` to its
   copy, each PADR to its ADR, anything under `materials/` to the same path under the moved directory (whether or not
   the file exists), each carried file to its new path, and the bundle directory to the spec bundle. URLs, root-relative and fragment-only links are left
   alone; a `#fragment` or `?query` is kept. Files written for the bundle's location (the carried `spec.md`, the
@@ -218,7 +219,7 @@ proposal as it was; their `feedback/` is scanned, since feedback stays current.
 | `unmapped` | A link into the proposal with no new location (the `decisions/` directory, a path that does not exist). |
 | `removed` | A reference to an ID declared inside the proposal by a document that was not carried anywhere. |
 | `ambiguous` | Another document declares the same ID, so it is not rewritten. |
-| `unreadable`, `unwritable` | The file could not be read, parsed or written (line `0`). |
+| `unreadable`, `unwritable` | The file could not be read, parsed or written (line `0`); the link rewrites of a file that could not be written are not reported as rewritten. |
 
 The `spec-next` skill's post-handoff check follows up the reported lines.
 
@@ -226,7 +227,8 @@ The `spec-next` skill's post-handoff check follows up the reported lines.
 
 A handoff deletes the proposal in the worktree it runs in; merging that branch removes the tracked files from the
 base checkout but leaves their directories. `devkit spec proposal prune [<slug>]` removes `docs/proposals/PROP-<slug>/` (every `PROP-*` directory without a slug) when it
-holds no file at any depth (a symbolic link counts as a file). A directory holding any file is kept. devkit-spec's
+holds no file at any depth (a symbolic link counts as a file; devkit's `remove_empty_tree`). A directory holding any
+file is kept, and one that cannot be listed fails the prune before anything is removed. devkit-spec's
 `devkit.post_finish` extension prunes the finished slug after a successful `devkit worktree finish`
 (`ADR-cleanup-after-worktree-finish`); the command remains for other checkouts and a failed extension.
 
