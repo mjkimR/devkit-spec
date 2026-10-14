@@ -31,6 +31,10 @@ Execute the impact-assessment and drafting steps of `spec-sync` in an isolated c
 
 The caller's payload: `task_goal` (draft the Living Spec impact of this change), `relevant_files` (`spec.md`, the deciding review envelope, capabilities, stories, architecture documents and ADRs likely affected), `allowed_boundaries` (write scope: the docs paths below and this bundle's `reconcile.md`), `diff_scope` (base and head) and `expected_output_format` (docs draft diff plus envelope fields).
 
+## Procedure
+
+Read `.devkit/managed/spec/AGENTS.md` (the spec constitution; you have no shell for `devkit get-context`), then `.devkit/managed/spec/skills/spec-sync/SKILL.md` (or its override under `.devkit/overrides/` when one exists). Follow its section 2 and Steps 1 and 2 only: identify the impact and draft the docs and `reconcile.md`. Steps 2a to 4 (deferred-work proposals, entrypoints, rule checks, completion) are the caller's; name a deferred follow-up in `findings` instead.
+
 ## Return
 
 - The draft diff, left in the working tree, unstaged.

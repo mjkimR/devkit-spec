@@ -43,7 +43,7 @@ them as they are, without wrapping them again.
 This repository installs agent assets with `devkit`. `.devkit/config.toml` selects
 bundles; `.devkit/installation.json` records what is deployed.
 
-- Before work that touches a bundle's assets, run `uv run devkit get-context <bundle>` once per bundle in the current agent context. Installed bundles: `advisory`, `devkit`, `spec`.
+- Before work that touches a bundle's assets, run `uv run devkit get-context <bundle>` once per bundle in the current agent context. Installed bundles: `advisory`, `authoring`, `devkit`, `spec`.
 - Entry skill `devkit-playbook`: find and run an operational playbook (explicit user invocation only).
 - Entry skill `devkit-workflow`: diagnose and follow the delivery workflow stage of a work unit.
 - Never edit `.devkit/managed/` or projected agent files; change the source bundle or use `devkit override`.

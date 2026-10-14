@@ -10,7 +10,7 @@ agent: claude-code
 origin: user
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-14
 ---
 
@@ -31,3 +31,5 @@ uv run devkit playbook search "skill authoring" -> "results": []
 .devkit/config.toml [presets]: spec = ["core", "docs-skeleton"]
 devkit/authoring_guide/bundle/bundle.toml: [presets.skill-authoring] assets = ["skill-authoring", "skill-document-size"]
 ```
+
+- **Disposition**: `.devkit/config.toml` (s-lane): `authoring = "skill-authoring"` selected; `devkit rules check --phase hygiene` reports 0 warnings, since the rule measures bundle sources and skips receipt-owned projections.

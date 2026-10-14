@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-14
 ---
 
@@ -30,3 +30,5 @@ created_at: 2026-10-14
 first edit: 9004 bytes; after trims: 8493, 8325, 8270, 8202, 8176
 spec/SKILL.md: 8144 bytes (was 8183 before this change)
 ```
+
+- **Disposition**: `SPEC-subagent-procedure-in-contract` (AC-08): `spec-delegate` and `spec` restructured with the skill-authoring playbook to 7418 and 7677 bytes, guarded by `tests/test_bundle_budgets.py`.

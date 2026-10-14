@@ -227,7 +227,8 @@ role).
 
 The contract body is the role's prompt and holds only what the role needs: purpose, input fields, return fields,
 write boundaries, failure handling and, for a role whose procedure no main session runs (`challenger`, `scout`), the
-procedure itself. `reviewer` and `reconciler` name the skill the main session also runs by default. Caller guidance
+procedure itself. `reviewer` and `reconciler` name the skill the main session also runs by default, with its
+managed path and the sections the role follows (the reconciler only the impact and drafting steps). Caller guidance
 (per-role payload, host guarantees, the post-run diff comparison, envelope recording) lives in `spec-delegate`
 (`SPEC-subagent-procedure-in-contract`). Only `reviewer` and `scout` have a shell (`Bash`; Antigravity `run_command`
 with `commandExecutionPolicy: sandbox`), `scout` for `devkit spec search`, `list`, `resolve` and `refs`.

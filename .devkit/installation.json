@@ -9,6 +9,28 @@
       ]
     },
     {
+      "bundle": "authoring",
+      "entrypoints": [
+        ".devkit/managed/authoring/playbooks/skill-authoring/SKILL.md"
+      ],
+      "id": "skill-authoring",
+      "kind": "playbook",
+      "paths": [
+        ".devkit/managed/authoring/playbooks/skill-authoring/SKILL.md",
+        ".devkit/managed/authoring/playbooks/skill-authoring/references/scripts.md"
+      ]
+    },
+    {
+      "bundle": "authoring",
+      "id": "skill-document-size",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/authoring/rules/skill_document_size/guide.md",
+        ".devkit/managed/authoring/rules/skill_document_size/rule.py",
+        ".devkit/managed/authoring/rules/skill_document_size/tests/test_rule.py"
+      ]
+    },
+    {
       "bundle": "devkit",
       "id": "consumption",
       "kind": "instruction",
@@ -479,11 +501,11 @@
     },
     ".agents/agents/reconciler.md": {
       "mode": 420,
-      "sha256": "03123e1d2ddad5bd527a62514ea47b7ba2f9dc44bd42ff4aa683c55830270102"
+      "sha256": "6e5cd73be9c755b7df65dcb6b45ecbe19bb5cfa4090a5ca1e8f6ecf7585019d3"
     },
     ".agents/agents/reviewer.md": {
       "mode": 420,
-      "sha256": "2919bf014250cf93896fddeef2f062ee28e3b0e66711bd26db53f0ff031063a9"
+      "sha256": "b585feb3098846545c227c7fb2e4797e77782697aedc4fbafd02871ba40e0a98"
     },
     ".agents/agents/scout.md": {
       "mode": 420,
@@ -611,11 +633,11 @@
     },
     ".claude/agents/reconciler.md": {
       "mode": 420,
-      "sha256": "19cb97886261de162c68c3eb9edc9d84d117c4e6320c1473eb28d45133a13c2d"
+      "sha256": "33ad977c7aca9ad3d5681f971d447aa18b5adc905a328ccaaa70fdbe9ec244d3"
     },
     ".claude/agents/reviewer.md": {
       "mode": 420,
-      "sha256": "9a1dbc1aa8687fb37236ca804fc074c99502cf42a88a5e28e77f61ee025cfdd5"
+      "sha256": "930fa16b1959567c6c870df7be3b3bd0385bfb282a7a1391790ad37c3b092ef0"
     },
     ".claude/agents/scout.md": {
       "mode": 420,
@@ -735,11 +757,11 @@
     },
     ".codex/agents/reconciler.toml": {
       "mode": 420,
-      "sha256": "17c34074f0b74e3907c7baccbecd4df0778a1bc08d1942ebc592851973247677"
+      "sha256": "74580b63351dfa585d662949a6e2dd7c660e37e25d2eb529b6a5fe3cea032e12"
     },
     ".codex/agents/reviewer.toml": {
       "mode": 420,
-      "sha256": "48a9a069a1e383eda01cecb1626645c693284ed20f081b2a0b199ea8614ffd16"
+      "sha256": "10872fecf7faed958d5393d7bc139f7b96506cb97da97a62d313b534ecda98f2"
     },
     ".codex/agents/scout.toml": {
       "mode": 420,
@@ -768,6 +790,30 @@
     ".devkit/managed/advisory/instructions/agent-advisory.md": {
       "mode": 420,
       "sha256": "d6a5e93bfe6dba0f9b55ca33e16ab5bbf37f232856f26d71e4e57880cf139866"
+    },
+    ".devkit/managed/authoring/bundle.toml": {
+      "mode": 420,
+      "sha256": "1286142919408f968203e545952ff7bc77d5bf8e65c17b0f5b29eebbbfb8d60c"
+    },
+    ".devkit/managed/authoring/playbooks/skill-authoring/SKILL.md": {
+      "mode": 420,
+      "sha256": "cc86852d39608636a39b9dbe81e21e58af48af216789c57909142588f4d83234"
+    },
+    ".devkit/managed/authoring/playbooks/skill-authoring/references/scripts.md": {
+      "mode": 420,
+      "sha256": "31427a5453733263ae25a37299a118fbcedc2756827ae1776429428caa8a863b"
+    },
+    ".devkit/managed/authoring/rules/skill_document_size/guide.md": {
+      "mode": 420,
+      "sha256": "f6c27f6b1b13864d966ad9d8f991236a70dc58a910e5c2f08869a66c810eacc1"
+    },
+    ".devkit/managed/authoring/rules/skill_document_size/rule.py": {
+      "mode": 420,
+      "sha256": "adb874686e3e54eca74b2172b283235d74067edff48258b9eb427f5bb99c0dd6"
+    },
+    ".devkit/managed/authoring/rules/skill_document_size/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "e565b0aba7c829a827f3280330c2115d544b5c63b5f48bf95db4cf4343d5ab10"
     },
     ".devkit/managed/devkit/AGENTS.md": {
       "mode": 420,
@@ -1047,11 +1093,11 @@
     },
     ".devkit/managed/spec/subagents/reconciler.md": {
       "mode": 420,
-      "sha256": "29e56a9f559f627ba7dbbb955676a5abbeb9342e18ec6db87173910e52fb1be8"
+      "sha256": "6d6b2349a0f92ffddb1f2605bbb3f77a0a7d3356e40e072a747822db770d7c61"
     },
     ".devkit/managed/spec/subagents/reviewer.md": {
       "mode": 420,
-      "sha256": "c1f3295f6c94d815263c2d8333cd4cbc895eac7109086aefd99b393e89ef313a"
+      "sha256": "9f899a28fac0df49ba9938eaa48795306bb8a2a51104ac750b70df761154a9ca"
     },
     ".devkit/managed/spec/subagents/scout.md": {
       "mode": 420,
@@ -1090,10 +1136,16 @@
       "sha256": "213d9d0472f1db2f94981555afff09e1306ae780782bb518de7ea0aff29d4f70"
     }
   },
-  "guidance_block": "ead170eb331ee72564676468c5d70e0b69f94d84fc97117c2cd08e8366d2ecf7",
+  "guidance_block": "06be010db0995f6232e5352a8b090e65fe1d82eb8a51f03511adde6a77346c0d",
   "packages": [
     {
       "bundle": "advisory",
+      "bundle_version": "0.1.1",
+      "package": "devkit-agt",
+      "package_version": "0.1.1"
+    },
+    {
+      "bundle": "authoring",
       "bundle_version": "0.1.1",
       "package": "devkit-agt",
       "package_version": "0.1.1"
@@ -1218,6 +1270,9 @@
     "presets": {
       "advisory": [
         "core"
+      ],
+      "authoring": [
+        "skill-authoring"
       ],
       "devkit": [
         "core"

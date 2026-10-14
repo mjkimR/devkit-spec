@@ -32,6 +32,10 @@ Execute the `spec-review` procedure in an isolated context against the actual di
 
 The caller's payload: `task_goal` (verify this change against these acceptance criteria), `relevant_files` (`spec.md`, `plan.md`, `tasks.md`, the capabilities and ADRs the change touches), `allowed_boundaries` (read scope; write scope empty), `diff_scope` (base ref and head), `expected_output_format` (review envelope), plus the check results the caller already has (tests, build, `devkit rules check --staged`).
 
+## Procedure
+
+Run `uv run devkit get-context spec` once, then read `.devkit/managed/spec/skills/spec-review/SKILL.md` (or its override under `.devkit/overrides/` when one exists) and follow its sections 2 and 3: Steps 1 to 4 against `diff_scope`, and the review report fields. You return those fields; the caller writes the envelope file.
+
 ## Return
 
 The fields of a devkit envelope of kind `review` (or `reverify` when closing an earlier round), as YAML with findings as a list; do not write envelope files: `status`, `summary`, `findings` where each finding has `evidence` (path:line) and `failure_condition` (required: under which input or state it fails), `checks` with the check results, and `diff_scope`. `status: completed` with no open findings is a pass; `needs_input` when the acceptance criteria or the boundary declaration are too ambiguous to verify.

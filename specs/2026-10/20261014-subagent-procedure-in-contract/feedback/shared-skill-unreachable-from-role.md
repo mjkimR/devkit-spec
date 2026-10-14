@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-14
 ---
 
@@ -31,3 +31,5 @@ created_at: 2026-10-14
 .claude/agents/reconciler.md: tools: [Read, Grep, Glob, Write, Edit]; "Procedure: skill `spec-sync`."
 .claude/skills/spec-sync/SKILL.md: "Before performing this skill, load this bundle's context by running `uv run devkit get-context spec`"
 ```
+
+- **Disposition**: `src/devkit_spec/bundle/subagents/reviewer.md`, `src/devkit_spec/bundle/subagents/reconciler.md` (s-lane): each contract names its skill by the host-neutral managed path and the sections to follow; the reconciler reads the constitution file instead of running `get-context`.

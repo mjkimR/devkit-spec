@@ -16,6 +16,7 @@ schema = 1
 
 [presets]
 spec = ["core", "docs-skeleton"]
+authoring = "skill-authoring"
 
 [worktree]
 pull_request = false
