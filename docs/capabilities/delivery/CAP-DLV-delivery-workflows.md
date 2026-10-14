@@ -144,8 +144,8 @@ Every workflow also has `exception` (E). Stage details of the spec-bundle workfl
 | `merge` | `lint-ci-clean` | `merged` | `-` / none | |
 | `exception` | `exception-raised` | `exception-handled` | developer / none | `spec` |
 
-The `spike` stage of `incubated-delivery` delegates to the `scout` role (isolation `preferred`, skills
-`spec-delegate`, `spec-scout`, `spec-challenge`) and writes into the proposal's `materials/`. The `report-session`
+The `spike` stage of `incubated-delivery` delegates to the `scout` role (isolation `preferred`, skill
+`spec-delegate`) and writes into the proposal's `materials/`. The `report-session`
 stage of `s-lane` runs `spec-review`, `spec-sync` and, unless `collect-feedback` is switched off, `spec-feedback`.
 
 ### 4.3 Gates
@@ -210,21 +210,30 @@ records them. Docs impact has no envelope key: the reconciler writes it into the
 
 One Markdown contract per role in devkit's
 [role contract format](https://github.com/mjkimR/devkit/blob/main/docs/distribution/agent-projections.md#role-contract-format):
-`role`, `title`, `description`, `skill` and a `hosts` block for `claude-code`, `codex` and `antigravity`. Extension
+`role`, `title`, `description`, an optional `skill` and a `hosts` block for `claude-code`, `codex` and `antigravity`. Extension
 keys devkit does not interpret: `x-execution` (`isolated`), `x-invocation` (`optional`), `x-model-profile`
 (`light-medium`, `general-high`, `high-reasoning`; never a host model name) and `x-git-actions` (`[read]` for every
 role).
 
 | Role | Skill | Model profile | Writes | Envelope kind |
 | --- | --- | --- | --- | --- |
-| `challenger` | `spec-challenge` | `high-reasoning` | nothing | `challenger` |
+| `challenger` | none: the procedure is in the contract | `high-reasoning` | nothing | `challenger` |
 | `reconciler` | `spec-sync` | `light-medium` | docs drafts and the bundle's `reconcile.md` | `reconciler` |
 | `reviewer` | `spec-review` | `general-high` | nothing | `review`, `reverify` |
-| `scout` | `spec-scout` | `light-medium` | nothing, or the proposal's `materials/` on request | `scout` |
+| `scout` | none: the procedure is in the contract | `light-medium` | nothing, or the proposal's `materials/` on request | `scout` |
+
+The contract body is the role's prompt and holds only what the role needs: purpose, input fields, return fields,
+write boundaries, failure handling and, for a role whose procedure no main session runs (`challenger`, `scout`), the
+procedure itself. `reviewer` and `reconciler` name the skill the main session also runs by default. Caller guidance
+(per-role payload, host guarantees, the post-run diff comparison, envelope recording) lives in `spec-delegate`
+(`SPEC-subagent-procedure-in-contract`). Only `reviewer` and `scout` have a shell (`Bash`; Antigravity `run_command`
+with `commandExecutionPolicy: sandbox`), `scout` for `devkit spec search`, `list`, `resolve` and `refs`.
 
 Stages delegate to `reviewer` (`review-refine`), `reconciler` (`living-spec-draft`) and `scout` (`spike`);
-`challenger` is invoked through `spec-challenge`. `[DELEGATE: role=<role> isolation=...]` in `next` names the role;
-`spec-delegate` decides between a host subagent and a main-session substitute and records the choice.
+`challenger` has no stage and is delegated on request, typically during a spike before G2. `[DELEGATE: role=<role>
+isolation=...]` in `next` names the role; `spec-delegate` decides between a host subagent and a main-session
+substitute and records the choice. A projected role receives only the per-call payload, since the host loads the
+contract body as its system prompt.
 
 ### 4.7 Executor Commands (devkit)
 

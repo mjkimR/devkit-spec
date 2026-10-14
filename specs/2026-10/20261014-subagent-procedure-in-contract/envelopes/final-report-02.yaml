@@ -1,0 +1,18 @@
+kind: final-report
+stage: final-change-report
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-14T07:12:33.380546Z'
+status: completed
+summary: spec-scout and spec-challenge folded into their contracts; caller-only sections moved into spec-delegate, which passes only the payload to a projected role; scout gains a shell; spec-delegate and spec restructured with the skill-authoring playbook (7418 and 7610 bytes); Living Spec reconciled (3 targets).
+findings: []
+assumptions:
+- 'Nothing is committed yet: no commit was authorized, so checks ran on the working tree and the rule check ran without --staged.'
+- The skill restructuring joined this spec on the user's direction after G3 was first reached (decisions 03 and 04).
+checks:
+  tests: 'PASS just test: 642 passed'
+  build: PASS no build artifact; pyright 0 errors; devkit sync and workflow validate clean
+  lint: PASS just lint-check; devkit rules check 0 errors (working tree)
+diff_scope:
+  base: main
+  head: 0963a657521b30ecc890d6dfcf204aabc58c8ed3

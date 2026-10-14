@@ -1,0 +1,10 @@
+kind: feedback
+stage: collect-feedback
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-14T07:12:33.254693Z'
+status: completed
+summary: Second sweep after the scope extension; recorded FB-authoring-preset-not-selected. FB-skill-budget-headroom is addressed by AC-08 in this change (status left to a hygiene session); FB-shared-skill-unreachable-from-role still open.
+findings: []
+checks:
+  swept: PASS recorded=1 duplicates=0

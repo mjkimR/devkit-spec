@@ -48,6 +48,13 @@ def test_every_role_is_projected_for_every_agent(synced: Path) -> None:
             assert (synced / pattern.format(role=role)).is_file(), pattern.format(role=role)
 
 
+def test_no_skill_is_projected_for_a_procedure_only_a_role_runs(synced: Path) -> None:
+    for skill in ("spec-scout", "spec-challenge"):
+        assert not (synced / f".claude/skills/{skill}").exists(), skill
+        assert not (synced / f".agents/skills/{skill}").exists(), skill
+    assert (synced / ".claude/agents/scout.md").read_text(encoding="utf-8").count("\n## Procedure\n") == 1
+
+
 @pytest.mark.parametrize("workflow", WORKFLOWS)
 def test_show_renders_each_workflow(synced: Path, workflow: str) -> None:
     result = _devkit("workflow", "show", workflow, "-w", str(synced))

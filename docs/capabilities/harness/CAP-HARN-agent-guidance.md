@@ -32,7 +32,7 @@ directories and writes the guidance pointer into the root `AGENTS.md` block.
 
 ## 2. Scope & Boundary
 
-- **In-Scope**: the bundle manifest and presets, the constitution, the two instructions, the guidance pointer, the 14
+- **In-Scope**: the bundle manifest and presets, the constitution, the two instructions, the guidance pointer, the 12
   `spec*` skills and their references, the two playbooks, the document templates and the docs skeleton; the role
   contracts as deployed assets.
 - **Out-of-Scope**:
@@ -78,7 +78,7 @@ directories and writes the guidance pointer into the root `AGENTS.md` block.
 
 | Preset | Selection | Assets |
 | --- | --- | --- |
-| `core` | Automatic on `devkit sync` (`auto_select`) | Instructions, the guidance pointer, the eight rules, `templates`, the 14 skills, the four workflows, the four role contracts, the two playbooks. |
+| `core` | Automatic on `devkit sync` (`auto_select`) | Instructions, the guidance pointer, the eight rules, `templates`, the 12 skills, the four workflows, the four role contracts, the two playbooks. |
 | `docs-skeleton` | Opt-in: `devkit add spec:docs-skeleton` (or `[presets] spec = ["core", "docs-skeleton"]`) | The `docs-skeleton` seed. |
 
 A project opts out of the bundle with `[presets] spec = false` in `.devkit/config.toml`. The constitution
@@ -89,7 +89,7 @@ A project opts out of the bundle with `[presets] spec = false` in `.devkit/confi
 | `instruction` | `contract-authoring`, `living-spec-writing` |
 | `guidance` | `spec-pointer` |
 | `rule` | `document-reference`, `id-convention`, `spec-format`, `traceability-link`, `task-coverage`, `spec-lifecycle`, `reconcile-contract`, `document-summary`, `code-entrypoints` (`CAP-GOV-spec-rules`) |
-| `skill` | the 14 skills of 4.4 |
+| `skill` | the 12 skills of 4.4 |
 | `workflow` | `s-lane`, `direct-delivery`, `bugfix`, `incubated-delivery` |
 | `subagent` | `challenger`, `reconciler`, `reviewer`, `scout` |
 | `playbook` | `brownfield-adoption`, `feedback-hygiene` |
@@ -135,8 +135,6 @@ Living Spec and `specs/` holds feature specs.
 | `spec-sync` | Reconcile the change into the Living Spec and resolve `reconcile.md`. | `list`, `refs`, `search`, `proposal new`, `scope update` |
 | `spec-integrate` | Integrate after G3: conflicts, re-verification, reconcile confirmation, cumulative check, cleanup. | `policy`, `scope sweep`, `proposal prune` |
 | `spec-delegate` | Delegate a stage to a role contract and record its envelope. | |
-| `spec-challenge` | Challenger procedure: evidence-based objections before a direction is chosen. | `resolve`, `refs` |
-| `spec-scout` | Scout procedure: internal and external evidence for a proposal. | `list`, `resolve`, `refs`, `search` |
 | `spec-rule` | Author or tune a project rule for `devkit rules` in the project's own bundle. | |
 | `spec-feedback` | Record and sweep feedback observations (`specs/<YYYY-MM>/feedback/`). | `list feedback`, `resolve`, `policy` |
 | `spec-entrypoints` | Derive capability and story entrypoints from spec bundles, review and apply them. | `entrypoints derive`, `list capability` |
@@ -144,10 +142,12 @@ Living Spec and `specs/` holds feature specs.
 Skill references, each read at the moment it names: `spec/references/completion.md` (completion classification,
 policy, reconcile record, checks and commits), `spec/references/envelope.md` (delegation input and return envelope,
 final change report), `spec/references/worktree.md` (task worktree start, work, integrate and finish, leftovers),
+`spec/references/playbooks.md` (Tier 2 operational playbook routing),
 `spec-next/references/post-handoff.md` (follow-up of `[REWRITTEN]` and `[UNRESOLVED_LINK]` lines),
 `spec-next/references/workflow-signals.md` (`devkit workflow next` lines and advisories),
-`spec-specify/references/feature.md` and `bugfix.md`, `spec-feedback/references/sweep.md` and `template.md`,
-`spec-rule/references/config.md` and `templates.md`.
+`spec-delegate/references/hosts.md` (spawning a role on each host), `spec-specify/references/feature.md` and
+`bugfix.md`, `spec-feedback/references/sweep.md` and `template.md`, `spec-rule/references/config.md` and
+`templates.md`.
 
 ### 4.5 Playbooks
 

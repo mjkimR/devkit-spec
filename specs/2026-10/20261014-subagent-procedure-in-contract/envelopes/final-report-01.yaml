@@ -1,0 +1,18 @@
+kind: final-report
+stage: final-change-report
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-14T07:04:29.316674Z'
+status: completed
+summary: spec-scout and spec-challenge folded into the scout and challenger contracts; caller-only sections moved out of all four contracts into spec-delegate, which now passes only the payload to a projected role; scout gains a shell; Living Spec reconciled (3 targets).
+findings: []
+assumptions:
+- 'Nothing is committed yet: no commit was authorized, so checks ran on the working tree and the rule check ran without --staged.'
+- Intent and direction were recorded from the user's acceptance of the reviewed plan (option B, caller sections into spec-delegate, scout shell); reconciler shell left unchanged.
+checks:
+  tests: 'PASS just test: 626 passed'
+  build: PASS no build artifact; pyright 0 errors; devkit sync and workflow validate clean
+  lint: PASS just lint-check; devkit rules check 0 errors (working tree)
+diff_scope:
+  base: main
+  head: 0963a657521b30ecc890d6dfcf204aabc58c8ed3

@@ -1,0 +1,17 @@
+kind: review
+stage: review-refine
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-14T07:12:16.258150Z'
+status: completed
+summary: 'AC-01..AC-08 confirmed: tests/test_role_contracts.py (AC-02..AC-06), tests/test_workflows.py (AC-01), tests/test_bundle_budgets.py sizes, links and linked references (AC-08), rg over src and README (AC-07). skill-authoring completion conditions hold: links resolve, moved content is host-specific or operational-only, safety rules stay in SKILL.md.'
+findings: []
+assumptions:
+- Reviewed in the main session; uncommitted working tree against HEAD; rule check without --staged.
+- 'RULE-skill-document-size was not run: the authoring bundle is not selected in this project; tests/test_bundle_budgets.py checks the same 8192-byte limit plus the 7680-byte headroom.'
+checks:
+  tests: 'PASS just test: 642 passed'
+  lint: PASS just lint-check, pyright 0 errors, devkit rules check 0 errors (working tree)
+diff_scope:
+  base: main
+  head: 0963a657521b30ecc890d6dfcf204aabc58c8ed3

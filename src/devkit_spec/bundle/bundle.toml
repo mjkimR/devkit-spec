@@ -118,18 +118,6 @@ id = "spec-delegate"
 kind = "skill"
 source = "skills/spec-delegate"
 
-# Challenge a direction before it is chosen.
-[[assets]]
-id = "spec-challenge"
-kind = "skill"
-source = "skills/spec-challenge"
-
-# Scout prior art and evidence for a proposal.
-[[assets]]
-id = "spec-scout"
-kind = "skill"
-source = "skills/spec-scout"
-
 # Author or tune a project rule for devkit rules.
 [[assets]]
 id = "spec-rule"
@@ -202,7 +190,8 @@ id = "incubated-delivery"
 kind = "workflow"
 source = "workflows/incubated-delivery.md"
 
-# Optional support roles the workflows delegate to: host-neutral contracts, projected per agent.
+# Optional support roles the workflows delegate to: host-neutral contracts, projected per agent; the body is the
+# role's prompt, so a procedure no main session runs lives there rather than in a skill.
 [[assets]]
 id = "challenger"
 kind = "subagent"
@@ -259,8 +248,6 @@ assets = [
     "spec-sync",
     "spec-integrate",
     "spec-delegate",
-    "spec-challenge",
-    "spec-scout",
     "spec-rule",
     "spec-feedback",
     "spec-entrypoints",

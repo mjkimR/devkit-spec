@@ -1,0 +1,8 @@
+request: return:direction
+kind: return
+action: accept
+workflow: direct-delivery
+stage: direction
+note: 'scope extension: split spec-delegate and spec skills per the skill-authoring
+  playbook to restore budget headroom'
+at: '2026-10-14T07:09:44.557239Z'

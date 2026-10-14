@@ -17,7 +17,7 @@ new home. The project's own Living Spec starts at [docs/README.md](docs/README.m
 Status: the specrig port is functionally complete: the document model with namespaces (`devkit spec
 resolve|refs|list|search`), ten spec rules, the four delivery workflows with their role contracts, proposals and spec
 bundles (`devkit spec proposal new|padr|handoff`, `devkit spec new`), code entrypoints (`devkit spec entrypoints`),
-the scope registry (`devkit spec scope`), `devkit spec policy`, the constitution, instructions, templates, 14 `spec*`
+the scope registry (`devkit spec scope`), `devkit spec policy`, the constitution, instructions, templates, 12 `spec*`
 skills, two playbooks and the opt-in docs skeleton.
 
 ## Use in a project

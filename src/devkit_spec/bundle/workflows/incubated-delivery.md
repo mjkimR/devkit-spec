@@ -32,7 +32,7 @@ stages:
     entry: [anchor-exists]
     exit: []
     artifacts: [docs/proposals/PROP-<slug>/materials/]
-    skills: [spec-delegate, spec-scout, spec-challenge]
+    skills: [spec-delegate]
     role: scout
     isolation: preferred
     returns:
@@ -81,7 +81,7 @@ High uncertainty: the problem is shaped in a proposal bundle `docs/proposals/PRO
 
 The frontmatter is the only stage definition. Read it with `devkit workflow show incubated-delivery` (or `devkit workflow show --unit <dir>`). This document keeps only the rules the schema cannot express.
 
-- **Spike** is optional and never becomes the current stage on its own: run it when the direction needs evidence, delegating to the `scout` role (and `challenger` through `spec-challenge`). Its materials go under the proposal's `materials/`.
+- **Spike** is optional and never becomes the current stage on its own: run it when the direction needs evidence, delegating to the `scout` role (and the `challenger` role when the direction needs criticism). Its materials go under the proposal's `materials/`.
 - **Handoff** has no exit check: once the direction gate holds, `next` reports the unit complete (`[STAGE: - complete=true]`, no `[HANDOFF]` line). That is the cue to run `devkit spec proposal handoff <slug>`. The definition declares no `next` candidates, because devkit's `devkit workflow handoff` rebinds a unit in place and cannot move it into another layout.
 
 ## Gate rules
