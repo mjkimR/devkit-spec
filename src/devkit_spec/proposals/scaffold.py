@@ -66,22 +66,29 @@ def require_slug(raw: str, what: str = "slug") -> str:
     return slug
 
 
-def new_slug(raw: str, what: str = "slug", error: type[SpecError] = ProposalSlugError) -> str:
+def new_slug(raw: str, what: str = "slug", error: type[SpecError] = ProposalSlugError, fix: str | None = None) -> str:
     """The slug of a new document: ``clean_slug(raw)`` with ``_`` written as ``-``.
 
     Raises ``error`` when nothing is left, or when the first segment has no letter: ``RULE-id-convention`` reads
-    ``2024-budget`` as a retired number-based ID. Lookups of existing documents use ``require_slug``.
+    ``2024-budget`` as a retired number-based ID (``fix`` replaces the default directive then). Lookups of existing
+    documents use ``require_slug``.
     """
     slug = _DASHES.sub("-", clean_slug(raw)).strip("-")
     if not slug:
         raise error(f"{what} {raw!r} has no letter or digit", target_files=[raw])
-    if not _FIRST_SEGMENT_LETTER.match(slug):
+    if not first_segment_has_letter(slug):
         raise error(
             f"{what} {raw!r} gives {slug!r}, whose first segment has no letter",
             target_files=[raw],
-            fix=f"Pass a {what} whose first word has a letter (for example budget-2024 instead of 2024-budget)",
+            fix=fix or f"Pass a {what} whose first word has a letter (for example budget-2024 instead of 2024-budget)",
         )
     return slug
+
+
+def first_segment_has_letter(slug: str) -> bool:
+    """Whether the first ``-`` segment of ``slug`` has a letter; ``RULE-id-convention`` reads ``2024-budget`` as the
+    retired number-based ID ``2024``."""
+    return _FIRST_SEGMENT_LETTER.match(slug) is not None
 
 
 def yaml_scalar(value: str) -> str:
@@ -388,12 +395,20 @@ class CreatedDecision:
 
 
 def create_padr(
-    root: Path, slug: str, title: str, *, summary: str | None = None, today: date | None = None
+    root: Path,
+    slug: str,
+    title: str,
+    *,
+    summary: str | None = None,
+    padr_slug: str | None = None,
+    today: date | None = None,
 ) -> CreatedDecision:
-    """Scaffold ``decisions/PADR-<title slug>.md`` in the bundle of proposal ``slug``.
+    """Scaffold ``decisions/PADR-<padr slug>.md`` in the bundle of proposal ``slug``.
 
-    ``summary`` is written only when given; the promoted ADR keeps it. Raises ``ProposalSlugError`` for a slug or
-    title without letters or digits, ``ArgumentError`` for a ``summary`` that is empty or not English,
+    The PADR slug is ``padr_slug`` when given (a leading ``PADR-`` dropped), else the title's (``new_slug``); the
+    title stays free text, so ``"2024 roadmap"`` works with ``padr_slug="roadmap-2024"``. ``summary`` is written only
+    when given; the promoted ADR keeps it. Raises ``ProposalSlugError`` for a slug without letters or digits or a
+    PADR slug whose first segment has no letter, ``ArgumentError`` for a ``summary`` that is empty or not English,
     ``ProposalNotFoundError`` when the bundle does not exist, ``ProposalExistsError`` when any document already
     declares the PADR ID.
     """
@@ -401,7 +416,15 @@ def create_padr(
     slug = require_slug(slug)
     summary = require_summary(summary)
     title = title.strip()
-    padr_id = f"PADR-{new_slug(title, 'title')}"
+    if padr_slug is not None:
+        padr_id = f"PADR-{new_slug(padr_slug.strip().removeprefix('PADR-'), '--slug')}"
+    else:
+        padr_id = "PADR-" + new_slug(
+            title,
+            "title",
+            fix="Pass --slug with a slug whose first word has a letter (for example --slug roadmap-2024), keeping the"
+            " title as it is",
+        )
     bundle = bundle_dir(root, slug)
     if not bundle.is_dir():
         rel = bundle.relative_to(root).as_posix()

@@ -6,9 +6,9 @@
   ``reconcile.md``, ``target-docs.md`` (``prop`` stage); ``tasks.md`` ``_Boundary`` entries are declared code (they win
   over a candidate of the same path), the targets' ``entrypoints`` candidates. When both target lists exist, the
   paths only one names are reported as ``Diff`` and not merged.
-- Observed (``build`` stage): the paths changed on the task's side of its base branch (``<fork point>..HEAD``, the
-  fork point being ``git merge-base <base ref> HEAD``, else the record's fixed base revision), staged, unstaged and
-  untracked, relative to the workspace root.
+- Observed (``build`` stage): the paths changed on the task's side of its base branch (``<start>..HEAD``, the start
+  being the fork point ``git merge-base <base ref> HEAD`` when the record's fixed base revision is its ancestor, else
+  that base revision), staged, unstaged and untracked, relative to the workspace root.
 
 ``targets`` is a list of ``{file: <workspace-relative path>, resolution: ...}`` in both files. Paths follow the
 entrypoint path contract. What cannot become a path is ``Unresolved`` with its reason, never dropped silently.
@@ -241,6 +241,17 @@ def _fork_point(root: Path, base_ref: str, deadline: Deadline) -> str:
         return ""
 
 
+def _is_ancestor(root: Path, ancestor: str, descendant: str, deadline: Deadline) -> bool:
+    """``git merge-base --is-ancestor``; ``False`` also when Git does not know either commit."""
+    try:
+        run_git(root, "merge-base", "--is-ancestor", ancestor, descendant, deadline=deadline)
+    except GitError as exc:
+        if exc.returncode is None:
+            raise
+        return False
+    return True
+
+
 def observe_git(
     root: Path, base_revision: str, deadline: Deadline, first_seen: str, *, base_ref: str = ""
 ) -> tuple[list[ScopePath], list[Unresolved]]:
@@ -248,9 +259,12 @@ def observe_git(
 
     The committed range starts where ``HEAD`` forks from the branch ``base_ref`` (``git merge-base``), so what the
     task merged or rebased in from that branch is not observed while its own changes and conflict resolutions are.
-    Without ``base_ref`` it starts at ``base_revision``; a ``base_ref`` that does not resolve falls back to
-    ``base_revision`` and is unresolved (``missing-base-ref``). An empty or unknown start skips the committed range
-    and is unresolved. Paths are relative to ``root`` and limited to it. Renames are not detected, so a moved file
+    That fork point is used only when ``base_revision`` is its ancestor: the range is never wider than
+    ``base_revision..HEAD``, so a ``base_ref`` that is not the branch the task forked from (the base checkout was on
+    another branch at registration) cannot pull another branch's commits in. Without ``base_ref``, or when the fork
+    point predates ``base_revision``, it starts at ``base_revision``; a ``base_ref`` that does not resolve or shares no
+    history with ``HEAD`` (a shallow clone) falls back to ``base_revision`` and is unresolved (``missing-base-ref``).
+    An empty or unknown start skips the committed range and is unresolved. Paths are relative to ``root`` and limited to it. Renames are not detected, so a moved file
     contributes both its old and its new path. A path outside the entrypoint path contract (a glob character or a
     colon in its name) is left out. Raises ``ScopeTimeoutError`` when the deadline passes and ``GitError`` when Git
     fails otherwise.
@@ -272,10 +286,10 @@ def observe_git(
     start = base_revision
     if base_ref:
         fork = _fork_point(root, base_ref, deadline)
-        if fork:
-            start = fork
-        else:
+        if not fork:
             unresolved.append(Unresolved(base_ref, "missing-base-ref", Source.OBSERVED))
+        elif not base_revision or _is_ancestor(root, base_revision, fork, deadline):
+            start = fork  # no wider than base_revision..HEAD: the fork point is base_revision or descends from it
     changed = ("diff", "--name-only", "--no-renames", "-z", "--relative")
     if not start:
         unresolved.append(Unresolved("", "missing-base-revision", Source.OBSERVED))

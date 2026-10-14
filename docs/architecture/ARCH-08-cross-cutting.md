@@ -137,7 +137,8 @@ The spec rules follow devkit's rule engine contract (`CAP-GOV-spec-rules`):
   `devkit spec proposal handoff`). Rewrites change only what was parsed (a reference's offsets, the `entrypoints`
   block), leaving every other byte as it was.
 - Nothing is deleted beyond what the command owns: handoff removes the handed-off proposal, `proposal prune` removes
-  only directories that hold no file, `scope sweep --apply` removes only stale records whose revision is unchanged.
+  only directories that hold no file, `scope sweep --apply` removes only stale records whose revision is unchanged,
+  and `scope release` keeps the worktree's token while an unreadable record file may still be its record.
 
 ---
 

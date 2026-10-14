@@ -130,12 +130,25 @@ def new_cmd(
     default=None,
     help="One or two English sentences: what the decision defines; kept by the promoted ADR [default: none]",
 )
+@click.option(
+    "--slug",
+    "padr_slug",
+    default=None,
+    help="Slug of the PADR ID and file name; its first word needs a letter [default: the title's slug]",
+)
 @WORKSPACE
 @FORMAT_OPTION
 @boundary
-def padr_cmd(slug: str, title: str, summary: str | None, workspace_root: str | None, output_format: str) -> None:
-    """Record a preliminary decision PADR-<title slug> in proposal SLUG's decisions/."""
-    created = create_padr(resolve_root(workspace_root), slug, title, summary=summary)
+def padr_cmd(
+    slug: str,
+    title: str,
+    summary: str | None,
+    padr_slug: str | None,
+    workspace_root: str | None,
+    output_format: str,
+) -> None:
+    """Record a preliminary decision PADR-<slug> in proposal SLUG's decisions/ (the title's slug unless --slug)."""
+    created = create_padr(resolve_root(workspace_root), slug, title, summary=summary, padr_slug=padr_slug)
     if is_json(output_format):
         echo_json(created.to_dict())
         return

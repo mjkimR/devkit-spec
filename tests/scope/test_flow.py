@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
+import time
 from pathlib import Path
 
 import pytest
-from devkit.advisory import AdvisoryError, Level
+from devkit.advisory import ActionMode, AdvisoryError, Level
 from scope.support import SPEC, git, make_repo, write
 
 from devkit_spec.config import ScopeConfig
@@ -40,7 +42,8 @@ from devkit_spec.scope import (
     slug_from_spec,
     update,
 )
-from devkit_spec.scope.location import SHARED_DIR, TOKEN_FILE, save_token
+from devkit_spec.scope import location as location_module
+from devkit_spec.scope.location import SHARED_DIR, TOKEN_FILE, load_token, save_token
 
 
 @pytest.fixture
@@ -147,6 +150,39 @@ def test_a_registration_that_loses_the_token_race_is_rolled_back(repo: Path, mon
     assert own(session).record.task_id == "first", "the winner keeps its token"
 
 
+def test_token_files_are_complete_or_ignored(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:
+    path = tmp_path / "git" / TOKEN_FILE
+    path.parent.mkdir()
+    stale, fresh, other = (path.parent / name for name in (f".{TOKEN_FILE}-ab_12cd3", f".{TOKEN_FILE}-zz99yy00", ".x"))
+    for leftover in (stale, fresh, other):
+        leftover.write_text("live-token\n")
+    old = time.time() - 3600
+    os.utime(stale, (old, old))
+    os.utime(other, (old, old))
+    assert load_token(path) is None
+    assert not stale.exists() and fresh.exists() and other.exists(), "only old files of the temp pattern are removed"
+    path.write_text("partial")
+    assert load_token(path) is None, "a token without its newline is incomplete"
+    path.unlink()
+
+    def no_links(*args: object) -> None:
+        raise OSError(1, "Operation not permitted")
+
+    monkeypatch.setattr(location_module.os, "link", no_links)
+    save_token(path, "one")
+    assert load_token(path) == "one" and path.stat().st_mode & 0o777 == 0o600
+    with pytest.raises(FileExistsError):
+        save_token(path, "two")
+    monkeypatch.undo()
+
+    session = open_session(repo)
+    session.location.token_path.write_text("")  # an interrupted save without hard links
+    with pytest.raises(ScopeTokenExistsError):
+        register(session, SPEC)
+    assert release(session).registered is False and not session.location.token_path.exists()
+    assert register(session, SPEC).record.task_id == "SPEC-s"
+
+
 def test_save_token_is_exclusive(tmp_path: Path) -> None:
     path = tmp_path / "git" / TOKEN_FILE
     save_token(path, "one")
@@ -215,9 +251,62 @@ def test_observed_scope_forks_from_the_base_branch(repo: Path, tmp_path: Path) -
     git(repo, "branch", "-m", "main", "trunk")
     ack = update(session, SPEC)
     assert ack.status == AckStatus.APPLIED and ack.record is not None
-    assert ("refs/heads/main", "missing-base-ref") in {(item.value, item.reason) for item in ack.record.unresolved}
+    assert ack.record.base_ref == "refs/heads/trunk", "a renamed base branch is detected again"
+    assert not [item for item in ack.record.unresolved if item.reason == "missing-base-ref"]
+    assert {path.path for path in ack.record.scopes if path.source is Source.OBSERVED} == {"src/a/a.py"}
+
+    git(repo, "switch", "-q", "--detach")
+    git(repo, "branch", "-D", "trunk")
+    ack = update(session, SPEC)
+    assert ack.status == AckStatus.APPLIED and ack.record is not None
+    assert ("refs/heads/trunk", "missing-base-ref") in {(item.value, item.reason) for item in ack.record.unresolved}
     observed = {path.path for path in ack.record.scopes if path.source is Source.OBSERVED}
     assert {"src/a/a.py", "src/b/b.py"} <= observed, "an unresolvable base ref falls back to base_revision"
+
+    git(repo, "switch", "-q", "-c", "next")
+    ack = update(session, SPEC)
+    assert ack.record is not None and ack.record.base_ref == "refs/heads/next", "the next detection replaces it"
+    assert not [item for item in ack.record.unresolved if item.reason == "missing-base-ref"]
+
+
+def _observed(session: Session) -> set[str]:
+    ack = update(session, SPEC)
+    assert ack.record is not None, ack.error
+    return {path.path for path in ack.record.scopes if path.source is Source.OBSERVED}
+
+
+def test_a_base_checkout_on_another_branch_adds_no_upstream_paths(repo: Path, tmp_path: Path) -> None:
+    git(repo, "switch", "-q", "-c", "other")
+    write(repo, "src/b/b.py", "b = 'other'\n")
+    git(repo, "commit", "-q", "-am", "other")
+    git(repo, "switch", "-q", "main")
+    write(repo, "src/shared.py", "s = 'main'\n")  # main moves on after other forked
+    git(repo, "commit", "-q", "-am", "main")
+    git(repo, "switch", "-q", "other")  # the base checkout is on other when the task registers
+    linked = tmp_path / "repo-wt-task"
+    git(repo, "worktree", "add", "-q", "-b", "task", str(linked), "main")
+    session = open_session(linked)
+    assert register(session, SPEC).record.base_ref == "refs/heads/other"
+    write(linked, "src/a/a.py", "a = 2\n")
+    git(linked, "commit", "-q", "-am", "task")
+    assert _observed(session) == {"src/a/a.py"}, "the range is never wider than base_revision..HEAD"
+
+
+def test_a_worktree_forked_from_another_branch_adds_no_upstream_paths(repo: Path, tmp_path: Path) -> None:
+    git(repo, "branch", "release")
+    linked = tmp_path / "repo-wt-release"
+    git(repo, "worktree", "add", "-q", "-b", "prep", str(linked), "release")
+    write(linked, "src/b/b.py", "b = 'release'\n")
+    git(linked, "commit", "-q", "-am", "release work")
+    git(linked, "switch", "-q", "--detach")
+    git(repo, "branch", "-f", "release", "prep")
+    task = tmp_path / "repo-wt-task"
+    git(repo, "worktree", "add", "-q", "-b", "task", str(task), "release")  # the base checkout stays on main
+    session = open_session(task)
+    assert register(session, SPEC).record.base_ref == "refs/heads/main"
+    write(task, "src/a/a.py", "a = 2\n")
+    git(task, "commit", "-q", "-am", "task")
+    assert _observed(session) == {"src/a/a.py"}, "release's own commits are not the task's"
 
 
 def test_update_statuses_for_stale_timeout_and_orphaned_records(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -269,12 +358,43 @@ def test_release_of_a_named_task(repo: Path) -> None:
 def test_an_unreadable_own_record_keeps_the_token(repo: Path) -> None:
     session = open_session(repo)
     register(session, SPEC)
-    (session.location.shared_path / session.location.namespace / "SPEC-s.json").write_text("{not json")
+    path = session.location.shared_path / session.location.namespace / "SPEC-s.json"
+    path.write_text(path.read_text() + "trailing garbage")  # still names the token hash
     for call in (lambda: release(session), lambda: release(session, "SPEC-s"), lambda: own(session)):
         with pytest.raises(AdvisoryError) as raised:
             call()
-        assert raised.value.code == "SPEC_SCOPE_RECORD_INVALID" and raised.value.level == Level.ERROR
+        error = raised.value
+        assert (error.code, error.level, error.mode) == (
+            "SPEC_SCOPE_RECORD_INVALID",
+            Level.ERROR,
+            ActionMode.INTERACTION,
+        )
+        assert error.target_files == (str(path),) and error.details == ("SPEC-s.json: parse",)
+        assert "token is kept" in error.message
     assert session.location.token_path.exists(), "the token of a record that cannot be read is kept"
+    ack = update(session, SPEC)
+    assert ack.status == AckStatus.FAILED and ack.error is not None and ack.error.code == "SPEC_SCOPE_RECORD_INVALID"
+
+
+def test_unrelated_unreadable_records_do_not_block_release(repo: Path) -> None:
+    session = open_session(repo)
+    register(session, SPEC)
+    directory = session.location.shared_path / session.location.namespace
+    (directory / "SPEC-other.json").write_text("{not json")  # another task's corrupt record
+    assert release(session, "SPEC-gone").already and session.location.token_path.exists()
+    with pytest.raises(AdvisoryError) as raised:
+        release(session, "SPEC-other")  # that task's own record file is the unreadable one
+    assert raised.value.target_files == (str(directory / "SPEC-other.json"),)
+    released = release(session, "SPEC-s")
+    assert (released.task, released.already) == ("SPEC-s", False) and not session.location.token_path.exists()
+
+    register(session, SPEC)
+    (directory / "SPEC-s.json").unlink()  # the record is gone: the token is orphaned
+    with pytest.raises(ScopeRecordMissingError):
+        own(session)
+    assert isinstance(update(session, SPEC).error, ScopeRecordMissingError)
+    released = release(session)
+    assert released.already and not session.location.token_path.exists(), "the orphaned token is removed"
 
 
 def test_journal_failure_is_one_warning(repo: Path) -> None:

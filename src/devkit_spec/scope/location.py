@@ -6,7 +6,11 @@ without configuration, and a cache clean never touches them. ``[tool.spec.scope]
 registry between clones or hosts, set the same absolute ``shared_path`` and an explicit ``namespace`` on each.
 
 The token lives in the worktree's own Git directory (``<git-dir>/devkit-spec-scope-token``, mode 0600): one per
-worktree, created exclusively, never in the working tree, never in the registry.
+worktree, created exclusively, never in the working tree, never in the registry. It is written to a temporary file
+(``.devkit-spec-scope-token-<random>``) and hard-linked into place; a file system without hard links gets the token
+file created exclusively and written in place instead, so ``load_token`` takes only a file that ends with its newline
+for a token. A temporary file a crash left behind is removed by the next ``save_token`` or ``load_token`` once it is
+older than a minute.
 """
 
 from __future__ import annotations
@@ -14,7 +18,9 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import os
+import re
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -26,6 +32,8 @@ from devkit_spec.scope.deadline import Deadline
 
 SHARED_DIR = "devkit-spec-scope"
 TOKEN_FILE = "devkit-spec-scope-token"
+_TEMP_TOKEN = re.compile(rf"\.{re.escape(TOKEN_FILE)}-[a-z0-9_]{{8}}")  # what tempfile.mkstemp names in save_token
+_TEMP_TOKEN_AGE = 60.0  # seconds: older temporary token files belong to no save still in progress
 
 
 @dataclass(frozen=True)
@@ -88,12 +96,35 @@ def head_revision(root: Path, deadline: Deadline) -> str:
 
 
 def load_token(path: Path) -> str | None:
-    """The saved token; ``None`` when there is none."""
+    """The saved token; ``None`` when there is none.
+
+    A file that does not end with the token's newline (empty or partial: a save in progress, or one interrupted on a
+    file system without hard links) holds no token either; ``incomplete_token`` tells the two apart.
+    """
+    _clean_temp_tokens(path.parent)
     try:
-        token = path.read_text(encoding="utf-8").strip()
+        text = path.read_text(encoding="utf-8")
     except FileNotFoundError:
         return None
-    return token or None
+    token = text.strip()
+    return token if token and text.endswith("\n") else None
+
+
+def incomplete_token(path: Path) -> bool:
+    """Whether a token file exists at ``path`` but ``load_token`` takes it for no token (empty or partial)."""
+    return path.exists() and load_token(path) is None
+
+
+def _clean_temp_tokens(directory: Path) -> None:
+    """Remove the temporary token files a crashed ``save_token`` left in ``directory`` (exact name pattern only)."""
+    cutoff = time.time() - _TEMP_TOKEN_AGE
+    with contextlib.suppress(OSError):
+        for entry in directory.glob(f".{TOKEN_FILE}-*"):
+            if not _TEMP_TOKEN.fullmatch(entry.name):
+                continue
+            with contextlib.suppress(OSError):
+                if entry.lstat().st_mtime < cutoff:
+                    entry.unlink()
 
 
 def _symbolic_head(cwd: Path, deadline: Deadline) -> str:
@@ -107,7 +138,9 @@ def _symbolic_head(cwd: Path, deadline: Deadline) -> str:
 
 
 def base_ref(location: Location, deadline: Deadline) -> str:
-    """The branch the base checkout is on (``refs/heads/<name>``), which ``devkit worktree finish`` integrates into.
+    """The branch the base checkout is on now (``refs/heads/<name>``): the best available guess at the task's base
+    branch. devkit records no fork branch for a worktree, and the base checkout may have switched branches since the
+    worktree was created, so a consumer never trusts it alone (``observe_git`` checks it against the base revision).
 
     ``""`` when the base checkout is detached, or when this workspace is on that same branch (the base checkout
     itself): there no upstream commit can be told apart from the task's own.
@@ -116,13 +149,27 @@ def base_ref(location: Location, deadline: Deadline) -> str:
     return "" if not ref or ref == _symbolic_head(location.root, deadline) else ref
 
 
+def ref_exists(root: Path, ref: str, deadline: Deadline) -> bool:
+    """Whether ``ref`` names a commit in the repository at ``root``."""
+    try:
+        run_git(root, "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}", deadline=deadline)
+    except GitError as exc:
+        if exc.returncode is None:
+            raise
+        return False
+    return True
+
+
 def save_token(path: Path, token: str) -> None:
     """Create the token file, readable by its owner only; ``FileExistsError`` when the worktree already holds one.
 
-    The token is written to a temporary file and linked into place, so a reader sees no token or a complete one,
-    and of two registrations racing in one worktree exactly one saves its token.
+    The token is written to a temporary file and hard-linked into place, so a reader sees no token or a complete
+    one, and of two registrations racing in one worktree exactly one saves its token. Without hard links the token
+    file is created exclusively and written in place: still exactly one winner, and a reader that comes between the
+    creation and the write sees a file without the final newline, which ``load_token`` takes for no token.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
+    _clean_temp_tokens(path.parent)
     fd, name = tempfile.mkstemp(prefix=f".{TOKEN_FILE}-", dir=path.parent)  # created with mode 0600
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:

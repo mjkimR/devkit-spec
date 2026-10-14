@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import errno
 import os
+import shutil
 from collections.abc import Callable
 from pathlib import Path
 
@@ -16,10 +17,12 @@ from devkit_spec.errors import (
     ProposalNotApprovedError,
     ProposalNotFoundError,
     ProposalSlugConflictError,
+    ProposalSlugError,
     ProposalTargetExistsError,
     ProposalWorkflowError,
 )
 from devkit_spec.proposals import SKELETON_MARKER, HandoffResult, create_padr, create_proposal, handoff_proposal
+from devkit_spec.proposals import specs as specs_module
 
 SPEC = f"specs/{MONTH}/{STAMP}"
 
@@ -656,3 +659,171 @@ def test_single_file_proposal(workspace: Path, write: Write) -> None:
     assert f"`SPEC-single` [s](../../{SPEC}-single/spec.md)" in story
     assert not (workspace / "docs/proposals/PROP-single.md").exists()
     assert result.decisions == [] and result.materials is None
+
+
+def test_a_workflow_path_outside_the_discovered_definitions_writes_nothing(workspace: Path, write: Write) -> None:
+    write_workflow(workspace, "direct-delivery")
+    write("elsewhere/x.md", WORKFLOW.format(id="direct-delivery"))
+    proposal = _new(workspace, "moved")
+    accept(proposal, "\nhandoff_workflow: elsewhere/x.md")
+    with pytest.raises(ProposalWorkflowError) as raised:
+        handoff_proposal(workspace, "moved", today=TODAY)
+    assert any("WORKFLOW_NOT_BINDABLE" in detail for detail in raised.value.details)
+    assert proposal.is_file() and not (workspace / "specs").exists()
+
+
+def test_refuses_a_legacy_slug_that_starts_with_a_number(workspace: Path, write: Write) -> None:
+    write(
+        "docs/proposals/PROP-2024-budget.md",
+        "---\nid: PROP-2024-budget\ntitle: Budget\nstatus: accepted\n---\n\n# [PROP-2024-budget] Budget\n",
+    )
+    with pytest.raises(ProposalSlugError) as raised:
+        handoff_proposal(workspace, "2024-budget", today=TODAY)
+    assert raised.value.code == "SPEC_PROPOSAL_SLUG_INVALID"
+    assert raised.value.target_files == ("docs/proposals/PROP-2024-budget.md",)
+    assert "Rename PROP-2024-budget" in str(raised.value.advisory.fix)
+
+    proposal = _new(workspace, "cache")
+    write("docs/proposals/PROP-cache/decisions/PADR-2024-cache.md", "---\nid: PADR-2024-cache\nstatus: draft\n---\n")
+    accept(proposal)
+    with pytest.raises(ProposalSlugError) as raised:
+        handoff_proposal(workspace, "cache", today=TODAY)
+    assert raised.value.target_files == ("docs/proposals/PROP-cache/decisions/PADR-2024-cache.md",)
+    assert proposal.is_file() and not (workspace / "specs").exists()
+
+
+def test_leaves_operating_system_junk_behind(workspace: Path, write: Write) -> None:
+    proposal = _new(workspace, "junk")
+    for path in ("materials/.DS_Store", "materials/sub/Thumbs.db", ".DS_Store", "decisions/desktop.ini"):
+        write(f"docs/proposals/PROP-junk/{path}", "junk")
+    accept(proposal)
+    result = handoff_proposal(workspace, "junk", today=TODAY)
+    assert result.materials is None
+    assert "Preserved Materials" not in (spec_dir(workspace, "junk") / "spec.md").read_text(encoding="utf-8")
+    assert not (workspace / "docs/materials").exists() and not proposal.parent.exists()
+
+
+def test_carries_other_hidden_files(workspace: Path, write: Write) -> None:
+    proposal = _new(workspace, "hidden")
+    write("docs/proposals/PROP-hidden/.DS_Store", "junk")
+    write("docs/proposals/PROP-hidden/.notes", "keep")
+    accept(proposal)
+    result = handoff_proposal(workspace, "hidden", today=TODAY)
+    preserved = workspace / f"docs/materials/{MONTH}/{STAMP}-hidden"
+    assert result.materials == preserved.relative_to(workspace).as_posix()
+    assert sorted(path.name for path in preserved.iterdir()) == [".notes"]
+
+
+def test_never_moves_a_file_through_a_symlink_in_materials(
+    workspace: Path, write: Write, tmp_path_factory: pytest.TempPathFactory
+) -> None:
+    outside = tmp_path_factory.mktemp("outside")
+    proposal = _new(workspace, "linked")
+    (proposal.parent / "materials/sub").symlink_to(outside, target_is_directory=True)
+    write("docs/proposals/PROP-linked/sub/x.md", "# x\n")
+    accept(proposal)
+    with pytest.raises(ProposalTargetExistsError) as raised:
+        handoff_proposal(workspace, "linked", today=TODAY)
+    assert raised.value.target_files == ("docs/proposals/PROP-linked/sub/x.md",)
+    assert list(outside.iterdir()) == [] and not (workspace / "specs").exists()
+
+
+def test_refuses_a_destination_that_resolves_outside_the_workspace(
+    workspace: Path, write: Write, tmp_path_factory: pytest.TempPathFactory
+) -> None:
+    outside = tmp_path_factory.mktemp("outside")
+    (workspace / "docs/materials").mkdir(parents=True)
+    (workspace / f"docs/materials/{MONTH}").symlink_to(outside, target_is_directory=True)
+    proposal = _new(workspace, "away")
+    write("docs/proposals/PROP-away/notes.md", "# notes\n")
+    accept(proposal)
+    with pytest.raises(ProposalTargetExistsError) as raised:
+        handoff_proposal(workspace, "away", today=TODAY)
+    assert "outside the workspace" in raised.value.message
+    assert list(outside.iterdir()) == [] and not (workspace / "specs").exists()
+    assert (proposal.parent / "notes.md").is_file()
+
+
+def _failing_move(fail: Callable[[Path], bool]) -> Callable[..., None]:
+    """``move_path`` that raises for the sources ``fail`` selects."""
+    move = specs_module.move_path
+
+    def move_path(source: Path, *args: object) -> None:
+        if fail(source):
+            raise OSError("simulated failure")
+        move(source, *args)  # type: ignore[arg-type]
+
+    return move_path
+
+
+def test_a_roll_back_leaves_no_directory_inside_the_materials(
+    workspace: Path, write: Write, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    proposal = _new(workspace, "prune")
+    write("docs/proposals/PROP-prune/materials/a.md", "# a\n")
+    write("docs/proposals/PROP-prune/extra/deep/notes.md", "# notes\n")
+    write("docs/proposals/PROP-prune/z.md", "# z\n")
+    accept(proposal)
+    monkeypatch.setattr("devkit_spec.proposals.handoff.move_path", _failing_move(lambda path: path.name == "z.md"))
+    with pytest.raises(ProposalHandoffError):
+        handoff_proposal(workspace, "prune", today=TODAY)
+    bundle = proposal.parent
+    assert sorted(p.relative_to(bundle).as_posix() for p in (bundle / "materials").rglob("*")) == ["materials/a.md"]
+    assert (bundle / "extra/deep/notes.md").is_file() and (bundle / "z.md").is_file()
+    assert not (workspace / "docs/materials").exists() and not (workspace / "specs").exists()
+
+
+def test_a_roll_back_never_removes_what_it_could_not_move_back(
+    workspace: Path, write: Write, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    proposal = _new(workspace, "stuck")
+    write("docs/proposals/PROP-stuck/materials/a.md", "# a\n")
+    write("docs/proposals/PROP-stuck/z.md", "# z\n")
+    accept(proposal)
+    preserved = workspace / f"docs/materials/{MONTH}/{STAMP}-stuck"
+    monkeypatch.setattr("devkit_spec.proposals.handoff.move_path", _failing_move(lambda path: path.name == "z.md"))
+    move = shutil.move
+
+    def refuse(source: object, destination: object) -> object:
+        if Path(str(source)) == preserved:
+            raise OSError("simulated failure")
+        return move(source, destination)  # type: ignore[arg-type]
+
+    monkeypatch.setattr("devkit_spec.proposals.specs.shutil.move", refuse)
+    with pytest.raises(ProposalHandoffError) as raised:
+        handoff_proposal(workspace, "stuck", today=TODAY)
+    assert "roll-back was incomplete" in raised.value.message
+    assert any("could not be moved back" in detail for detail in raised.value.details)
+    assert any("was kept" in detail for detail in raised.value.details)
+    assert (preserved / "a.md").read_text(encoding="utf-8") == "# a\n"
+    assert not (workspace / "specs" / MONTH).exists()
+
+
+def test_links_into_an_unmoved_materials_directory_stay_unmapped(workspace: Path, write: Write) -> None:
+    proposal = _new(workspace, "empty")
+    write("docs/proposals/PROP-empty/notes.md", "# notes\n")
+    write("docs/README.md", "[foo](proposals/PROP-empty/materials/foo.md)\n")
+    accept(proposal)
+    result = handoff_proposal(workspace, "empty", today=TODAY)
+    assert result.materials == f"docs/materials/{MONTH}/{STAMP}-empty"
+    assert (workspace / "docs/README.md").read_text(
+        encoding="utf-8"
+    ) == "[foo](proposals/PROP-empty/materials/foo.md)\n"
+    assert [(u.path, u.target, u.reason) for u in result.unresolved] == [
+        ("docs/README.md", "proposals/PROP-empty/materials/foo.md", "unmapped")
+    ]
+
+
+@pytest.mark.parametrize(
+    ("status", "promoted"),
+    [('"draft"', "accepted"), ("'proposed' # x", "accepted # x"), ('"draft #2"', '"draft #2"'), ("draft#2", "draft#2")],
+)
+def test_promotes_only_a_draft_status_value(workspace: Path, status: str, promoted: str) -> None:
+    proposal = _new(workspace, "quoted")
+    create_padr(workspace, "quoted", "Pick One")
+    padr = proposal.parent / "decisions/PADR-pick-one.md"
+    padr.write_text(padr.read_text(encoding="utf-8").replace("\nstatus: draft\n", f"\nstatus: {status}\n", 1))
+    accept(proposal)
+    handoff_proposal(workspace, "quoted", today=TODAY)
+    adr = (workspace / f"docs/decisions/{MONTH}/{STAMP}-pick-one.md").read_text(encoding="utf-8")
+    assert f"\nstatus: {promoted}\n" in adr

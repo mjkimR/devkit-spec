@@ -54,8 +54,9 @@ creates one without a proposal, writing the document IDs the spec rules expect (
    written for real and the line removed. A skeleton-marked `spec.md` is exempt from `RULE-document-summary` until it
    is written.
 5. **Binding**: `spec.md` is bound with devkit's `write_binding` (`workflow`, `workflow_hash`) to `--workflow`,
-   default `direct-delivery`. An explicit workflow that does not resolve or validate is `SPEC_WORKFLOW_INVALID`
-   before writing; a default that is not available leaves `spec.md` unbound with a `SPEC_UNBOUND` notice, whose
+   default `direct-delivery`. An explicit workflow that does not resolve or validate, or that names by path a
+   definition other than the one discovered for its id (devkit's `WORKFLOW_NOT_BINDABLE`: the binding records only
+   the id, so later lookups would find another definition or none), is `SPEC_WORKFLOW_INVALID` before writing; a default that is not available leaves `spec.md` unbound with a `SPEC_UNBOUND` notice, whose
    `[FIX]` is `devkit workflow bind --unit <dir> --workflow <id>`.
 6. **Bugfix bundles start with `spec.md` only**: a bundle bound to `bugfix` carries `kind: bugfix` (that workflow's
    exits check `frontmatter(spec.md kind bugfix)`) and gets no `plan.md` or `tasks.md`: the workflow writes them in
@@ -156,7 +157,7 @@ before anything is written; `DEFAULT_WORKFLOW` is `direct-delivery`, `BUGFIX_WOR
 | --- | --- | --- | --- |
 | `SPEC_SLUG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecSlugError` | The slug keeps no letter or digit after normalization. |
 | `SPEC_EXISTS` | `ERROR` (`INPUT_ERROR`) | `SpecExistsError` | A document declares `SPEC-<slug>` or `PROP-<slug>`, a proposal of the slug exists, or the bundle directory exists; `[TARGET]` lists them. |
-| `SPEC_WORKFLOW_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecWorkflowError` | `--workflow` names a workflow that does not resolve or validate; `[DETAIL]` carries devkit's code. |
+| `SPEC_WORKFLOW_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecWorkflowError` | `--workflow` names a workflow that does not resolve or validate, or a definition path other than the one discovered for its id; `[DETAIL]` carries devkit's code (`WORKFLOW_NOT_BINDABLE` for the latter). |
 | `SPEC_WRITE_FAILED` | `ERROR` (`MAINTENANCE`) | `SpecWriteError` | A write failed; what was written is removed. |
 | `SPEC_UNBOUND` | `NOTICE` | `SpecUnboundNotice` | No `--workflow` and `direct-delivery` is not available: `spec.md` is unbound. |
 | `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | devkit's `ArgumentError` | `--namespace` is neither `global` nor registered, or `--summary` is empty or not English. |

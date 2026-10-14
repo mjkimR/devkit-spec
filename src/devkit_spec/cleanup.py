@@ -9,9 +9,12 @@ removed. A project that deploys the ``spec`` bundle then needs two cleanups the 
   Only the records of the finished worktree are removed, at the revision read here, as ``scope sweep --apply``
   would remove them; other stale records stay for an explicit sweep.
 
-Each cleanup returns one notice line per change. When the record removal fails (a malformed ``[tool.spec]``, a
-registry timeout), its error is returned next to the prune notices, which devkit reports as a warning, and its fix
-ends with ``devkit spec scope sweep --apply``. A project without the ``spec`` bundle is left alone.
+Each cleanup returns one notice line per change, and neither failure stops the other: a prune that fails (a
+directory that cannot be listed or removed) is a ``SPEC_PROPOSAL_CLEANUP_FAILED`` warning whose fix is
+``devkit spec proposal prune <slug>``, and the sweep still runs; when the record removal fails (a malformed
+``[tool.spec]``, a registry timeout), its error is returned next to the prune notices, which devkit reports as a
+warning (``SPEC_CONFIG_INVALID``, ``SPEC_SCOPE_TIMEOUT``, ...), and its fix ends with
+``devkit spec scope sweep --apply``. A project without the ``spec`` bundle is left alone.
 """
 
 from __future__ import annotations
@@ -21,7 +24,7 @@ from typing import Any
 
 from devkit.advisory import AdvisoryError
 
-from devkit_spec.errors import SpecError
+from devkit_spec.errors import ProposalCleanupWarning, SpecError
 from devkit_spec.proposals.prune import prune_proposals
 from devkit_spec.scope.flow import journal, open_session, sweep_events
 from devkit_spec.scope.model import Verdict
@@ -39,6 +42,16 @@ def after_finish(base: Path, result: dict[str, Any]) -> list[str | AdvisoryError
         pruned = prune_proposals(base, slug)
     except SpecError:  # a slug that cannot name a proposal has none to prune
         pruned = []
+    except OSError as exc:  # a directory that cannot be listed or removed: report it and still sweep
+        pruned = []
+        target = f"docs/proposals/PROP-{slug}"
+        lines.append(
+            ProposalCleanupWarning(
+                f"the empty proposal directories of {target} could not be pruned: {exc}",
+                target_files=[target],
+                fix=f"Fix the permissions of the directory in [TARGET], then run devkit spec proposal prune {slug}",
+            )
+        )
     lines += [f"removed empty proposal directory {path}" for path in pruned]
     try:
         lines += _sweep(base, Path(str(result.get("path", ""))))

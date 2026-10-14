@@ -173,6 +173,20 @@ def test_create_padr(workspace: Path) -> None:
         create_padr(workspace, "fast-engine", "use go ast parser")
 
 
+def test_create_padr_with_an_explicit_slug(workspace: Path) -> None:
+    create_proposal(workspace, "plans")
+    with pytest.raises(ProposalSlugError) as raised:
+        create_padr(workspace, "plans", "2024 roadmap")
+    assert raised.value.advisory.fix is not None and "--slug" in raised.value.advisory.fix
+    created = create_padr(workspace, "plans", "2024 roadmap", padr_slug="PADR-Roadmap 2024", today=TODAY)
+    assert created.id == "PADR-roadmap-2024"
+    assert created.path == "docs/proposals/PROP-plans/decisions/PADR-roadmap-2024.md"
+    text = (workspace / created.path).read_text(encoding="utf-8")
+    assert "title: 2024 roadmap\n" in text and "# [PADR-roadmap-2024] 2024 roadmap\n" in text
+    with pytest.raises(ProposalSlugError):
+        create_padr(workspace, "plans", "Any", padr_slug="2024-roadmap")
+
+
 def test_padr_ids_are_unique_across_proposals(workspace: Path) -> None:
     create_proposal(workspace, "first")
     create_proposal(workspace, "second")

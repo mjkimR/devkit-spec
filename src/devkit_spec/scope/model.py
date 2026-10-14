@@ -196,7 +196,8 @@ class PairResult:
 class Record:
     """One registered task scope (schema version 1). The registry stores the token's hash, never the token.
 
-    ``base_ref`` is the base branch the observed range forks from (``""``: the fixed ``base_revision``);
+    ``base_ref`` is the branch the base checkout was on, which the observed range forks from when ``base_revision``
+    is an ancestor of the fork point (``""``: the fixed ``base_revision``);
     ``last_added`` and ``last_removed`` are the counts of the update ``last_request_id`` applied, so a retried
     request is answered with them.
     """

@@ -4,22 +4,22 @@ Per document, the ``new`` pairs whose path exists and is not folded are written:
 ``/``, sorted, after the entries already declared. An addition an existing entry or another addition already
 covers is dropped, so a document never lists a directory and files inside it from one apply. Only the
 ``entrypoints`` block of the frontmatter changes: every other byte of the file stays as it was. A rerun writes
-nothing (every written path is ``declared``). A document that cannot be read or written, or whose ``entrypoints``
-is present but not a list of strings, is reported and left unchanged; the others are still written.
+nothing (every written path is ``declared``). A changed document is replaced atomically and keeps its permission
+bits. A document that cannot be read or written, is a symbolic link or lies below one that leaves the workspace (the
+document index never follows links), or whose ``entrypoints`` is present but not a list of strings, is reported and
+left unchanged; the others are still written.
 """
 
 from __future__ import annotations
 
 import contextlib
-import os
 import re
-import tempfile
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
-from devkit.core import FrontmatterError
+from devkit.core import FrontmatterError, atomic_write_text
 from devkit.core.frontmatter import locate, parse
 
 from devkit_spec.entrypoints.derive import Pair, Reason, SkipKind, Skipped, State
@@ -76,7 +76,7 @@ def apply(root: Path, pairs: Sequence[Pair], only: set[str] | None = None) -> Ap
         if not additions:
             continue
         try:
-            added = _write(root / doc_path, sorted(additions))
+            added = _write(root, root / doc_path, sorted(additions))
         except (OSError, UnicodeDecodeError, FrontmatterError, ValueError) as exc:
             problem = exc.message if isinstance(exc, FrontmatterError) else str(exc)
             result.failures.append((doc_path, problem))
@@ -86,7 +86,11 @@ def apply(root: Path, pairs: Sequence[Pair], only: set[str] | None = None) -> Ap
     return result
 
 
-def _write(path: Path, additions: list[str]) -> list[str]:
+def _write(root: Path, path: Path, additions: list[str]) -> list[str]:
+    if path.is_symlink():
+        raise ValueError("the document is a symbolic link; edit the file it points to, then rerun")
+    if not path.parent.resolve().is_relative_to(root.resolve()):
+        raise ValueError("the document's directory resolves outside the workspace through a symbolic link")
     text = path.read_bytes().decode("utf-8")
     data = parse(text).data
     if data is None:
@@ -103,7 +107,7 @@ def _write(path: Path, additions: list[str]) -> list[str]:
         )
     added = collapse(existing, additions)
     if added:
-        _write_atomic(path, set_entrypoints(text, [*existing, *added]))
+        atomic_write_text(path, set_entrypoints(text, [*existing, *added]))
     return added
 
 
@@ -183,16 +187,3 @@ def _render(entries: list[str]) -> list[str]:
         return ["entrypoints: []"]
     dumped = yaml.safe_dump(entries, default_flow_style=False, allow_unicode=True, width=10_000)
     return ["entrypoints:", *(f"  {line}" for line in dumped.rstrip("\n").split("\n"))]
-
-
-def _write_atomic(path: Path, text: str) -> None:
-    descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=".entrypoints-", suffix=".tmp")
-    try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(text.encode("utf-8"))
-        os.chmod(temporary, path.stat().st_mode & 0o7777)
-        os.replace(temporary, path)
-    except BaseException:
-        with contextlib.suppress(OSError):
-            os.unlink(temporary)
-        raise

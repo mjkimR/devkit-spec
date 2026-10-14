@@ -122,7 +122,9 @@ sequence numbers are forbidden (they collide across parallel branches).
   are not checked); no frontmatter; an `id`/`reconcile_id` or `area` other than the path requires (fixable); a first
   `# ` heading opened by a bracket or code-span ID token that is not the ID (fixable; in a spec bundle file the token
   MAY follow a leading `<label>: `, and a plan, tasks or reconcile heading MAY name `SPEC-<slug>`; an ID later in the
-  heading is a reference, not the document's own); an ID another file's path also derives (slugs are unique per document type across partitions and
+  heading is a reference, not the document's own, and never rewritten); outside a spec bundle, a first `# ` heading
+  that does not open with an ID token but names an ID of the document's own kind (`# Capability [CAP-X-old] Title`;
+  reported, not fixable: the heading should read `# [<ID>] <title>`); an ID another file's path also derives (slugs are unique per document type across partitions and
   areas, feedback slugs within their bundle; detected across the whole workspace); a date- or number-based reference
   (such as ``ADR-0006``, ``US-010``, ``CAP-HARN-007``, ``SPEC-20261006`` or an `ARCH-<NN>` without slug) in the
   frontmatter or prose of any Markdown file under `docs/` (materials excepted) or `specs/`. Code blocks, indented
@@ -191,7 +193,8 @@ In a spec bundle the `status` of `spec.md`, the checklist of `tasks.md` and the 
   its `spec.md`, `tasks.md` or `reconcile.md`; the violation is on `spec.md` (line 1) when that is targeted, else on
   the targeted `reconcile.md` or `tasks.md`.
 - **Fix**: sets `status: completed` by rewriting only the value of the top-level `status:` line of a targeted
-  `spec.md`, keeping a trailing comment (`# draft | planned | ...`); a `spec.md` without a `status:` line is fixed by
+  `spec.md`, keeping a trailing comment (`# draft | planned | ...`; a `#` counts as one only after whitespace and
+  outside a quoted value, so `status: "draft #2"` becomes `status: completed`); a `spec.md` without a `status:` line is fixed by
   hand.
 
 ### 3.9 `RULE-spec-progress`

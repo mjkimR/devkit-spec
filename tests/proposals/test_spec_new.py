@@ -79,6 +79,19 @@ def test_an_unbindable_workflow_writes_nothing(workspace: Path, definition: str 
     assert not (workspace / "specs").exists()
 
 
+def test_a_workflow_path_outside_the_discovered_definitions_is_refused(workspace: Path, write: Write) -> None:
+    write_workflow(workspace, "s-lane")
+    write("elsewhere/s-lane.md", WORKFLOW.format(id="s-lane"))
+    with pytest.raises(SpecWorkflowError) as raised:
+        create_spec(workspace, "moved", workflow="elsewhere/s-lane.md", day=TODAY)
+    assert raised.value.code == "SPEC_WORKFLOW_INVALID"
+    assert any("WORKFLOW_NOT_BINDABLE" in detail for detail in raised.value.details)
+    assert not (workspace / "specs").exists()
+    # The discovered definition named by its path binds its id.
+    created = create_spec(workspace, "kept", workflow=".devkit/workflows/s-lane.md", day=TODAY)
+    assert created.workflow == "s-lane"
+
+
 def test_without_the_default_workflow_the_spec_stays_unbound(workspace: Path) -> None:
     created = create_spec(workspace, "loose", day=TODAY)
     assert created.workflow is None and created.next_command is None

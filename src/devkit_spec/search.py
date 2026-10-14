@@ -13,6 +13,8 @@ The policy on top of the generic ranking:
   document first, whatever the ranking.
 - **Glossary expansion**: ``docs/glossary.yaml`` (optional; ``terms: [{primary, synonyms: [...]}]``) adds a term's
   whole synonym cluster to the query when the query contains any of its terms, compared as ``tokenize`` words.
+  Terms of different clusters with the same words (``C++`` and ``C#`` both tokenize to ``c``) expand to both
+  clusters merged, so no cluster is lost.
 """
 
 from __future__ import annotations
@@ -54,7 +56,8 @@ class SpecSearchResult:
 
 def load_glossary(root: Path) -> dict[tuple[str, ...], list[str]]:
     """Each glossary term's words (devkit's ``tokenize``) mapped to its whole cluster; empty without
-    ``docs/glossary.yaml``."""
+    ``docs/glossary.yaml``. Words that terms of several clusters share map to the union of those clusters, in
+    glossary order."""
     path = root / GLOSSARY_PATH
     if not path.is_file():
         return {}
@@ -76,7 +79,7 @@ def load_glossary(root: Path) -> dict[tuple[str, ...], list[str]]:
         for word in cluster:
             words = tuple(tokenize(word))
             if words:
-                index[words] = cluster
+                index[words] = list(dict.fromkeys([*index.get(words, []), *cluster]))
     return index
 
 

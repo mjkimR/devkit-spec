@@ -245,3 +245,31 @@ def test_handoff_in_the_base_checkout_does_not_register(repo: Path) -> None:
     assert result.exit_code == 0, result.output
     assert _json(result)["scope"] is None
     assert not (repo / ".git/devkit-spec-scope-token").exists()
+
+
+def test_query_lists_the_records_when_this_worktree_record_may_be_unreadable(repo: Path) -> None:
+    _scope(repo, "register", "--spec", SPEC)
+    namespace_dir = next((repo / ".git/devkit-spec-scope").iterdir())
+    own = namespace_dir / "SPEC-s.json"
+    (namespace_dir / "broken.json").write_text("{")  # another task's corrupt record
+    own.unlink()  # this worktree's token is orphaned
+    result = _scope(repo, "query")
+    assert result.exit_code == 0 and result.stdout.splitlines()[-1].endswith(
+        "records=0 pairs=0 overlapping=0 problems=1]"
+    )
+    assert "(SPEC_SCOPE_RECORD_INVALID)" in result.stderr
+
+    _scope(repo, "release")
+    _scope(repo, "register", "--spec", SPEC)
+    own.write_text(own.read_text() + "garbage")  # this worktree's own record, unreadable
+    result = _scope(repo, "query", "--format", "json")
+    assert result.exit_code == 0, result.output
+    data = _json(result)
+    assert data["own"] is None and data["summary"]["problems"] == 2
+    [notice] = data["notices"]
+    assert notice["code"] == "SPEC_SCOPE_RECORD_INVALID"
+    assert any(
+        "this worktree's record is not among the readable records" in line for line in notice["advisory"]["details"]
+    )
+    released = _scope(repo, "release")
+    assert released.exit_code == 2 and "(SPEC_SCOPE_RECORD_INVALID)" in released.stderr

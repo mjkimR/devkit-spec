@@ -27,6 +27,7 @@ from devkit_spec.scope import (
     FlockLocker,
     Granularity,
     LocalRegistry,
+    Problem,
     Registry,
     ScopePath,
     Source,
@@ -34,6 +35,7 @@ from devkit_spec.scope import (
     Verdict,
 )
 from devkit_spec.scope.localfs import Unlock, is_temp
+from devkit_spec.scope.registry import token_hash
 
 
 def _no_temp(directory: Path) -> None:
@@ -70,6 +72,28 @@ def test_unreadable_records_are_problems_not_records(tmp_path: Path) -> None:
         ("broken.json", "parse"),
         ("wrong.json", "parse"),
     ]
+
+
+def test_an_unreadable_record_that_may_share_the_worktree_keeps_the_flag(tmp_path: Path) -> None:
+    fs = registry(tmp_path)
+    fs.register(record("a", "/wt/same"), Deadline(5))
+    token_b, _ = fs.register(record("b", "/wt/same"), Deadline(5))
+    token_c, _ = fs.register(record("c", "/wt/same"), Deadline(5))
+    (tmp_path / "ns/unrelated.json").write_text('{"worktree": "/wt/other",')
+    (tmp_path / "ns/c.json").write_text((tmp_path / "ns/c.json").read_text() + "garbage")  # names /wt/same
+
+    def shared() -> dict[str, bool]:
+        return {item.task_id: item.shared_worktree for item in fs.query("ns", Deadline(5))[0]}
+
+    fs.release("ns", "b", token_b, Deadline(5))
+    assert shared() == {"a": True}, "the unreadable c may still share the worktree"
+    assert fs.may_hold("ns", Problem("c.json", "parse"), token_hash(token_c))
+    assert not fs.may_hold("ns", Problem("unrelated.json", "parse"), token_hash(token_c))
+    assert fs.record_file("../x") == "_._x.json"
+    (tmp_path / "ns/c.json").unlink()
+    token_d, _ = fs.register(record("d", "/wt/same"), Deadline(5))
+    fs.release("ns", "d", token_d, Deadline(5))
+    assert shared() == {"a": False}, "an unreadable record naming another worktree does not keep the flag"
 
 
 def test_sweep_verdicts_and_revision_protection(tmp_path: Path) -> None:

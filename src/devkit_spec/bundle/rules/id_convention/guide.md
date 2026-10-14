@@ -74,7 +74,11 @@ repository-wide, so a slug is unique across `docs/` and every package.
   reconcile heading may also name `SPEC-{slug}`): `Heading token [<token>] does not match identifier <ID>[ or <ID>]`.
   The token names the document's own ID only where it opens the heading (`# [ADR-{slug}] Title`) or, in a spec
   bundle file, follows a leading label (`` # Technical Plan: `SPEC-{slug}` Title ``); an ID later in the heading
-  (`` # Supersede `ADR-{other}` with Redis ``) is a reference and is not checked here.
+  (`` # Supersede `ADR-{other}` with Redis ``) is a reference and is never rewritten.
+- Outside a spec bundle, a first `# ` heading that does not open with an ID token but names an ID of the document's
+  own kind (`# Capability [CAP-X-old] Title`, `` # Supersede `ADR-{other}` with Redis `` in an ADR): `Heading does
+  not open with the document's own ID <ID> but names [<token>]`. Reported, not fixed: rewrite the heading as
+  `# [<ID>] <title>`.
 - An ADR, spec or Living Spec ID that another file's path also derives: `Identifier <ID> is duplicated across
   <paths>`. Slugs are unique per document type across partitions and areas. Feedback IDs are not compared here; two
   files declaring the same `FB-` ID are reported by `RULE-document-reference`.

@@ -60,6 +60,7 @@ devkit spec proposal new <slug> --milestone "Phase 1"   # Scaffold with target m
 devkit spec proposal new <slug> --with-target-docs      # Scaffold with Living Spec target blueprint
 devkit spec proposal new <slug> --handoff-workflow bugfix  # A defect: hand off to the bugfix workflow
 devkit spec proposal padr <slug> <title>                # Scaffold preliminary decision (PADR)
+devkit spec proposal padr <slug> <title> --slug <padr-slug>  # PADR slug other than the title's
 devkit spec list proposal                               # List proposals
 devkit spec proposal handoff <slug>                     # Graduate proposal (scaffold spec, clean bundle)
 ```

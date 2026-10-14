@@ -37,14 +37,19 @@ def resolve_binding(
     """The binding for ``value`` (a workflow id, or ``None``/empty for ``default``), or ``None`` with the reason.
 
     ``source`` names where ``value`` came from (a file, or a command option) and ``field`` its key, for messages. An
-    explicit ``value`` that is not a string, does not resolve or does not validate raises ``error``.
+    explicit ``value`` that is not a string, does not resolve, does not validate or names a definition by a path that
+    is not the one discovered for its id (devkit's ``Workspace.require_bindable``, ``WORKFLOW_NOT_BINDABLE``) raises
+    ``error``.
     """
     if value is not None and not isinstance(value, str):
         raise error(f"{source}: {field} must be a workflow id", target_files=[source])
     explicit = (value or "").strip()
     workflow = explicit or default
     try:
-        doc = Workspace(root, lint=None, ancestor=None).definition(workflow)
+        workspace = Workspace(root, lint=None, ancestor=None)
+        doc = workspace.definition(workflow)
+        # A binding records only the id: a definition named by a path must be the one discovered for that id.
+        workspace.require_bindable(doc, explicit or None)
     except AdvisoryError as exc:
         if explicit:
             raise error(

@@ -79,6 +79,29 @@ def test_apply_collects_failures_and_continues(workspace: Path, write: Write) ->
     assert [item.doc for item in result.applied] == ["CAP-Y"]
 
 
+def test_apply_keeps_the_file_mode(workspace: Path, write: Write) -> None:
+    doc = write("docs/capabilities/x/CAP-X.md", "---\nid: CAP-X\n---\n")
+    doc.chmod(0o600)
+    write("src/a.go", "package a\n")
+    result = apply(workspace, [Pair("CAP-X", "docs/capabilities/x/CAP-X.md", "src/a.go", State.NEW, True)])
+    assert [item.added for item in result.applied] == [("src/a.go",)]
+    assert doc.stat().st_mode & 0o777 == 0o600
+    assert [p.name for p in doc.parent.iterdir()] == ["CAP-X.md"]  # no temporary file left
+
+
+def test_apply_refuses_a_symlinked_document(workspace: Path, write: Write) -> None:
+    text = "---\nid: CAP-X\n---\n"
+    real = write("docs/capabilities/x/CAP-X.md", text)
+    link = workspace / "docs/capabilities/x/CAP-L.md"
+    link.symlink_to(real.name)
+    write("src/a.go", "package a\n")
+    result = apply(workspace, [Pair("CAP-L", "docs/capabilities/x/CAP-L.md", "src/a.go", State.NEW, True)])
+    assert result.applied == []
+    assert [path for path, _ in result.failures] == ["docs/capabilities/x/CAP-L.md"]
+    assert "symbolic link" in result.failures[0][1]
+    assert link.is_symlink() and real.read_text() == text
+
+
 @pytest.mark.parametrize(
     "declared",
     ["entrypoints: src/keep.py\n", "entrypoints:\n  - src/a.go\n  - {path: src/b}\n", "entrypoints: {a: 1}\n"],

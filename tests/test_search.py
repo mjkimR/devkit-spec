@@ -74,6 +74,19 @@ def test_glossary_terms_match_as_tokenized_words(docs: Path, write: Write) -> No
     assert expand_query("workscope", glossary) == "workscope"
 
 
+def test_glossary_terms_with_the_same_words_merge_their_clusters(docs: Path, write: Write) -> None:
+    write(
+        "docs/glossary.yaml",
+        "terms:\n  - primary: C++\n    synonyms: [cpp]\n  - primary: C#\n    synonyms: [csharp, cpp]\n",
+    )
+    glossary = load_glossary(docs)
+    assert glossary[("c",)] == ["C++", "cpp", "C#", "csharp"]
+    assert glossary[("cpp",)] == ["C++", "cpp", "C#", "csharp"]
+    # C++ adds no words a query with C# lacks; both clusters' other terms are added.
+    assert expand_query("C# rules", glossary) == "C# rules cpp csharp"
+    assert expand_query("csharp", glossary) == "csharp C# cpp"
+
+
 @pytest.mark.parametrize(
     "text", ["terms: x\n", "terms:\n  - synonyms: [a]\n", "terms:\n  - primary: a\n    synonyms: b\n", ": :\n"]
 )

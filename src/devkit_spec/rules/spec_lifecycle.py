@@ -15,7 +15,7 @@ targets its ``spec.md`` (every bundle in a whole-workspace run, excluded ones as
 ``tasks.md`` as an explicit target; the violation then lands on ``spec.md`` when that is targeted, otherwise on the
 first named file, so it is always reported in a file the run targets. The fix rewrites only a targeted ``spec.md``
 whose frontmatter has a top-level ``status:`` line, and keeps every other character of the file, a trailing comment
-on that line included.
+on that line included (``trailing_comment``: a ``#`` outside a quoted value).
 """
 
 from __future__ import annotations
@@ -35,6 +35,8 @@ COMPLETED = "completed"
 RESOLVED = "resolved"
 _STATUS_LINE = re.compile(r"^status:[ \t]*[^\r\n]*", re.MULTILINE)
 _COMMENT = re.compile(r"[ \t]+#[^\r\n]*$")  # a trailing YAML comment: "#" after whitespace
+# A quoted YAML scalar on one line: "..." with backslash escapes, '...' with '' for a quote.
+_QUOTED = re.compile(r"\"(?:[^\"\\\r\n]|\\.)*\"|'(?:[^'\r\n]|'')*'")
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,6 +210,22 @@ def has_status_line(ctx: RuleContext, path: str) -> bool:
     return text is not None and with_status(text, COMPLETED) is not None
 
 
+def trailing_comment(line: str, start: int) -> str | None:
+    """The trailing YAML comment of the one-line value that starts at ``line[start:]`` (``None``: none).
+
+    A ``#`` counts only after whitespace and outside a quoted scalar: ``"draft #2"`` is a value, not a comment. An
+    unterminated quote has no comment.
+    """
+    value = len(line) - len(line[start:].lstrip(" \t"))
+    if line[value : value + 1] in ('"', "'"):
+        quoted = _QUOTED.match(line, value)
+        if quoted is None:
+            return None
+        value = quoted.end()
+    comment = _COMMENT.search(line, value)
+    return comment.group() if comment else None
+
+
 def with_status(text: str, status: str) -> str | None:
     """``text`` with its frontmatter ``status:`` line set to ``status``, keeping a trailing comment (the templates'
     ``# draft | planned | ...``); ``None`` when there is no such line."""
@@ -219,8 +237,8 @@ def with_status(text: str, status: str) -> str | None:
         return None
 
     def replace(match: re.Match[str]) -> str:
-        comment = _COMMENT.search(match.group(), len("status:"))
-        return f"status: {status}" + (comment.group() if comment else "")
+        comment = trailing_comment(match.group(), len("status:"))
+        return f"status: {status}" + (comment or "")
 
     header = _STATUS_LINE.sub(replace, block.header)
     return text[: block.header_start] + header + text[block.header_end :]

@@ -15,8 +15,10 @@ A target is reported for a path off the convention (and then nothing else), a mi
 ``reconcile_id`` or ``area`` other than the path requires (fixable), a first H1 opened by an ``[ID]`` or `` `ID` ``
 token other than the ID (fixable; in a spec bundle file the token may follow a leading ``<label>: ``, and a plan,
 tasks or reconcile heading may also name its ``SPEC-<slug>``; an ID later in the heading is a reference, never the
-document's own), and an ADR, spec or Living Spec ID that another target's path also derives. Every Markdown file under ``docs/`` (except
-``docs/materials/``) and ``specs/`` is reported for a date- or number-based reference (``ADR-0006``,
+document's own), outside a spec bundle a first H1 that does not open with an ID token but names one of the
+document's own kind (``# Capability [CAP-X-old] Title``; reported, not fixed), and an ADR, spec or Living Spec ID
+that another target's path also derives. Every Markdown file under ``docs/`` (except ``docs/materials/``) and
+``specs/`` is reported for a date- or number-based reference (``ADR-0006``,
 ``SPEC-20261006``, ``US-010``, ``CAP-HARN-007``, ``ARCH-06``) in its frontmatter or prose; code, HTML comments and
 escapes are skipped, link labels and targets are not.
 
@@ -62,6 +64,7 @@ _ARCH_STEM = re.compile(r"^ARCH-(?:(\d{2})(?:-([1-9]))?-)?([a-z0-9]+(?:-[a-z0-9]
 _ID_TOKEN = r"(?P<token>(?:\[|`)(?P<id>(?:SPEC|PLAN|TASKS|REC|ADR|FB|CAP|US|ARCH)-[^\]`]+)(?:\]|`))"
 _HEADING_TOKEN = re.compile(rf"^#[ \t]+{_ID_TOKEN}")
 _LABELLED_HEADING_TOKEN = re.compile(rf"^#[ \t]+(?:[^`\[\]:\r\n]+:[ \t]+)?{_ID_TOKEN}")
+_ANY_ID_TOKEN = re.compile(_ID_TOKEN)
 # Date- or number-based references that are never valid identifiers.
 _LEGACY_REF = re.compile(
     r"\b(SPEC-\d{8}(?:-[a-z0-9-]+)?|FB-\d{8}(?:-[a-z0-9-]+)?|P?ADR-\d{4}|US-\d{3,}|CAP-[A-Z0-9]+-\d{3,})\b", re.ASCII
@@ -317,6 +320,18 @@ def _heading_token(heading: VisibleLine | None, kind: Kind) -> re.Match[str] | N
     return pattern.match(heading.text)
 
 
+def _same_kind_token(heading: VisibleLine, target: _Target) -> str | None:
+    """Outside a spec bundle, the first ID token in ``heading`` of the document's own kind (``CAP-`` in a capability):
+    the heading should open with the document's own ID instead (``# [ID] Title``)."""
+    if target.kind is Kind.SPEC:
+        return None
+    prefix = target.expected_id.split("-", 1)[0] + "-"
+    return next(
+        (match.group("id") for match in _ANY_ID_TOKEN.finditer(heading.text) if match.group("id").startswith(prefix)),
+        None,
+    )
+
+
 def _convention_lines(text: str) -> Iterator[VisibleLine]:
     """Frontmatter lines as written, then the body's prose lines with code, comments and escapes blanked."""
     try:
@@ -477,6 +492,14 @@ class IdConventionRule(BaseRule):
                 f"Heading token [{token.group('id')}] does not match identifier {' or '.join(target.allowed_tokens())}",
                 f"Run `{FIX_COMMAND}` or rewrite the heading token to the slug-based identifier",
                 fixable=True,
+            )
+        elif heading is not None and token is None and (named := _same_kind_token(heading, target)) is not None:
+            add(
+                path,
+                heading.number,
+                f"Heading does not open with the document's own ID {target.expected_id} but names [{named}]",
+                f"Rewrite the heading as `# [{target.expected_id}] <title>`; an ID later in the heading is read as a"
+                " reference, so the fix leaves it",
             )
         sharing = owners.get(target.expected_id, [])
         if len(sharing) > 1:

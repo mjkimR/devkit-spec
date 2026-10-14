@@ -136,8 +136,9 @@ joins them.
    lines after its last item stay), else before `created_at`, else at the end of the header. Every other byte, the
    line endings included, MUST be kept, and the file is replaced atomically (its mode preserved).
 6. A rerun MUST write nothing (every written path is then `declared`).
-7. A document that cannot be read or written, or whose `entrypoints` is present but not a list of strings (a scalar,
-   a mapping, an item that is not a string), is left unchanged and fails with `SPEC_ENTRYPOINTS_APPLY_FAILED` after
+7. A document that cannot be read or written, is a symbolic link or lies in a directory that resolves outside the
+   workspace (documents are never written through a link), or whose `entrypoints` is present but not a list of
+   strings (a scalar, a mapping, an item that is not a string), is left unchanged and fails with `SPEC_ENTRYPOINTS_APPLY_FAILED` after
    the result, which lists the documents that were written; the others are still written.
 
 ### 3.7 Review Before Apply

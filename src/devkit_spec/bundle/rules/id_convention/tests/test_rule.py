@@ -459,11 +459,46 @@ def test_only_a_leading_heading_token_is_the_documents_own_id(tmp_path: Path) ->
             "Heading token [SPEC-other] does not match identifier SPEC-gamma or PLAN-gamma",
         ),
     ]
+    # An ADR heading that names another ADR but not its own ID is reported, never rewritten.
+    assert [(v.file, v.message, v.fixable) for v in violations if v.message.startswith("Heading does not")] == [
+        (
+            "docs/decisions/2026-10/20261014-new-cache.md",
+            "Heading does not open with the document's own ID ADR-new-cache but names [ADR-old-cache]",
+            False,
+        )
+    ]
     check(RULE, tmp_path, fix=True)
     for path in ("docs/decisions/2026-10/20261014-new-cache.md", "specs/2026-10/20261014-gamma/spec.md"):
         assert _read(tmp_path, path) == files[path]
     assert "# `ADR-wrong` Wrong, see `ADR-old-cache`\n" in _read(tmp_path, "docs/decisions/2026-10/20261014-wrong.md")
     assert "# Technical Plan: `SPEC-gamma` Gamma\n" in _read(tmp_path, "specs/2026-10/20261014-gamma/plan.md")
+
+
+def test_a_heading_must_open_with_its_own_id(tmp_path: Path) -> None:
+    def doc(document_id: str, heading: str, area: str = "x") -> str:
+        return f"---\nid: {document_id}\ntitle: T\narea: {area}\nstatus: active\n---\n\n# {heading}\n"
+
+    files = {
+        "docs/capabilities/x/CAP-X-new.md": doc("CAP-X-new", "Capability [CAP-X-old] Title"),
+        "docs/capabilities/x/CAP-X-own.md": doc("CAP-X-own", "Capability `CAP-X-own` later"),
+        "docs/capabilities/x/CAP-X-ref.md": doc("CAP-X-ref", "Uses [US-login] only"),
+        "docs/stories/x/US-login.md": doc("US-login", "[US-login] Login, see [US-other]"),
+    }
+    violations = check(RULE, tmp_path, files)
+    assert [(v.file, v.message, v.fixable) for v in violations] == [
+        (
+            "docs/capabilities/x/CAP-X-new.md",
+            "Heading does not open with the document's own ID CAP-X-new but names [CAP-X-old]",
+            False,
+        ),
+        (
+            "docs/capabilities/x/CAP-X-own.md",
+            "Heading does not open with the document's own ID CAP-X-own but names [CAP-X-own]",
+            False,
+        ),
+    ]
+    check(RULE, tmp_path, fix=True)
+    assert all(_read(tmp_path, path) == text for path, text in files.items())
 
 
 def test_dated_slugs_need_a_letter_in_their_first_segment(tmp_path: Path) -> None:

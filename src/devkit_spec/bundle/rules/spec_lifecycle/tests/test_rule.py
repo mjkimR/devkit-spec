@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from devkit.rules import Autofixable, RuleContext, Violation
 from devkit.rules.testing import check, load_rule, write_files
 
@@ -90,6 +91,25 @@ def test_fix_keeps_a_trailing_comment(tmp_path: Path) -> None:
         "---\nid: SPEC-stale\nstatus: completed # draft | planned | in-progress | completed\n---\n"
     )
     assert check(RULE, tmp_path) == []
+
+
+@pytest.mark.parametrize(
+    ("status", "fixed"),
+    [
+        ('"draft #2"', "completed"),
+        ('"draft #2" # note', "completed # note"),
+        ("'it''s #1' # c", "completed # c"),
+        ('"a \\" #b" #c', "completed #c"),
+        ("draft#2", "completed"),
+        ('"open #1', "completed"),
+    ],
+)
+def test_fix_reads_a_hash_inside_quotes_as_the_value(tmp_path: Path, status: str, fixed: str) -> None:
+    spec = _bundle(tmp_path, "stale", "planned", "resolved", "- [x] A\n")
+    path = tmp_path / spec
+    path.write_text(f"---\nid: SPEC-stale\nstatus: {status}\n---\n", encoding="utf-8")
+    check(RULE, tmp_path, fix=True)
+    assert path.read_text(encoding="utf-8") == f"---\nid: SPEC-stale\nstatus: {fixed}\n---\n"
 
 
 def test_stale_spec_without_status_line_is_not_fixable(tmp_path: Path) -> None:

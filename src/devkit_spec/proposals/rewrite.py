@@ -3,7 +3,7 @@
 ``RelocationPlan`` says where each part of the proposal went. Links are rewritten by devkit's
 ``devkit.rules.relocate_links`` (the plan converted to a ``LinkRelocation``); ID references here. The rewriting
 never fails a handoff: a link or reference without a new target, and a file that cannot be read or written, become
-``Unresolved`` entries.
+``Unresolved`` entries. Every changed file is replaced atomically.
 
 Every Markdown file under ``docs/`` and ``specs/`` is scanned except the proposal itself, directories starting with
 ``.``, symbolic links and the files of completed spec bundles, which record the proposal as it was (their
@@ -18,7 +18,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from devkit.core import FrontmatterError
+from devkit.core import FrontmatterError, atomic_write_text
 from devkit.core.frontmatter import locate
 from devkit.rules import LinkRelocation, relocate_links
 
@@ -29,7 +29,6 @@ from devkit_spec.documents.model import BODY
 
 LINK = "link"
 ID = "id"
-REMOVED = "removed"  # a reference to the ID of a proposal document nothing replaced
 AMBIGUOUS = "ambiguous"  # several documents declare the ID, so it is not rewritten
 UNREADABLE = "unreadable"
 UNWRITABLE = "unwritable"
@@ -159,20 +158,8 @@ def _read(path: str) -> str:
 
 
 def _write(path: str, text: str) -> None:
-    with open(path, "w", encoding="utf-8", newline="") as handle:
-        handle.write(text)
-
-
-def _new_location(plan: RelocationPlan, target: str) -> str | None:
-    """Where the absolute ``target`` inside the proposal went, ``None`` when nothing replaced it."""
-    if target in plan.exact:
-        return plan.exact[target]
-    if target == plan.proposal and plan.dir_target:
-        return plan.dir_target
-    for old, new in plan.prefixes.items():
-        if target.startswith(old + os.sep):
-            return new + target[len(old) :]
-    return None
+    """Replace ``path`` atomically, keeping its permission bits (symbolic links are never scanned)."""
+    atomic_write_text(Path(path), text)
 
 
 def rewrite_links(root: Path, files: Iterable[str], plan: RelocationPlan, report: RewriteReport) -> None:
@@ -227,11 +214,10 @@ def rewrite_ids(
     """Rewrite references (fields, prose, ``proposal`` provenance) to the IDs of relocated proposal documents.
 
     The mapping comes from the documents actually written (``plan.exact``: proposal to spec, PADR to ADR, the
-    blueprint to its copy), never from slug guesses. A reference to an ID declared inside the proposal by a document
-    that was not carried anywhere is ``removed``; an ID other documents declare too is ``ambiguous`` and stays.
+    blueprint to its copy, each carried file to its new path), never from slug guesses; every document of the
+    proposal is carried somewhere, so each of its IDs maps. An ID other documents declare too is ``ambiguous`` and
+    stays.
     """
-    inside = [d for d in index.documents if plan.contains(str(index.root / d.path))]
-    removed = {d.id for d in inside if _new_location(plan, str(index.root / d.path)) is None}
     mapping: dict[str, str] = {}
     for old_path, new_path in sorted(plan.exact.items()):
         old, new = _parse(root, old_path), _parse(root, new_path)
@@ -257,8 +243,6 @@ def rewrite_ids(
             new_id = mapping.get(ref.target)
             if new_id is not None and new_id != ref.target:
                 changed.append(Rewritten(display, ref.line, ID, ref.target, new_id))
-            elif new_id is None and ref.target in removed:
-                report.unresolved.append(Unresolved(display, ref.line, ID, ref.target, REMOVED))
         if updated == text:
             continue
         try:

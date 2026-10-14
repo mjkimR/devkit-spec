@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
-from devkit.advisory import AdvisoryError, Level
+from devkit.advisory import Actor, AdvisoryError, Level, Retry
 
 from devkit_spec.config import read_spec_config
 from devkit_spec.errors import (
@@ -38,8 +38,10 @@ from devkit_spec.scope.location import (
     Location,
     base_ref,
     head_revision,
+    incomplete_token,
     load_token,
     locate,
+    ref_exists,
     remove_token,
     save_token,
 )
@@ -259,7 +261,8 @@ def own(session: Session) -> Own:
     """This worktree's record (found by its token) and the other records of the namespace.
 
     Raises ``ScopeTokenMissingError`` without a token, ``ScopeRecordMissingError`` when its record is gone and
-    ``SPEC_SCOPE_RECORD_INVALID`` at ``ERROR`` when it is not found while some record files cannot be read.
+    ``SPEC_SCOPE_RECORD_INVALID`` at ``ERROR`` (``INTERACTION``) when it is not found while unreadable record files
+    may hold it (``Registry.may_hold``); unreadable files that cannot be it are only ``problems``.
     """
     location = session.location
     token = load_token(location.token_path)
@@ -271,8 +274,9 @@ def own(session: Session) -> Own:
     digest = token_hash(token)
     mine = [record for record in records if record.token_hash == digest]
     if not mine:
-        if problems:
-            raise _unreadable(location, problems)
+        suspects = _suspects(session, problems, digest)
+        if suspects:
+            raise _unreadable(location, suspects, _OWN_UNREADABLE)
         raise ScopeRecordMissingError(
             "the record of this worktree's token no longer exists (released or swept)",
             target_files=[str(location.token_path)],
@@ -281,14 +285,38 @@ def own(session: Session) -> Own:
     return Own(token, mine[0], others, problems)
 
 
-def _unreadable(location: Location, problems: Sequence[Problem]) -> AdvisoryError:
-    """This worktree's record is not among the readable ones, and unreadable files may hold it."""
+_OWN_UNREADABLE = (
+    "this worktree's record is not among the readable records and may be one of the record files that cannot be read"
+)
+
+
+def _suspects(session: Session, problems: Sequence[Problem], digest: str) -> list[Problem]:
+    """The unreadable record files that may be the record of the token hashed to ``digest``."""
+    namespace = session.location.namespace
+    return [problem for problem in problems if session.registry.may_hold(namespace, problem, digest)]
+
+
+def _unreadable(location: Location, problems: Sequence[Problem], message: str) -> ScopeRecordInvalidWarning:
+    """The record looked for may be one of the unreadable ``problems``: an ``ERROR`` the user resolves
+    (``INTERACTION``), because only a person can tell whether those files may be repaired or deleted. Until then
+    nothing is removed and this worktree's token is kept."""
     directory = location.shared_path / location.namespace
     return ScopeRecordInvalidWarning(
-        "this worktree's record is not readable: it may be one of the record files that cannot be read",
+        f"{message}; this worktree's token is kept until the files are repaired or removed",
         *(f"{problem.file}: {problem.reason}" for problem in problems),
+        level=Level.ERROR,
+        actor=Actor.USER,
+        retry=Retry.AFTER_FIX,
+        what_to_report=(
+            "The record files in [TARGET] cannot be read and may hold the record this command needs; "
+            "this worktree's token is kept"
+        ),
+        fix=(
+            "Once the user decides, repair the record files in [TARGET] or delete those whose tasks are finished "
+            "(devkit spec scope sweep lists them with verdict=error), then rerun the same command"
+        ),
         target_files=[str(directory / problem.file) for problem in problems],
-    ).with_level(Level.ERROR)
+    )
 
 
 # --- update -------------------------------------------------------------------------------------------------------
@@ -331,6 +359,18 @@ class Ack:
         }
 
 
+def _current_base_ref(location: Location, stored: str, deadline: Deadline) -> str:
+    """The record's base ref while it names a commit; else the base branch detected now (``base_ref``) when that one
+    does, so a renamed or deleted base branch, or one the base checkout took after a detached registration, stops
+    being unresolved; else the stored one (``observe_git`` then reports it as ``missing-base-ref``)."""
+    if stored and ref_exists(location.root, stored, deadline):
+        return stored
+    detected = base_ref(location, deadline)
+    if detected and detected != stored and ref_exists(location.root, detected, deadline):
+        return detected
+    return stored
+
+
 def _diff_scopes(before: Sequence[ScopePath], after: Sequence[ScopePath]) -> tuple[int, int]:
     was = {path.key for path in before}
     now = {path.key for path in after}
@@ -341,7 +381,9 @@ def update(session: Session, spec_dir: str, request_id: str | None = None, *, so
     """Recollect the bundle's declared and observed scope, write it with this worktree's token and the revision just
     read, and compare it with the namespace's other records.
 
-    The observed range forks from the record's ``base_ref`` (``observe_git``). ``request_id`` retries an update
+    The observed range forks from the record's ``base_ref`` (``observe_git``); a record without one, or whose
+    ``base_ref`` no longer names a commit (renamed or deleted), takes the base branch detected now when that one does
+    (``_current_base_ref``). ``request_id`` retries an update
     whose outcome was not observed: an ID the record already applied is answered from the stored record, with the
     ``added`` and ``removed`` counts that request recorded, before anything is collected or written. Never raises
     for a registry failure: the ACK carries it.
@@ -357,9 +399,11 @@ def update(session: Session, spec_dir: str, request_id: str | None = None, *, so
             stored = current  # already applied: answered from the stored record
         else:
             stamp = utc_now()
-            scope = collect(location, spec_dir, current.base_revision, deadline, stamp, base_ref=current.base_ref)
+            ref = _current_base_ref(location, current.base_ref, deadline)
+            scope = collect(location, spec_dir, current.base_revision, deadline, stamp, base_ref=ref)
             added, removed = _diff_scopes(current.scopes, scope.all_paths())
             proposed = current.with_(
+                base_ref=ref,
                 spec=spec_dir,
                 scopes=tuple(scope.all_paths()),
                 unresolved=tuple(scope.unresolved),
@@ -418,9 +462,12 @@ class Released:
 def release(session: Session, task_id: str | None = None, *, source: str = "") -> Released:
     """Remove this worktree's record with its token and delete the token; repeating is a no-op.
 
-    Without ``task_id`` and without a token nothing happens (``registered`` false). With ``task_id`` the token must
-    own that record (``ScopeTokenMismatchError``), and a token is required (``ScopeTokenMissingError``). A record not
-    found while some record files cannot be read is ``SPEC_SCOPE_RECORD_INVALID`` at ``ERROR``; the token is kept.
+    Without ``task_id`` and without a token nothing happens (``registered`` false); an incomplete token file (one
+    ``load_token`` takes for no token) is removed. With ``task_id`` the token must own that record
+    (``ScopeTokenMismatchError``), and a token is required (``ScopeTokenMissingError``). A token whose record is gone
+    is removed (orphaned), unless an unreadable record file may hold that record. ``SPEC_SCOPE_RECORD_INVALID`` at
+    ``ERROR`` (the token kept) is raised only when the record looked for may be unreadable: with ``task_id`` when
+    that task's own record file cannot be read, without it when an unreadable file may hold this token's record.
     """
     location, registry, deadline = session.location, session.registry, session.deadline
     token = load_token(location.token_path)
@@ -429,17 +476,23 @@ def release(session: Session, task_id: str | None = None, *, source: str = "") -
             raise ScopeTokenMissingError(
                 "this worktree holds no scope registry token", target_files=[str(location.token_path)]
             )
+        if incomplete_token(location.token_path):
+            remove_token(location.token_path)  # a token nobody can present: an interrupted save
         return Released("", 0, registered=False, already=False)
     records, problems = registry.query(location.namespace, deadline)
     digest = token_hash(token)
+    suspects = _suspects(session, problems, digest)
     if task_id:
         target = next((record for record in records if record.task_id == task_id), None)
+        named = [problem for problem in problems if problem.file == registry.record_file(task_id)]
+        if target is None and named:
+            raise _unreadable(location, named, f"the record of task {task_id} cannot be read")
     else:
         target = next((record for record in records if record.token_hash == digest), None)
+        if target is None and suspects:
+            raise _unreadable(location, suspects, _OWN_UNREADABLE)
     if target is None:
-        if problems:  # the record looked for may be one of the unreadable files: keep the token
-            raise _unreadable(location, problems)
-        if not any(record.token_hash == digest for record in records):
+        if not suspects and not any(record.token_hash == digest for record in records):
             remove_token(location.token_path)  # orphaned: its record was released or swept
         return Released(task_id or "", 0, registered=True, already=True)
     registry.release(location.namespace, target.task_id, token, deadline)

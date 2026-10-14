@@ -32,6 +32,15 @@ def test_new_and_padr(workspace: Path) -> None:
     assert json.loads(result.stdout)["error"]["code"] == "SPEC_PROPOSAL_EXISTS"
 
 
+def test_padr_slug_option(workspace: Path) -> None:
+    _proposal(workspace, "new", "plans")
+    result = _proposal(workspace, "padr", "plans", "2024 roadmap", "--slug", "roadmap-2024")
+    assert result.exit_code == 0, result.output
+    assert result.stdout.splitlines() == [
+        "[PADR: PADR-roadmap-2024 path=docs/proposals/PROP-plans/decisions/PADR-roadmap-2024.md proposal=PROP-plans]"
+    ]
+
+
 def test_new_json(workspace: Path) -> None:
     result = _proposal(workspace, "new", "lean", "--format", "json")
     assert result.exit_code == 0

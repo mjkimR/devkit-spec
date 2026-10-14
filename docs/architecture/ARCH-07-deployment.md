@@ -69,7 +69,7 @@ flowchart TD
 | `docs/` skeleton files | `devkit add spec:docs-skeleton` (seeded once) | The project |
 | `docs/proposals/`, `specs/`, `docs/decisions/`, `docs/materials/` | `devkit spec proposal ...`, `devkit spec new` | The project (committed) |
 | `<git-common-dir>/devkit-spec-scope/<namespace>/` (`<task>.json`, `.lock`, `journal.jsonl`) | `devkit spec scope ...` | The registry; outside the working tree, shared by all worktrees |
-| `<git-dir>/devkit-spec-scope-token` (mode 0600) | `devkit spec scope register`, handoff | One per worktree |
+| `<git-dir>/devkit-spec-scope-token` (mode 0600) | `devkit spec scope register`, handoff | One per worktree; a `.devkit-spec-scope-token-<random>` temporary file a crashed save left behind is removed by the next scope command after a minute |
 
 ---
 

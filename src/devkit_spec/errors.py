@@ -145,7 +145,8 @@ class ProposalHandoffError(SpecError):
 
 
 class ProposalCleanupWarning(SpecError):
-    """The handoff completed but the proposal could not be removed (``WARNING``)."""
+    """The handoff completed but the proposal could not be removed, or the post-finish prune of the slug's empty
+    proposal directories failed (``WARNING``)."""
 
     code = "SPEC_PROPOSAL_CLEANUP_FAILED"
     level = Level.WARNING

@@ -141,7 +141,17 @@ class LocalRegistry:
         return self.shared / namespace
 
     def record_path(self, namespace: str, task_id: str) -> Path:
-        return self.namespace_dir(namespace) / f"{safe_name(task_id)}{RECORD_SUFFIX}"
+        return self.namespace_dir(namespace) / self.record_file(task_id)
+
+    @staticmethod
+    def record_file(task_id: str) -> str:
+        """The name of the record file of ``task_id``: what a ``Problem`` names when that record cannot be read."""
+        return f"{safe_name(task_id)}{RECORD_SUFFIX}"
+
+    def may_hold(self, namespace: str, problem: Problem, token_digest: str) -> bool:
+        """Whether the unreadable record file of ``problem`` may be the record of the token hashed to ``token_digest``:
+        ``False`` only when the file is gone or its bytes can be read and do not contain that hash."""
+        return _may_contain(self.namespace_dir(namespace) / problem.file, json.dumps(token_digest).encode("utf-8"))
 
     def journal_path(self, namespace: str) -> Path:
         return self.namespace_dir(namespace) / JOURNAL_FILE
@@ -319,8 +329,12 @@ class LocalRegistry:
 
     def _unshare(self, directory: Path, released: Record) -> None:
         """Clear ``shared_worktree`` on the record left alone in the worktree ``released`` shared; the flag is
-        advisory, so a failure to write it never fails the release."""
-        records, _ = self._read_all(directory)
+        advisory, so a failure to write it never fails the release. An unreadable record file that may name the
+        worktree may be another peer, so the flag stays."""
+        records, problems = self._read_all(directory)
+        worktree = json.dumps(released.worktree, ensure_ascii=False).encode("utf-8")
+        if any(_may_contain(directory / problem.file, worktree) for problem in problems):
+            return
         peers = [
             record
             for record in records
@@ -412,6 +426,16 @@ class LocalRegistry:
                     problems.append(Problem(JOURNAL_FILE, "parse", number))
         events.sort(key=lambda event: event.at)
         return events, problems
+
+
+def _may_contain(path: Path, needle: bytes) -> bool:
+    """Whether the file at ``path`` may contain ``needle``: unknown (``True``) when it cannot be read."""
+    try:
+        return needle in path.read_bytes()
+    except FileNotFoundError:
+        return False
+    except OSError:
+        return True
 
 
 def _seen(path: ScopePath, stamp: str) -> ScopePath:

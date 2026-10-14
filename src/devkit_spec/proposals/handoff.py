@@ -5,26 +5,30 @@ path it would create), then:
 
 1. writes ``specs/<YYYY-MM>/<YYYYMMDD>-<slug>/`` with ``spec.md``, ``plan.md`` and ``tasks.md`` carried from the
    proposal body, each marked as a skeleton (``spec.md`` keeps the proposal's ``namespace``, which must be
-   ``global`` or registered, and its ``summary``, which must be a string), and binds ``spec.md`` to the proposal's ``handoff_workflow``
-   (default ``direct-delivery``; ``kind: bugfix`` for ``bugfix``). A spec bound to ``bugfix`` gets ``spec.md`` only, with the proposal's target area and
-   boundaries in its carried notes;
+   ``global`` or registered, and its ``summary``, which must be a string), and binds ``spec.md`` to the proposal's
+   ``handoff_workflow`` (default ``direct-delivery``; ``kind: bugfix`` for ``bugfix``). A spec bound to ``bugfix``
+   gets ``spec.md`` only, with the proposal's target area and boundaries in its carried notes;
 2. copies ``target-docs.md`` into the spec bundle;
 3. promotes each ``decisions/PADR-<slug>.md`` to ``docs/decisions/<YYYY-MM>/<YYYYMMDD>-<slug>.md`` as an accepted
    ``ADR-<slug>`` (its frontmatter, ``summary`` included, is kept);
-4. moves a non-empty ``materials/`` to ``docs/materials/<YYYY-MM>/<YYYYMMDD>-<slug>/``, together with every other
-   file of the bundle that steps 1 to 3 do not carry (``notes.md``, a non-PADR file in ``decisions/``), at its path
-   relative to the bundle;
+4. moves ``materials/`` to ``docs/materials/<YYYY-MM>/<YYYYMMDD>-<slug>/`` when it holds a file other than
+   operating-system junk (``JUNK_FILES``), together with every other file of the bundle that steps 1 to 3 do not
+   carry (``notes.md``, a non-PADR file in ``decisions/``; junk aside), at its path relative to the bundle. Symbolic
+   links are moved as links, never followed;
 5. rewrites links and ID references that pointed into the proposal (``rewrite``);
 6. removes the proposal.
 
-A failure of any kind in steps 1 to 4 removes what they wrote, moves what they moved back and keeps the proposal;
-across file systems step 4 copies and removes the sources only after every write succeeded. A single-file proposal
+A legacy proposal or PADR whose slug starts with a number (``PROP-2024-budget``) is refused: the ID it would become
+breaks ``RULE-id-convention``. A failure of any kind in steps 1 to 4 removes what they wrote, moves what they moved
+back and keeps the proposal; a directory still holding something that could not be moved back is kept and reported.
+Across file systems step 4 copies and removes the sources only after every write succeeded. A single-file proposal
 ``docs/proposals/PROP-<slug>.md`` gets the plain skeleton (its body is not carried) and has no PADRs, materials or
 blueprint.
 """
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 from dataclasses import dataclass, field
@@ -47,6 +51,7 @@ from devkit_spec.errors import (
     ProposalNotApprovedError,
     ProposalNotFoundError,
     ProposalReferencesRewrittenNotice,
+    ProposalSlugError,
     ProposalTargetExistsError,
     ProposalUnboundNotice,
     ProposalWrongWorktreeError,
@@ -72,6 +77,7 @@ from devkit_spec.proposals.scaffold import (
     bundle_dir,
     check_spec_conflict,
     clean_slug,
+    first_segment_has_letter,
     known_namespaces,
     require_slug,
     single_file,
@@ -97,8 +103,15 @@ SUMMARY = "summary"
 ACCEPTED = "accepted"
 DIRECTION_STATUSES = ("draft", "reviewing")
 
+# Files an operating system leaves behind; never carried, they are deleted with the proposal.
+JUNK_FILES = frozenset({".DS_Store", "Thumbs.db", "desktop.ini"})
+
 _PADR = re.compile(r"\bPADR-[a-z0-9]+(?:-[a-z0-9]+)*")
-_DRAFT_STATUS = re.compile(r"^status:[ \t]*(?:draft|proposed)(?=[ \t]*(?:#.*)?$)", re.MULTILINE)
+# A frontmatter ``status: draft`` (or ``proposed``, plain or quoted); a trailing comment ("#" after whitespace) stays.
+_DRAFT_STATUS = re.compile(
+    r"""^status:[ \t]*(?:draft|proposed|"(?:draft|proposed)"|'(?:draft|proposed)')(?=[ \t]*\r?$|[ \t]+#)""",
+    re.MULTILINE,
+)
 _DRAFT_BODY_STATUS = re.compile(r"^- \*\*Status\*\*:[ \t]*(?:Draft|Proposed)[ \t]*$", re.MULTILINE)
 
 
@@ -179,12 +192,14 @@ def handoff_proposal(
     """Hand proposal ``slug`` off to a spec bundle under the workspace ``root`` (see the module docstring).
 
     Approval is ``status: accepted``, or ``draft``/``reviewing`` with ``direction_chosen`` (the user chose the
-    direction explicitly); it is never inferred. Raises, before writing anything: ``ProposalSlugError``,
-    ``ProposalNotFoundError``, ``ProposalInvalidError``, ``ProposalNotApprovedError``,
-    ``ProposalSlugConflictError``, ``ProposalWorkflowError``, ``ProposalTargetExistsError``,
-    ``ProposalWrongWorktreeError`` (``_check_worktree``). A failure while writing removes what was written, moves
-    the materials and carried files back and keeps the proposal, then raises ``ProposalHandoffError``, or the
-    ``AdvisoryError`` itself when the failure was one (such as a ``FrontmatterError`` binding ``spec.md``).
+    direction explicitly); it is never inferred. Raises, before writing anything: ``ProposalSlugError`` (also for a
+    proposal or PADR slug whose first segment has no letter), ``ProposalNotFoundError``, ``ProposalInvalidError``,
+    ``ProposalNotApprovedError``, ``ProposalSlugConflictError``, ``ProposalWorkflowError``,
+    ``ProposalTargetExistsError``, ``ProposalWrongWorktreeError`` (``_check_worktree``). A failure while writing
+    removes what was written, moves the materials and carried files back and keeps the proposal, then raises
+    ``ProposalHandoffError`` (with what the roll-back could not undo in its details), or the ``AdvisoryError``
+    itself when the failure was one (such as a ``FrontmatterError`` binding ``spec.md``) and the roll-back was
+    complete.
     """
     root = root.resolve()
     slug = require_slug(slug)
@@ -196,6 +211,7 @@ def handoff_proposal(
         raise ProposalNotFoundError(f"proposal PROP-{slug} not found", target_files=[f"PROP-{slug}"])
     proposal_path = bundle / PROPOSAL_FILE if is_bundle else single
     proposal_rel = proposal_path.relative_to(root).as_posix()
+    _require_lettered_slug(f"PROP-{slug}", slug, proposal_rel, "SPEC")
     text = _read(proposal_path, root)
     try:
         meta: dict[str, Any] = parse(text).data or {}
@@ -222,7 +238,7 @@ def handoff_proposal(
     target_dir = spec_dir(root, slug, day)
     targets: list[Path] = [target_dir]
     materials_dir = bundle / MATERIALS
-    move_materials = is_bundle and materials_dir.is_dir() and any(materials_dir.iterdir())
+    move_materials = is_bundle and _has_material(materials_dir)
     materials_target: Path | None = None
     target_docs_text: str | None = None
     decisions: list[_Decision] = []
@@ -233,11 +249,13 @@ def handoff_proposal(
         decisions = _plan_decisions(root, bundle / DECISIONS, month, stamp)
         targets += [decision.target for decision in decisions]
         preserved = root / "docs" / MATERIALS / month / f"{stamp}-{slug}"
-        extras = _plan_extras(root, bundle, decisions, preserved)
+        extras = _plan_extras(root, bundle, decisions, preserved, move_materials)
         if move_materials or extras:
             materials_target = preserved
             targets.append(materials_target)
     _check_targets(root, index, targets, decisions)
+    for _, destination in extras:
+        _require_inside(root, destination)
 
     title = text_value(meta.get("title")) or slug
     materials_ref = (
@@ -289,15 +307,19 @@ def handoff_proposal(
             make_dirs(materials_target.parent, written)
             move_path(materials_dir, materials_target, written, moved, leftovers)
         for source, destination in extras:
+            _require_inside(root, destination)  # the moved materials/ may hold a symbolic link
             make_dirs(destination.parent, written)
             move_path(source, destination, written, moved, leftovers)
     except Exception as exc:
-        roll_back(written, moved)
-        if isinstance(exc, AdvisoryError):
+        problems = roll_back(written, moved)
+        if isinstance(exc, AdvisoryError) and not problems:
             raise
-        raise ProposalHandoffError(
-            f"handoff of PROP-{slug} failed; the files it wrote were removed and the proposal is kept", str(exc)
-        ) from exc
+        what = (
+            "the files it wrote were removed and the proposal is kept"
+            if not problems
+            else "the roll-back was incomplete; inspect the paths in the details before retrying"
+        )
+        raise ProposalHandoffError(f"handoff of PROP-{slug} failed; {what}", str(exc), *problems) from exc
     remove_paths(leftovers)
 
     plan = RelocationPlan(proposal=str(bundle if is_bundle else single))
@@ -311,7 +333,7 @@ def handoff_proposal(
         plan.exact.update(promoted)
         # A promoted ADR was written for decisions/: its relative links resolve from there.
         plan.moved_files.update({str(d.target): str(d.padr) for d in decisions})
-        if materials_target is not None:
+        if materials_target is not None and move_materials:
             plan.prefixes[str(materials_dir)] = str(materials_target)
             plan.moved[str(materials_target)] = str(materials_dir)
         for source, destination in extras:
@@ -427,6 +449,19 @@ def _scope_notes(meta: dict[str, Any]) -> str:
     return "### Target Area & Boundaries\n\n" + "\n".join(lines) + "\n\n" if lines else ""
 
 
+def _require_lettered_slug(name: str, slug: str, rel: str, prefix: str) -> None:
+    """Refuse a legacy ``name`` whose slug starts with a number: its ``<prefix>-<slug>`` would fail
+    ``RULE-id-convention`` (``2024-budget`` reads as the retired number-based ID ``2024``)."""
+    if first_segment_has_letter(slug):
+        return
+    raise ProposalSlugError(
+        f"{name} has slug {slug!r}, whose first segment has no letter; {prefix}-{slug} would break RULE-id-convention",
+        target_files=[rel],
+        fix=f"Rename {name} (its file or directory and its id) so the first segment of its slug has a letter (for"
+        " example budget-2024 instead of 2024-budget), update references to it, then rerun the handoff",
+    )
+
+
 def _plan_decisions(root: Path, decisions_dir: Path, month: str, stamp: str) -> list[_Decision]:
     """The ADRs the bundle's ``PADR-*.md`` files become, with their promoted text."""
     if not decisions_dir.is_dir():
@@ -438,8 +473,9 @@ def _plan_decisions(root: Path, decisions_dir: Path, month: str, stamp: str) -> 
         adr_slug = clean_slug(padr.name.removeprefix("PADR-").removesuffix(".md"))
         if not adr_slug:
             continue
-        original = _read(padr, root)
         rel = padr.relative_to(root).as_posix()
+        _require_lettered_slug(f"PADR-{adr_slug}", adr_slug, rel, "ADR")
+        original = _read(padr, root)
         try:
             old = parse_document(rel, original)
         except FrontmatterError as exc:
@@ -475,38 +511,76 @@ def _plan_decisions(root: Path, decisions_dir: Path, month: str, stamp: str) -> 
     return planned
 
 
-def _plan_extras(root: Path, bundle: Path, decisions: list[_Decision], materials: Path) -> list[tuple[Path, Path]]:
-    """Every bundle file the handoff does not carry otherwise, with its destination under ``materials`` at its path
-    relative to the bundle (``materials/`` itself moves as a whole).
+def _has_material(materials_dir: Path) -> bool:
+    """Whether ``materials_dir`` holds anything worth preserving: a file other than ``JUNK_FILES`` or a symbolic link,
+    at any depth (empty directories and junk are deleted with the proposal). A symbolic link ``materials_dir`` is
+    preserved as the link."""
+    if materials_dir.is_symlink():
+        return True
+    if not materials_dir.is_dir():
+        return False
+    for current, dirnames, filenames in os.walk(materials_dir):
+        here = Path(current)
+        if any(name not in JUNK_FILES or (here / name).is_symlink() for name in filenames):
+            return True
+        if any((here / name).is_symlink() for name in dirnames):
+            return True
+    return False
 
-    Raises ``ProposalTargetExistsError`` when a destination is also the destination of a file in ``materials/``.
+
+def _plan_extras(
+    root: Path, bundle: Path, decisions: list[_Decision], materials: Path, move_materials: bool
+) -> list[tuple[Path, Path]]:
+    """Every bundle file the handoff does not carry otherwise, with its destination under ``materials`` at its path
+    relative to the bundle (``materials/`` itself moves as a whole when ``move_materials``). ``JUNK_FILES`` are not
+    carried; other hidden files are. Symbolic links are never followed: one is carried as a file.
+
+    Raises ``ProposalTargetExistsError`` when a destination is also the destination of a path in ``materials/``, or
+    lies below a file or symbolic link there (moving into it would leave the preserved directory).
     """
     carried = {bundle / PROPOSAL_FILE, bundle / TARGET_DOCS, *(decision.padr for decision in decisions)}
     materials_dir = bundle / MATERIALS
 
     def taken(rel: Path) -> bool:
-        """Whether moving ``materials/`` already puts something at ``rel``, or a file at one of its parents."""
-        found = materials_dir / rel
-        if found.exists() or found.is_symlink():
+        """Whether moving ``materials/`` already puts something at ``rel``, or a file or symlink at a parent."""
+        if os.path.lexists(materials_dir / rel):
             return True
-        return any((materials_dir / parent).is_file() for parent in rel.parents[:-1])
+        return any(
+            (materials_dir / parent).is_symlink() or (materials_dir / parent).is_file() for parent in rel.parents[:-1]
+        )
 
     extras = []
     for path in sorted(bundle.rglob("*")):
         if (path.is_dir() and not path.is_symlink()) or path in carried:
             continue
-        if materials_dir.is_dir() and path.is_relative_to(materials_dir):
+        if (materials_dir.is_dir() or materials_dir.is_symlink()) and path.is_relative_to(materials_dir):
+            continue  # moved as a whole, or junk deleted with the proposal
+        if path.name in JUNK_FILES and not path.is_symlink():
             continue
         extras.append((path, materials / path.relative_to(bundle)))
-    clashes = [source for source, _ in extras if materials_dir.is_dir() and taken(source.relative_to(bundle))]
+    clashes = [source for source, _ in extras if move_materials and taken(source.relative_to(bundle))]
     if clashes:
         rels = [path.relative_to(root).as_posix() for path in clashes]
         raise ProposalTargetExistsError(
-            f"the handoff would move {', '.join(rels)} onto a file of materials/ with the same path",
+            f"the handoff would move {', '.join(rels)} onto a path of materials/ (the same path, or below a file or"
+            " symbolic link)",
             target_files=rels,
             fix="Rename or move the path in [TARGET] (or its counterpart in materials/), then rerun the handoff",
         )
     return extras
+
+
+def _require_inside(root: Path, destination: Path) -> None:
+    """Refuse to carry a file to ``destination`` when its directory resolves outside the workspace ``root`` (a
+    symbolic link on the way)."""
+    if destination.parent.resolve().is_relative_to(root):
+        return
+    rel = destination.relative_to(root).as_posix()
+    raise ProposalTargetExistsError(
+        f"the handoff would move a file to {rel}, whose directory resolves outside the workspace",
+        target_files=[rel],
+        fix="Replace the symbolic link on the way to [TARGET] with a directory, then rerun the handoff",
+    )
 
 
 def _check_targets(root: Path, index: DocumentIndex, targets: list[Path], decisions: list[_Decision]) -> None:

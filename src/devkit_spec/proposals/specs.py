@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from devkit.advisory import AdvisoryError
+from devkit.core import remove_empty_tree
 from devkit.core.frontmatter import locate
 from devkit.workflow import Binding, write_binding
 
@@ -243,15 +244,52 @@ def remove_paths(paths: Sequence[Path]) -> None:
             _log.info("%s could not be removed: %s", path, exc)
 
 
-def roll_back(written: list[Path], moved: Sequence[tuple[Path, Path]] = ()) -> None:
+def _relocate(path: Path, moves: Sequence[tuple[Path, Path]]) -> Path:
+    """Where ``path`` is after ``moves`` (``(source, destination)`` in the order they ran) carried it or a parent."""
+    for source, destination in moves:
+        if path == source or path.is_relative_to(source):
+            path = destination / path.relative_to(source)
+    return path
+
+
+def roll_back(written: list[Path], moved: Sequence[tuple[Path, Path]] = ()) -> list[str]:
     """Undo a failed write: move each ``(new, old)`` of ``moved`` back, newest first, then remove what was written,
-    newest first."""
+    newest first; returns what could not be undone (also logged), ``[]`` when everything was.
+
+    A written path a move-back carried along (a directory ``make_dirs`` created inside a moved directory) is followed
+    to where it went: a file is removed there, a directory only when it holds no file (``remove_empty_tree``). A
+    written directory that holds something whose move-back failed is never removed, so nothing moved is lost.
+    """
+    problems: list[str] = []
+    back: list[tuple[Path, Path]] = []
+    stuck: list[tuple[Path, int]] = []  # a path left at its new location, and how many move-backs ran before it
     for new, old in reversed(moved):
         try:
             shutil.move(new, old)
         except OSError as exc:
-            _log.info("%s could not be moved back to %s: %s", new, old, exc)
-    remove_paths(written)
+            problems.append(f"{new} could not be moved back to {old}: {exc}")
+            stuck.append((new, len(back)))
+        else:
+            back.append((new, old))
+    kept = [_relocate(path, back[ran:]) for path, ran in stuck]
+    for path in reversed(written):
+        here = _relocate(path, back)
+        holding = [item for item in kept if item == here or item.is_relative_to(here)]
+        try:
+            if holding:
+                problems.append(f"{here} was kept: it holds {', '.join(map(str, holding))}, not moved back")
+            elif here != path and here.is_dir() and not here.is_symlink():
+                if not remove_empty_tree(here) and here.exists():
+                    problems.append(f"{here} was kept: it is not empty")
+            elif here.is_dir() and not here.is_symlink():
+                shutil.rmtree(here)
+            else:
+                here.unlink(missing_ok=True)
+        except OSError as exc:
+            problems.append(f"{here} could not be removed: {exc}")
+    for problem in problems:
+        _log.info("roll-back: %s", problem)
+    return problems
 
 
 @dataclass
@@ -339,10 +377,12 @@ def create_spec(
     try:
         write_spec_bundle(directory, files, binding, written)
     except Exception as exc:
-        roll_back(written)
-        if isinstance(exc, AdvisoryError):
+        problems = roll_back(written)
+        if isinstance(exc, AdvisoryError) and not problems:
             raise
-        raise SpecWriteError(f"creating SPEC-{slug} failed; the files it wrote were removed", str(exc)) from exc
+        raise SpecWriteError(
+            f"creating SPEC-{slug} failed; the files it wrote were removed", str(exc), *problems
+        ) from exc
     rel = directory.relative_to(root).as_posix()
     created = CreatedSpec(
         id=f"SPEC-{slug}", dir=rel, workflow=binding.workflow if binding else None, namespace=reported

@@ -63,10 +63,12 @@ integrated. It never grants or blocks a write, and it is not exclusive ownership
 9. **Cleanup after finish**: devkit-spec's `devkit.post_finish` extension (`devkit_spec.cleanup.after_finish`) runs in the
    base after `devkit worktree finish` succeeds and removes the records whose worktree is the finished one, at the
    revision it read (`sweep --apply` restricted to those tasks); other stale records stay for an explicit sweep.
-   When the removal fails (a malformed `[tool.spec]`, a registry timeout), its error is returned beside the proposal
-   prune notices, which devkit reports as a warning, and its fix ends with `devkit spec scope sweep --apply`.
-   Nothing is released before the finish, so a refused finish leaves the task registered. Rationale:
-   `ADR-cleanup-after-worktree-finish`.
+   Neither of its cleanups stops the other. A proposal prune that fails (a directory that cannot be listed or
+   removed) is a `SPEC_PROPOSAL_CLEANUP_FAILED` warning whose fix is `devkit spec proposal prune <slug>`, and the
+   record removal still runs. When the record removal fails (a malformed `[tool.spec]`, a registry timeout), its
+   error (`SPEC_CONFIG_INVALID`, `SPEC_SCOPE_TIMEOUT`, ...) is returned beside the prune notices, devkit reports it as
+   a warning with its own code, and its fix ends with `devkit spec scope sweep --apply`. Nothing is released before
+   the finish, so a refused finish leaves the task registered. Rationale: `ADR-cleanup-after-worktree-finish`.
 10. **Absolute shared path**: a configured `shared_path` MUST be absolute (a relative path would resolve to a
     different directory in each worktree).
 
@@ -95,11 +97,17 @@ a task that moves a file overlaps a task editing it at its old path.
 
 The committed range starts at the fork point, `git merge-base <base ref> HEAD`, recomputed on every `register` and
 `update`: what a task merges or rebases in from its base branch is not observed, while its own changes, including
-conflict resolutions, are. The base ref is the branch the base checkout was on at registration (what
-`devkit worktree finish` integrates into). In the base checkout itself, on the base branch, or when the base
-checkout is detached, the record has no base ref and the range starts at the fixed base revision. A base ref that no
-longer resolves (or shares no history with HEAD) falls back to the base revision and is unresolved
-(`missing-base-ref`); the update still applies.
+conflict resolutions, are. The base ref is the branch the base checkout is on when the task registers: devkit records
+no branch a worktree forked from, so it is a guess, and the base checkout may be on another branch than the one the
+worktree was created from. The fork point is therefore used only when the base revision is its ancestor; otherwise
+(the fork point predates the base revision) the range starts at the base revision, so it is never wider than
+`<base revision>..HEAD` and another branch's commits are never observed. In the base checkout itself, on the base
+branch, or when the base checkout is detached, the record has no base ref and the range starts at the fixed base
+revision. A base ref that no longer resolves (or shares no history with HEAD) falls back to the base revision and is
+unresolved (`missing-base-ref`); the update still applies. An `update` whose record has no base ref, or one that no
+longer names a commit (the base branch was renamed or deleted), detects the base checkout's branch again and keeps it
+in the record when it names a commit, which clears `missing-base-ref`. A shallow clone whose history does not reach
+the fork point stays unresolved until it is deepened (`git fetch --unshallow`).
 
 | Unresolved reason | Input |
 | --- | --- |
@@ -111,7 +119,7 @@ longer resolves (or shares no history with HEAD) falls back to the base revision
 | `no-targets` | A `target-docs.md` without a `targets` key. |
 | `missing-target-docs`, `missing-reconcile`, `missing-tasks` | The input file does not exist. |
 | `missing-base-revision`, `unknown-base-revision` | The record has no base commit, or Git does not know it. |
-| `missing-base-ref` | The record's base branch does not resolve or shares no history with HEAD; the base revision is used instead. |
+| `missing-base-ref` | The record's base branch does not resolve and none can be detected again, or it shares no history with HEAD (a shallow clone); the base revision is used instead. |
 
 ### 4.2 Comparison
 
@@ -130,13 +138,16 @@ sides. Ranking and weighting are the consumer's.
   entrypoints like any other.
 - **Record**: `<shared>/<namespace>/<task-id>.json` (the task ID mapped to a file-name-safe form), schema version 1:
   `namespace`, `task_id`, `token_hash`, `revision` (1 on register, +1 per update), `base_revision` (HEAD at
-  registration), `base_ref` (the base checkout's branch at registration, `refs/heads/<name>`; empty when there is
-  none, 4.1), `worktree` (the absolute workspace root), `hostname`, `shared_worktree`, `spec` (workspace-relative),
+  registration), `base_ref` (the base checkout's branch at registration, or the one an
+  update detected again, `refs/heads/<name>`; empty when there is none, 4.1), `worktree` (the absolute workspace root), `hostname`, `shared_worktree`, `spec` (workspace-relative),
   `scopes` (`path`, `kind`, `source`, `stage`, `first_seen`), `unresolved`, `updated_at`, `last_request_id`,
   `last_added` and `last_removed` (the counts of the update `last_request_id` applied; 0 after registration).
 - **Token**: saved in the worktree's own Git directory as `devkit-spec-scope-token` (mode 0600), never in the working
-  tree or the registry; it is written to a temporary file and linked into place, so it is created exclusively and
-  never read half-written.
+  tree or the registry, and always created exclusively. It is written to a temporary file
+  (`.devkit-spec-scope-token-<random>`) and hard-linked into place, so it is never read half-written; on a file
+  system without hard links the token file is created exclusively and written in place, and a file that does not end
+  with the token's newline (a save in progress or interrupted) counts as no token: `release` removes it. A temporary
+  file a crash left behind is removed by the next scope command once it is older than a minute.
 - **Atomicity**: an exclusive `flock` on `<shared>/<namespace>/.lock` (devkit's `file_lock`; the lock file is created
   with mode 0600, so the processes sharing a namespace run as one user, and a symbolic link or anything but a
   regular file there is `SPEC_SCOPE_SHARED_PATH_UNAVAILABLE`);
@@ -146,12 +157,16 @@ sides. Ranking and weighting are the consumer's.
 - **Operations** (`devkit_spec.scope.Registry`; the local file adapter `LocalRegistry` is the only implementation):
   - `register`: creates the record; an existing task ID in the namespace is `SPEC_SCOPE_TASK_EXISTS`. A second record
     for the same worktree and host marks both `shared_worktree` (a `SPEC_SCOPE_SHARED_WORKTREE` warning).
-  - `query`: every readable record; unreadable files are reported, never read as records.
+  - `query`: every readable record; unreadable files are reported, never read as records. `record_file` names the
+    file of a task's record and `may_hold` tells whether an unreadable file may be a token's record (it may unless
+    its bytes can be read and lack the token's hash), so commands refuse only for the unreadable files that may be
+    the record they look for.
   - `update`: requires the owner token and the read revision (`SPEC_SCOPE_TOKEN_MISMATCH`,
     `SPEC_SCOPE_STALE_REVISION`); `first_seen` survives updates; observed paths are replaced on each update,
     declared ones are never removed by an observation.
   - `release`: deletes the record when the token owns it; a missing record is a no-op. A record left alone in the
-    worktree the released one shared loses its `shared_worktree` flag.
+    worktree the released one shared loses its `shared_worktree` flag, unless an unreadable record file may name that
+    worktree too.
   - `sweep`: classifies each record: `active`; `stale` (`worktree-missing`: same host, and the worktree path is gone
     or no longer a Git work tree); `unverifiable` (`other-host`); `error` (`parse`, `permission`). With `--apply` a
     stale record is removed (`removed`, `worktree-missing`) only if its revision still equals the one read before,
@@ -179,10 +194,10 @@ sentinel per line, warnings follow on stderr, and JSON is one object with the sa
 | --- | --- |
 | `devkit spec scope compare (--proposal <slug> \| --spec <dir>)...` | Compares two or more declared scopes pairwise without the registry or Git. |
 | `devkit spec scope register --spec <dir> [--task-id <id>]` | Registers this worktree's task (task ID default: the spec ID) and prints its token once. |
-| `devkit spec scope query [--spec <dir>]` | Lists the namespace's records and this worktree's overlaps with the others (every pair when this worktree registered nothing). `--spec` compares that bundle's declared scope with every record not owned here, for a task about to start. |
+| `devkit spec scope query [--spec <dir>]` | Lists the namespace's records and this worktree's overlaps with the others (every pair when this worktree registered nothing, or its record is gone or may be unreadable). `--spec` compares that bundle's declared scope with every record not owned here, for a task about to start. |
 | `devkit spec scope query --history [--task <id>]` | Prints the journal in time order; `--task` keeps events whose task ID or slug matches. |
 | `devkit spec scope update --spec <dir> [--request-id <id>]` | Recollects the declared and observed scope, writes it, prints the overlaps and the ACK. |
-| `devkit spec scope release [--task-id <id>]` | Removes this worktree's record and token. With `--task-id`, a token is required and must own that record; a token whose record is already gone is removed. |
+| `devkit spec scope release [--task-id <id>]` | Removes this worktree's record and token. With `--task-id`, a token is required and must own that record. A token whose record is already gone is removed, unless an unreadable record file may hold that record. |
 | `devkit spec scope sweep [--apply] [--expect <task>=<rev>]...` | Reports stale, unverifiable and unreadable records; `--apply` removes stale ones whose revision is unchanged (without `--expect`, the revisions this command read first). |
 
 Argument errors (`ARGUMENT_INVALID`): `register`/`update` without `--spec`, `compare` with fewer than two inputs,
@@ -261,7 +276,7 @@ A malformed table is `SPEC_CONFIG_INVALID` (`CAP-DLV-project-policy`).
 | `SPEC_SCOPE_TOKEN_MISSING` | `ERROR` (`INPUT_ERROR`) | `ScopeTokenMissingError` | This worktree registered nothing (update, release `--task-id`). |
 | `SPEC_SCOPE_TOKEN_EXISTS` | `ERROR` (`INPUT_ERROR`) | `ScopeTokenExistsError` | This worktree already registered a task, or a concurrent registration in it saved its token first. |
 | `SPEC_SCOPE_TASK_EXISTS` | `ERROR` (`INPUT_ERROR`) | `ScopeTaskExistsError` | Another record has the task ID. |
-| `SPEC_SCOPE_RECORD_MISSING` | `ERROR` (`INPUT_ERROR`) | `ScopeRecordMissingError` | The token's record was released or swept; `release` removes the orphaned token. |
+| `SPEC_SCOPE_RECORD_MISSING` | `ERROR` (`INPUT_ERROR`) | `ScopeRecordMissingError` | The token's record was released or swept, and no unreadable record file may hold it (`update`); `release` removes the orphaned token. |
 | `SPEC_SCOPE_TOKEN_MISMATCH` | `ERROR` (`BLOCKED`) | `ScopeTokenMismatchError` | The token does not own the record. |
 | `SPEC_SCOPE_STALE_REVISION` | `ERROR` (`AUTO`) | `ScopeStaleRevisionError` | The record changed between read and write; nothing was written. |
 | `SPEC_SCOPE_TIMEOUT` | `ERROR` (`DEFER`) | `ScopeTimeoutError` | The lock or Git outlasted `timeout`. |
@@ -270,7 +285,7 @@ A malformed table is `SPEC_CONFIG_INVALID` (`CAP-DLV-project-policy`).
 | `SPEC_SCOPE_SHARED_PATH_UNAVAILABLE` | `ERROR` (`INTERACTION`) | `ScopeSharedPathError` | The registry directory (or the token file) cannot be created, read or written, or its `.lock` is not a regular file. |
 | `SPEC_SCOPE_UNSUPPORTED` | `ERROR` (`MAINTENANCE`) | `ScopeUnsupportedError` | The reserved `claim` operation was called. |
 | `SPEC_SCOPE_ACK_FAILED` | `ERROR` (`MAINTENANCE`) | `ScopeAckFailedError` | An update failed for a cause without its own code. |
-| `SPEC_SCOPE_RECORD_INVALID` | `WARNING` | `ScopeRecordInvalidWarning` | A record file cannot be read (an `ERROR` when it is this worktree's record during update or release). |
+| `SPEC_SCOPE_RECORD_INVALID` | `WARNING` | `ScopeRecordInvalidWarning` | A record file cannot be read and was left out (`query` lists the other records, with a detail when this worktree's record may be among the unreadable files). An `ERROR` (`INTERACTION`, the token kept until the files are repaired or removed) only when the record a command needs may be unreadable: `update` and `release` without `--task-id` when this worktree's record is not readable and an unreadable file may hold its token's hash; `release --task-id <id>` when that task's own record file cannot be read. |
 | `SPEC_SCOPE_SHARED_WORKTREE` | `WARNING` | `ScopeSharedWorktreeWarning` | Another task registered the same worktree. |
 | `SPEC_SCOPE_JOURNAL_UNAVAILABLE` | `WARNING` | `ScopeJournalWarning` | The journal could not be written. |
 | `SPEC_SCOPE_JOURNAL_LINE_INVALID` | `WARNING` | `ScopeJournalLineWarning` | `query --history` skipped lines that are not JSON events. |

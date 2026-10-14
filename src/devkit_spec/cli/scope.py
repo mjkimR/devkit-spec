@@ -127,14 +127,20 @@ def _overlapping(pairs: Sequence[PairResult]) -> int:
     return sum(pair.overlapping for pair in pairs)
 
 
-def _record_warnings(location: Location, problems: Sequence[Problem]) -> list[AdvisoryError]:
+def _record_warnings(
+    location: Location, problems: Sequence[Problem], own_unreadable: AdvisoryError | None = None
+) -> list[AdvisoryError]:
+    """One ``SPEC_SCOPE_RECORD_INVALID`` warning for the unreadable record files; ``own_unreadable`` (this worktree's
+    record may be one of them) adds its message as a detail."""
     if not problems:
         return []
     directory = location.shared_path / location.namespace
+    own = [own_unreadable.message] if own_unreadable is not None else []
     return [
         ScopeRecordInvalidWarning(
             f"{len(problems)} record file(s) of the namespace could not be read and were left out",
             *(f"{problem.file}: {problem.reason}" for problem in problems),
+            *own,
             target_files=[str(directory / problem.file) for problem in problems],
         )
     ]
@@ -294,10 +300,13 @@ def query_cmd(
         return
     location = session.location
     mine: Record | None
+    unreadable: ScopeRecordInvalidWarning | None = None
     try:
         found = own(session)
         mine, others, problems = found.record, found.others, found.problems
-    except (ScopeTokenMissingError, ScopeRecordMissingError):
+    except (ScopeTokenMissingError, ScopeRecordMissingError, ScopeRecordInvalidWarning) as exc:
+        # listing needs no own record: one that may be unreadable is reported with the other unreadable files
+        unreadable = exc if isinstance(exc, ScopeRecordInvalidWarning) else None
         mine = None
         others, problems = session.registry.query(location.namespace, session.deadline)
     if spec_dir is not None:
@@ -307,7 +316,7 @@ def query_cmd(
         pairs = compare_with(mine.to_set(), [record.to_set() for record in others])
     else:
         pairs = compare_all([record.to_set() for record in others])
-    notices = _record_warnings(location, problems)
+    notices = _record_warnings(location, problems, unreadable)
     records = [*([mine] if mine else []), *others]
     summary = {
         "namespace": location.namespace,

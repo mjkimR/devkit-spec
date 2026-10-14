@@ -8,7 +8,9 @@ adapter (``localfs``) is the only implementation; ``claim`` (an exclusive publis
 - ``update``: ``ScopeRecordMissingError``, ``ScopeTokenMismatchError``, ``ScopeStaleRevisionError`` (the revision read
   is not the stored one); a ``request_id`` the record last applied is answered from the stored record unchanged;
 - ``release``: a missing record is a no-op, a foreign token ``ScopeTokenMismatchError``; a record left alone in the
-  worktree the released one shared loses its ``shared_worktree`` flag;
+  worktree the released one shared loses its ``shared_worktree`` flag (not while an unreadable record may share it);
+- ``record_file`` and ``may_hold`` relate the ``Problem`` of an unreadable record to a task ID or a token, so a caller
+  refuses only for the unreadable records that may be the one it looks for;
 - every operation: ``ScopeTimeoutError``, ``ScopeNamespaceError``, ``ScopeLockUnsupportedError``,
   ``ScopeSharedPathError``.
 """
@@ -56,6 +58,14 @@ class Registry(Protocol):
     def release(self, namespace: str, task_id: str, token: str, deadline: Deadline) -> None:
         """Delete the record when ``token`` owns it (a missing record is a no-op) and clear ``shared_worktree`` on a
         record left alone in its worktree."""
+        ...
+
+    def record_file(self, task_id: str) -> str:
+        """The name a ``Problem`` gives the record of ``task_id`` when it cannot be read."""
+        ...
+
+    def may_hold(self, namespace: str, problem: Problem, token_digest: str) -> bool:
+        """Whether the unreadable record of ``problem`` may be the record of the token hashed to ``token_digest``."""
         ...
 
     def sweep(

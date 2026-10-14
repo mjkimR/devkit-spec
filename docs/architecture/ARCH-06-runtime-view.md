@@ -176,6 +176,10 @@ sequenceDiagram
 - An update that does not apply prints `[SCOPE_ACK: status=failed|stale|timeout ...]` and its error
   (`SPEC_SCOPE_STALE_REVISION`, `SPEC_SCOPE_TIMEOUT`, ...); `--request-id` makes a retry idempotent.
 - `devkit spec scope release -w <worktree>` withdraws an abandoned task instead of the sweep.
+- The extension's two cleanups are independent: a failed proposal prune arrives as a `SPEC_PROPOSAL_CLEANUP_FAILED`
+  warning (fix: `devkit spec proposal prune <slug>`) and the record removal still runs; a failed record removal
+  arrives as its own warning (`SPEC_SCOPE_TIMEOUT`, `SPEC_CONFIG_INVALID`, ...) whose fix ends with
+  `devkit spec scope sweep --apply`. The finish itself has already succeeded.
 
 ---
 
