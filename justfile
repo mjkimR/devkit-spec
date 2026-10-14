@@ -11,29 +11,29 @@ init:
 
 # Run ruff format and lint with automatic fixes
 lint:
-    uv run --no-active ruff check --fix .
-    uv run --no-active ruff format .
+    uv run --no-active devkit run -- uv run --no-active ruff check --fix --output-format=concise .
+    uv run --no-active devkit run -- uv run --no-active ruff format .
 
 # Check linting and formatting without modifying files
 lint-check:
-    uv run --no-active ruff check .
-    uv run --no-active ruff format --check .
+    uv run --no-active devkit run -- uv run --no-active ruff check --output-format=concise .
+    uv run --no-active devkit run -- uv run --no-active ruff format --check .
 
 # Run pyright static type checking over sources and tests
 check:
-    uv run --no-active pyright
+    uv run --no-active devkit run -- uv run --no-active pyright
 
 # Run pytest
 test *args:
-    uv run --no-active pytest "$@"
+    uv run --no-active devkit run -- uv run --no-active pytest --tb=short "$@"
 
 # Run pytest with a coverage report
 test-cov *args:
-    uv run --no-active pytest --cov --cov-config=pyproject.toml "$@"
+    uv run --no-active devkit run -- uv run --no-active pytest --tb=short --cov --cov-config=pyproject.toml "$@"
 
 # Run the rule engine check (devkit rules check)
 rules-check *args:
-    uv run --no-active devkit rules check "$@"
+    uv run --no-active devkit run -- uv run --no-active devkit rules check "$@"
 
 # Everything CI runs
 ci: lint-check check test rules-check

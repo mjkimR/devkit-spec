@@ -34,6 +34,9 @@ Run lint, type checks and relevant tests before completing code changes:
 | Governance Rules | `just rules-check` |
 | Everything CI runs | `just ci` |
 
+The recipes run their tools through `devkit run` (bounded output, full log path); run
+them as they are, without wrapping them again.
+
 <!-- DEVKIT:START -->
 ## devkit
 
