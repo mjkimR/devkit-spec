@@ -108,6 +108,19 @@ def test_observe_git(repo: Path) -> None:
     assert [item.reason for item in observe_git(repo, "", Deadline(30), "")[1]] == ["missing-base-revision"]
 
 
+@pytest.mark.parametrize("stage", ["committed", "staged", "unstaged"])
+def test_observe_git_lists_both_sides_of_a_rename(repo: Path, stage: str) -> None:
+    base = git(repo, "rev-parse", "HEAD")
+    git(repo, "mv", "src/a/a.py", "src/moved.py")
+    if stage == "committed":
+        git(repo, "commit", "-q", "-m", "move")
+    elif stage == "unstaged":
+        git(repo, "reset", "-q")
+        git(repo, "add", "-N", "src/moved.py")
+    observed, _ = observe_git(repo, base, Deadline(30), "")
+    assert {"src/a/a.py", "src/moved.py"} <= {item.path for item in observed}
+
+
 def test_observe_git_is_relative_to_a_workspace_below_the_top_level(repo: Path) -> None:
     write(repo, "pkg/.devkit/config.toml", "")
     git(repo, "add", ".")

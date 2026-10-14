@@ -6,7 +6,8 @@ repository-wide. Every document belongs to one namespace:
 - a document under ``docs/packages/<name>/`` belongs to ``<name>``;
 - the files of a spec bundle (``specs/<YYYY-MM>/<bundle>/...``) or a proposal bundle
   (``docs/proposals/<bundle>/...``) belong to the namespace their ``spec.md`` or ``proposal.md`` names in its
-  ``namespace`` frontmatter field, so a bundle keeps its package wherever the work happens;
+  ``namespace`` frontmatter field, so a bundle keeps its package wherever the work happens; a single-file proposal
+  (``docs/proposals/<name>.md``) belongs to the namespace its own ``namespace`` field names;
 - everything else is ``global``.
 
 A selection (``--namespace``, ``--all-namespaces``, or detected from the current directory) shows its namespace plus
@@ -68,17 +69,23 @@ def require(namespaces: Sequence[Namespace], name: str) -> str:
 
 
 def select(namespaces: Sequence[Namespace], root: Path, cwd: Path, name: str | None, every: bool) -> Selection:
-    """The selection of ``--namespace NAME`` / ``--all-namespaces``, else the one the current directory implies."""
+    """The selection of ``--namespace NAME`` / ``--all-namespaces``, else the one the current directory implies.
+
+    ``NAME`` must be ``global`` or a registered namespace (``ArgumentError`` otherwise), also when none is registered;
+    without registered namespaces every selection shows everything.
+    """
     if name is not None and every:
         raise ArgumentError(
             "--namespace and --all-namespaces cannot be combined",
             target_files=["--namespace", "--all-namespaces"],
             fix="Pass one of --namespace NAME and --all-namespaces",
         )
+    if name is not None:
+        require(namespaces, name)
     if every or not namespaces:
         return Selection()
     if name is not None:
-        return Selection(require(namespaces, name))
+        return Selection(name)
     return Selection(detect(namespaces, root, cwd))
 
 
@@ -88,6 +95,8 @@ def _bundle_anchor(path: str) -> str | None:
         return "/".join([*parts[:3], "spec.md"])
     if len(parts) >= 4 and parts[:2] == ["docs", "proposals"]:
         return "/".join([*parts[:3], "proposal.md"])
+    if len(parts) == 3 and parts[:2] == ["docs", "proposals"]:
+        return path
     return None
 
 

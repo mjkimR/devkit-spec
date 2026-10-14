@@ -3,9 +3,9 @@
 ``specs/<YYYY-MM>/<YYYYMMDD>-<slug>/reconcile.md`` records how a change was reconciled into the Living Spec. Its
 frontmatter needs ``reconcile_id`` (its value is ``RULE-id-convention``'s), ``status`` ``pending`` (reconciliation
 under way) or ``resolved``, and ``targets``: a list of ``{file, resolution, rationale}`` where ``file`` is a
-workspace-relative path, unique in the list, ``resolution`` is ``modified`` (the Living Spec file changed with this
-work) or ``waived`` (no change needed), and a waiver's ``rationale`` holds at least 20 non-whitespace characters, so
-it says why. Whether a completed spec has a resolved record is ``RULE-spec-lifecycle``'s.
+workspace-relative path in canonical form (``docs/a.md``, not ``./docs/a.md`` or ``docs//a.md``), unique in the
+list, ``resolution`` is ``modified`` (the Living Spec file changed with this work) or ``waived`` (no change needed),
+and a waiver's ``rationale`` holds at least 20 non-whitespace characters, so it says why. Whether a completed spec has a resolved record is ``RULE-spec-lifecycle``'s.
 
 Checked on every targeted ``reconcile.md`` of a current bundle (a completed bundle's record is history, checked only
 when named as an explicit target). In a snapshot run (``check --staged`` at commit time, ``check --ci`` on a pull
@@ -16,7 +16,7 @@ branch, so a target changed in an earlier commit of the branch counts there.
 
 from __future__ import annotations
 
-from devkit.core import FrontmatterError, GitError, is_safe_relpath, run_git
+from devkit.core import FrontmatterError, GitError, is_safe_relpath, normalize_relpath, run_git
 from devkit.core.frontmatter import parse
 from devkit.rules import Phase, RuleContext, Severity, Violation
 from devkit.rules.rules import BaseRule
@@ -50,7 +50,12 @@ def _problems(data: dict[str, object]) -> list[str]:
             problems.append(f"targets[{position}] must be a mapping of file, resolution and rationale")
             continue
         file = target.get("file")
-        if not isinstance(file, str) or not is_safe_relpath(file) or file in seen:
+        if isinstance(file, str) and is_safe_relpath(file) and not is_safe_relpath(file, canonical=True):
+            # Uniqueness and the diff evidence compare paths as written, so only the canonical form is accepted.
+            problems.append(
+                f"targets[{position}].file {file!r} must be written in canonical form: {normalize_relpath(file)}"
+            )
+        elif not isinstance(file, str) or not is_safe_relpath(file) or file in seen:
             problems.append(f"targets[{position}].file {file!r} must be a unique workspace-relative path")
         else:
             seen.add(file)

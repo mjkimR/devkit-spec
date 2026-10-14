@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import shutil
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -31,7 +32,7 @@ from devkit_spec.proposals.body import CarriedProposal, ensure_ac_ids
 from devkit_spec.proposals.scaffold import (
     bundle_dir,
     bundle_namespace,
-    clean_slug,
+    new_slug,
     require_summary,
     single_file,
     yaml_scalar,
@@ -199,13 +200,14 @@ def make_dirs(path: Path, written: list[Path]) -> None:
         written.append(missing)
 
 
-def roll_back(written: list[Path], moved: tuple[Path, Path] | None = None) -> None:
-    """Undo a failed write: move ``moved[0]`` back to ``moved[1]``, then remove what was written, newest first."""
-    if moved is not None:
+def roll_back(written: list[Path], moved: Sequence[tuple[Path, Path]] = ()) -> None:
+    """Undo a failed write: move each ``(new, old)`` of ``moved`` back, newest first, then remove what was written,
+    newest first."""
+    for new, old in reversed(moved):
         try:
-            shutil.move(moved[0], moved[1])
+            shutil.move(new, old)
         except OSError as exc:
-            _log.info("%s could not be moved back to %s: %s", moved[0], moved[1], exc)
+            _log.info("%s could not be moved back to %s: %s", new, old, exc)
     for path in reversed(written):
         try:
             if path.is_dir() and not path.is_symlink():
@@ -265,10 +267,7 @@ def create_spec(
     fails (what was written is removed).
     """
     root = root.resolve()
-    raw = slug
-    slug = clean_slug(slug.strip().removeprefix("SPEC-"))
-    if not slug:
-        raise SpecSlugError(f"slug {raw!r} has no letter or digit", target_files=[raw])
+    slug = new_slug(slug.strip().removeprefix("SPEC-"), error=SpecSlugError)
     namespace, reported = bundle_namespace(root, namespace, cwd)
     summary = require_summary(summary)
     day = day or date.today()

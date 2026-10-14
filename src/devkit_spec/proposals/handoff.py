@@ -11,7 +11,9 @@ path it would create), then:
 2. copies ``target-docs.md`` into the spec bundle;
 3. promotes each ``decisions/PADR-<slug>.md`` to ``docs/decisions/<YYYY-MM>/<YYYYMMDD>-<slug>.md`` as an accepted
    ``ADR-<slug>`` (its frontmatter, ``summary`` included, is kept);
-4. moves a non-empty ``materials/`` to ``docs/materials/<YYYY-MM>/<YYYYMMDD>-<slug>/``;
+4. moves a non-empty ``materials/`` to ``docs/materials/<YYYY-MM>/<YYYYMMDD>-<slug>/``, together with every other
+   file of the bundle that steps 1 to 3 do not carry (``notes.md``, a non-PADR file in ``decisions/``), at its path
+   relative to the bundle;
 5. rewrites links and ID references that pointed into the proposal (``rewrite``);
 6. removes the proposal.
 
@@ -92,7 +94,7 @@ SUMMARY = "summary"
 ACCEPTED = "accepted"
 DIRECTION_STATUSES = ("draft", "reviewing")
 
-_PADR = re.compile(r"\bPADR-([a-z0-9]+(?:-[a-z0-9]+)*)")
+_PADR = re.compile(r"\bPADR-[a-z0-9]+(?:-[a-z0-9]+)*")
 _DRAFT_STATUS = re.compile(r"^status:[ \t]*(?:draft|proposed)[ \t]*$", re.MULTILINE)
 _DRAFT_BODY_STATUS = re.compile(r"^- \*\*Status\*\*:[ \t]*(?:Draft|Proposed)[ \t]*$", re.MULTILINE)
 
@@ -216,17 +218,21 @@ def handoff_proposal(
     target_dir = spec_dir(root, slug, day)
     targets: list[Path] = [target_dir]
     materials_dir = bundle / MATERIALS
+    move_materials = is_bundle and materials_dir.is_dir() and any(materials_dir.iterdir())
     materials_target: Path | None = None
     target_docs_text: str | None = None
     decisions: list[_Decision] = []
+    extras: list[tuple[Path, Path]] = []
     if is_bundle:
-        if materials_dir.is_dir() and any(materials_dir.iterdir()):
-            materials_target = root / "docs" / MATERIALS / month / f"{stamp}-{slug}"
-            targets.append(materials_target)
         if (bundle / TARGET_DOCS).is_file():
             target_docs_text = _read(bundle / TARGET_DOCS, root)
         decisions = _plan_decisions(root, bundle / DECISIONS, month, stamp)
         targets += [decision.target for decision in decisions]
+        preserved = root / "docs" / MATERIALS / month / f"{stamp}-{slug}"
+        extras = _plan_extras(root, bundle, decisions, preserved)
+        if move_materials or extras:
+            materials_target = preserved
+            targets.append(materials_target)
     _check_targets(root, index, targets, decisions)
 
     title = text_value(meta.get("title")) or slug
@@ -263,7 +269,7 @@ def handoff_proposal(
         files = {SPEC_FILE: files[SPEC_FILE]}
 
     written: list[Path] = []
-    moved: tuple[Path, Path] | None = None
+    moved: list[tuple[Path, Path]] = []
     promoted: dict[str, str] = {}
     try:
         write_spec_bundle(target_dir, files, binding, written)
@@ -274,10 +280,14 @@ def handoff_proposal(
             written.append(decision.target)
             decision.target.write_text(decision.text, encoding="utf-8")
             promoted[str(decision.padr)] = str(decision.target)
-        if materials_target is not None:
+        if materials_target is not None and move_materials:
             make_dirs(materials_target.parent, written)
             shutil.move(materials_dir, materials_target)
-            moved = (materials_target, materials_dir)
+            moved.append((materials_target, materials_dir))
+        for source, destination in extras:
+            make_dirs(destination.parent, written)
+            shutil.move(source, destination)
+            moved.append((destination, source))
     except OSError as exc:
         roll_back(written, moved)
         raise ProposalHandoffError(
@@ -293,9 +303,14 @@ def handoff_proposal(
         if target_docs_text is not None:
             plan.exact[str(bundle / TARGET_DOCS)] = str(target_dir / TARGET_DOCS)
         plan.exact.update(promoted)
+        # A promoted ADR was written for decisions/: its relative links resolve from there.
+        plan.moved_files.update({str(d.target): str(d.padr) for d in decisions})
         if materials_target is not None:
             plan.prefixes[str(materials_dir)] = str(materials_target)
             plan.moved[str(materials_target)] = str(materials_dir)
+        for source, destination in extras:
+            plan.exact[str(source)] = str(destination)
+            plan.moved_files[str(destination)] = str(source)
     else:
         plan.exact[str(single)] = str(target_dir / SPEC_FILE)
     index = DocumentIndex.load(root)
@@ -410,7 +425,7 @@ def _plan_decisions(root: Path, decisions_dir: Path, month: str, stamp: str) -> 
     """The ADRs the bundle's ``PADR-*.md`` files become, with their promoted text."""
     if not decisions_dir.is_dir():
         return []
-    planned = []
+    sources = []
     for padr in sorted(p for p in decisions_dir.iterdir() if p.is_file() and p.name.startswith("PADR-")):
         if not padr.name.endswith(".md"):
             continue
@@ -418,25 +433,74 @@ def _plan_decisions(root: Path, decisions_dir: Path, month: str, stamp: str) -> 
         if not adr_slug:
             continue
         original = _read(padr, root)
-        promoted = _PADR.sub(r"ADR-\1", original)
-        promoted = _DRAFT_STATUS.sub("status: accepted", promoted)
-        promoted = _DRAFT_BODY_STATUS.sub("- **Status**: Accepted", promoted)
         rel = padr.relative_to(root).as_posix()
         try:
-            old, new = parse_document(rel, original), parse_document(rel, promoted)
+            old = parse_document(rel, original)
+        except FrontmatterError as exc:
+            raise ProposalInvalidError(f"{rel}: {exc.message}", target_files=[rel]) from exc
+        sources.append((padr, adr_slug, original, rel, old.id if old else f"PADR-{adr_slug}"))
+    padr_ids = {source[4] for source in sources}
+
+    def promote_id(match: re.Match[str]) -> str:
+        # Only the PADRs promoted here become ADRs; a file name (PADR-x.md in a link) is left to the link rewrite.
+        if match.group() not in padr_ids or match.string.startswith(".md", match.end()):
+            return match.group()
+        return match.group().removeprefix("P")
+
+    planned = []
+    for padr, adr_slug, original, rel, padr_id in sources:
+        promoted = _PADR.sub(promote_id, original)
+        promoted = _DRAFT_STATUS.sub("status: accepted", promoted)
+        promoted = _DRAFT_BODY_STATUS.sub("- **Status**: Accepted", promoted)
+        try:
+            new = parse_document(rel, promoted)
         except FrontmatterError as exc:
             raise ProposalInvalidError(f"{rel}: {exc.message}", target_files=[rel]) from exc
         target = root / "docs" / DECISIONS / month / f"{stamp}-{adr_slug}.md"
         planned.append(
             _Decision(
                 padr=padr,
-                padr_id=old.id if old else f"PADR-{adr_slug}",
+                padr_id=padr_id,
                 target=target,
                 adr_id=new.id if new else f"ADR-{adr_slug}",
                 text=promoted,
             )
         )
     return planned
+
+
+def _plan_extras(root: Path, bundle: Path, decisions: list[_Decision], materials: Path) -> list[tuple[Path, Path]]:
+    """Every bundle file the handoff does not carry otherwise, with its destination under ``materials`` at its path
+    relative to the bundle (``materials/`` itself moves as a whole).
+
+    Raises ``ProposalTargetExistsError`` when a destination is also the destination of a file in ``materials/``.
+    """
+    carried = {bundle / PROPOSAL_FILE, bundle / TARGET_DOCS, *(decision.padr for decision in decisions)}
+    materials_dir = bundle / MATERIALS
+
+    def taken(rel: Path) -> bool:
+        """Whether moving ``materials/`` already puts something at ``rel``, or a file at one of its parents."""
+        found = materials_dir / rel
+        if found.exists() or found.is_symlink():
+            return True
+        return any((materials_dir / parent).is_file() for parent in rel.parents[:-1])
+
+    extras = []
+    for path in sorted(bundle.rglob("*")):
+        if (path.is_dir() and not path.is_symlink()) or path in carried:
+            continue
+        if materials_dir.is_dir() and path.is_relative_to(materials_dir):
+            continue
+        extras.append((path, materials / path.relative_to(bundle)))
+    clashes = [source for source, _ in extras if materials_dir.is_dir() and taken(source.relative_to(bundle))]
+    if clashes:
+        rels = [path.relative_to(root).as_posix() for path in clashes]
+        raise ProposalTargetExistsError(
+            f"the handoff would move {', '.join(rels)} onto a file of materials/ with the same path",
+            target_files=rels,
+            fix="Rename or move the path in [TARGET] (or its counterpart in materials/), then rerun the handoff",
+        )
+    return extras
 
 
 def _check_targets(root: Path, index: DocumentIndex, targets: list[Path], decisions: list[_Decision]) -> None:

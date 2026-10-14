@@ -119,7 +119,7 @@ timeout = 10                # whole seconds per registry command, 1 to 300
 | Key | Type | Default | Validation |
 | --- | --- | --- | --- |
 | `tool.spec.worktree` | boolean | `true` | `true` or `false`. |
-| `tool.spec.namespaces` | array of tables | `[]` | Each entry exactly `name` and `path`; `name` lowercase words joined by `-`, not `global`; `path` a safe workspace-relative directory without trailing `/`; no name or path registered twice. |
+| `tool.spec.namespaces` | array of tables | `[]` | Each entry exactly `name` and `path`; `name` lowercase words joined by `-`, not `global`; `path` a safe workspace-relative directory in canonical form (no `./`, `//` or trailing `/`); no name or path registered twice. |
 | `tool.spec.scope.shared_path` | string | Git common dir `devkit-spec-scope/` | Absolute after `~` expansion. |
 | `tool.spec.scope.namespace` | string | common-dir hash | Letters, digits, `.`, `_`, `-`, not starting with `.`. |
 | `tool.spec.scope.timeout` | integer | `10` | Whole seconds from 1 to 300 (a boolean is rejected). |
@@ -149,7 +149,7 @@ tables = template()  # list[devkit.core.TemplateTable]: [tool.spec], its namespa
 
 | Code | Level | Class | Condition |
 | --- | --- | --- | --- |
-| `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecConfigError` | `[tool.spec]` is not a table, has an unknown key, `worktree` is not a boolean, or a namespace entry is malformed (keys other than `name` and `path`, an invalid or `global` name, an unsafe path, a name or path registered twice), or `[tool.spec.scope]` is not a table, has an unknown key, a relative `shared_path`, a `namespace` that is not a plain name, or a `timeout` outside 1 to 300 whole seconds. |
+| `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecConfigError` | `[tool.spec]` is not a table, has an unknown key, `worktree` is not a boolean, or a namespace entry is malformed (keys other than `name` and `path`, an invalid or `global` name, an unsafe or non-canonical path, a name or path registered twice), or `[tool.spec.scope]` is not a table, has an unknown key, a relative `shared_path`, a `namespace` that is not a plain name, or a `timeout` outside 1 to 300 whole seconds. |
 
 devkit's own errors pass through: `CONFIG_INVALID` (an unreadable file), `WORKFLOW_CONFIG_INVALID`,
 `WORKTREE_CONFIG_INVALID`.

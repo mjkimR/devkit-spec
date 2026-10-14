@@ -39,7 +39,9 @@ reference rules stay repository-wide. `devkit_spec.namespaces` implements it.
 
 1. Each `[[tool.spec.namespaces]]` entry of `.devkit/config.toml` MUST have exactly the keys `name` and `path`.
 2. `name` MUST be lowercase letters and digits in words joined by `-`, and MUST NOT be `global`.
-3. `path` MUST be a safe workspace-relative directory (the package's source directory) without a trailing `/`.
+3. `path` MUST be a safe workspace-relative directory (the package's source directory) in canonical form: no `./`
+   or `.` segment, no `//` and no trailing `/` (`services/api`, not `./services/api`). A non-canonical path fails
+   with a fix naming its canonical form.
 4. Names and paths MUST be unique across entries.
 5. A namespace's docs root is `docs/packages/<name>/`.
 6. A malformed registry MUST fail with `SPEC_CONFIG_INVALID` in every command that reads it, and fail a rules run
@@ -52,18 +54,20 @@ Every document belongs to exactly one namespace:
 1. A document under `docs/packages/<name>/` belongs to `<name>`.
 2. The files of a spec bundle (`specs/<YYYY-MM>/<bundle>/...`, month-level feedback excluded) or a proposal bundle
    (`docs/proposals/<bundle>/...`) belong to the namespace the bundle's `spec.md` or `proposal.md` names in its
-   `namespace` frontmatter field, so a bundle keeps its package wherever the work happens. A value that is not a
-   registered name counts as `global` (and `RULE-spec-format` reports it).
+   `namespace` frontmatter field, so a bundle keeps its package wherever the work happens. A single-file proposal
+   (`docs/proposals/PROP-<slug>.md`) belongs to the namespace its own `namespace` field names. A value that is not a
+   registered name counts as `global` (`RULE-spec-format` reports it in a bundle's `spec.md` or `proposal.md` and in a single-file proposal).
 3. Everything else is `global`.
 
 ### 3.3 Selection
 
 1. `--namespace NAME` selects that namespace plus the global documents; `--namespace global` selects only the global
-   documents. An unknown name MUST fail with `ARGUMENT_INVALID` listing the valid names.
+   documents. An unknown name MUST fail with `ARGUMENT_INVALID` listing the valid names, also in a workspace
+   without registered namespaces (where only `global` is valid).
 2. `--all-namespaces` selects every namespace. Combining it with `--namespace` MUST fail with `ARGUMENT_INVALID`.
 3. Default: the namespace of the current directory: the one whose docs root contains it, else the one whose source
    `path` contains it (the deepest), else every namespace.
-4. In a workspace without registered namespaces, the selection is always every namespace and output carries no
+4. In a workspace without registered namespaces, a valid selection is always every namespace and output carries no
    `namespace` field in text.
 5. Identity stays global: `resolve`, `refs` and the reference rules MUST ignore namespaces. Agents SHOULD use
    `--all-namespaces` to see cross-package impact.
@@ -105,8 +109,8 @@ path = "services/api"   # the package's source directory
 
 | Code | Level | Class | Condition |
 | --- | --- | --- | --- |
-| `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit_spec.errors.SpecConfigError` | `[tool.spec.namespaces]` is not an array of tables, an entry has keys other than exactly `name` and `path`, a name is malformed or `global`, a path is unsafe or ends with `/`, or a name or path is registered twice. |
-| `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit.core.ArgumentError` | `--namespace` names an unregistered namespace, or is combined with `--all-namespaces`. |
+| `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit_spec.errors.SpecConfigError` | `[tool.spec.namespaces]` is not an array of tables, an entry has keys other than exactly `name` and `path`, a name is malformed or `global`, a path is unsafe or not in canonical form, or a name or path is registered twice. |
+| `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit.core.ArgumentError` | `--namespace` names neither `global` nor a registered namespace (also when none is registered), or is combined with `--all-namespaces`. |
 
 ### 4.5 Library
 

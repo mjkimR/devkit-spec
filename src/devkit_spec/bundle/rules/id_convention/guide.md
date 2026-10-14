@@ -27,8 +27,9 @@ of an ID, and neither are sequence numbers: they collide across parallel branche
 | Feedback in a bundle | `specs/{YYYY-MM}/{YYYYMMDD}-{slug}/feedback/{name}.md` | `FB-{name}` |
 | Month-level feedback | `specs/{YYYY-MM}/feedback/{YYYYMMDD}-{name}.md` | `FB-{name}` |
 
-`{slug}` and `{name}` are kebab-case, and the `{YYYY-MM}` partition must match the date prefix. A feedback file
-inside a bundle has no date prefix.
+`{slug}` and `{name}` are kebab-case and their first segment must contain a letter (`20261014-2024-budget` would
+give `ADR-2024-budget`, which reads as the number-based `ADR-2024`; write `20261014-budget-2024`). The `{YYYY-MM}`
+partition must match the date prefix. A feedback file inside a bundle has no date prefix.
 
 ### Living Spec: Capability, Story, Architecture
 
@@ -61,16 +62,19 @@ repository-wide, so a slug is unique across `docs/` and every package.
 ## 2. Cause of Violation
 
 - A path off the convention above (wrong depth, an undated or misdated partition, a non-kebab-case name, a dated
-  feedback name inside a bundle, a sequence-number slug, chapter 09 or 12, a capability or story outside an area
-  directory): `Invalid partition path: <what the path must be>`. Nothing else is reported for the file until it is
-  moved.
+  feedback name inside a bundle, a slug whose first segment is a date or sequence number, chapter 09 or 12, a
+  capability or story outside an area directory): `Invalid partition path: <what the path must be>`. Nothing else is
+  reported for the file until it is moved.
 - No frontmatter (or one never closed): `Missing YAML frontmatter; expected <field>: <ID>`.
 - A frontmatter `id` (`reconcile_id` in `reconcile.md`) other than the path requires (fixable): `Frontmatter <field>
   is "<declared>" but the path requires "<ID>"`.
 - A capability's or story's `area` other than its directory (fixable): `Frontmatter area is "<area>" but the
   directory requires "<directory>"`.
-- A first `# ` heading whose first `[ID]` or `` `ID` `` token is not the ID (fixable; a plan, tasks or reconcile
-  heading may also name `SPEC-{slug}`): `Heading token [<token>] does not match identifier <ID>[ or <ID>]`.
+- A first `# ` heading opened by an `[ID]` or `` `ID` `` token that is not the ID (fixable; a plan, tasks or
+  reconcile heading may also name `SPEC-{slug}`): `Heading token [<token>] does not match identifier <ID>[ or <ID>]`.
+  The token names the document's own ID only where it opens the heading (`# [ADR-{slug}] Title`) or, in a spec
+  bundle file, follows a leading label (`` # Technical Plan: `SPEC-{slug}` Title ``); an ID later in the heading
+  (`` # Supersede `ADR-{other}` with Redis ``) is a reference and is not checked here.
 - An ADR, spec or Living Spec ID that another file's path also derives: `Identifier <ID> is duplicated across
   <paths>`. Slugs are unique per document type across partitions and areas. Feedback IDs are not compared here; two
   files declaring the same `FB-` ID are reported by `RULE-document-reference`.

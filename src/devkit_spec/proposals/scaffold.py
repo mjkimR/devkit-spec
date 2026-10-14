@@ -33,6 +33,7 @@ from devkit_spec.errors import (
     ProposalSlugError,
     ProposalUnboundNotice,
     ProposalWorkflowError,
+    SpecError,
 )
 from devkit_spec.namespaces import detect, require
 from devkit_spec.proposals.binding import PROPOSAL_WORKFLOW, resolve_binding
@@ -46,6 +47,8 @@ MATERIALS = "materials"
 DEFAULT_TARGET_AREA = "capabilities/<area>/"
 
 _UNSAFE = re.compile(r"[^a-zA-Z0-9_-]+")
+_DASHES = re.compile(r"[_-]+")
+_FIRST_SEGMENT_LETTER = re.compile(r"^[0-9]*[a-z]")
 
 
 def clean_slug(raw: str) -> str:
@@ -60,6 +63,24 @@ def require_slug(raw: str, what: str = "slug") -> str:
     slug = clean_slug(raw)
     if not slug:
         raise ProposalSlugError(f"{what} {raw!r} has no letter or digit", target_files=[raw])
+    return slug
+
+
+def new_slug(raw: str, what: str = "slug", error: type[SpecError] = ProposalSlugError) -> str:
+    """The slug of a new document: ``clean_slug(raw)`` with ``_`` written as ``-``.
+
+    Raises ``error`` when nothing is left, or when the first segment has no letter: ``RULE-id-convention`` reads
+    ``2024-budget`` as a retired number-based ID. Lookups of existing documents use ``require_slug``.
+    """
+    slug = _DASHES.sub("-", clean_slug(raw)).strip("-")
+    if not slug:
+        raise error(f"{what} {raw!r} has no letter or digit", target_files=[raw])
+    if not _FIRST_SEGMENT_LETTER.match(slug):
+        raise error(
+            f"{what} {raw!r} gives {slug!r}, whose first segment has no letter",
+            target_files=[raw],
+            fix=f"Pass a {what} whose first word has a letter (for example budget-2024 instead of 2024-budget)",
+        )
     return slug
 
 
@@ -188,7 +209,7 @@ def create_proposal(
     bundle or a single-file proposal of the slug exists, ``ProposalSlugConflictError`` when ``SPEC-<slug>`` exists.
     """
     root = root.resolve()
-    slug = require_slug(slug)
+    slug = new_slug(slug)
     namespace, reported = bundle_namespace(root, namespace, cwd)
     summary = require_summary(summary)
     title = (title or "").strip() or slug
@@ -380,7 +401,7 @@ def create_padr(
     slug = require_slug(slug)
     summary = require_summary(summary)
     title = title.strip()
-    padr_id = f"PADR-{require_slug(title, 'title')}"
+    padr_id = f"PADR-{new_slug(title, 'title')}"
     bundle = bundle_dir(root, slug)
     if not bundle.is_dir():
         rel = bundle.relative_to(root).as_posix()

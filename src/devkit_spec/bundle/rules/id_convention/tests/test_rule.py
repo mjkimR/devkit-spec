@@ -437,3 +437,56 @@ def test_feedback_of_a_completed_bundle_is_checked_like_current_documents(tmp_pa
     )
     flagged = {v.file for v in check(RULE, tmp_path)}
     assert f"{base}/feedback/wrong-id.md" in flagged and f"{base}/plan.md" not in flagged
+
+
+def test_only_a_leading_heading_token_is_the_documents_own_id(tmp_path: Path) -> None:
+    def doc(document_id: str, heading: str) -> str:
+        return f"---\nid: {document_id}\ntitle: T\nstatus: active\n---\n\n# {heading}\n"
+
+    files = {
+        "docs/decisions/2026-10/20261014-new-cache.md": doc("ADR-new-cache", "Supersede `ADR-old-cache` with Redis"),
+        "docs/decisions/2026-10/20261014-old-cache.md": doc("ADR-old-cache", "[ADR-old-cache] Old cache"),
+        "docs/decisions/2026-10/20261014-wrong.md": doc("ADR-wrong", "`ADR-other` Wrong, see `ADR-old-cache`"),
+        "specs/2026-10/20261014-gamma/plan.md": doc("PLAN-gamma", "Technical Plan: `SPEC-other` Gamma"),
+        "specs/2026-10/20261014-gamma/tasks.md": doc("TASKS-gamma", "Task Breakdown: `SPEC-gamma` Gamma"),
+        "specs/2026-10/20261014-gamma/spec.md": doc("SPEC-gamma", "Gamma replaces [SPEC-old-gamma]"),
+    }
+    violations = check(RULE, tmp_path, files)
+    assert [(v.file, v.message) for v in violations if "Heading token" in v.message] == [
+        ("docs/decisions/2026-10/20261014-wrong.md", "Heading token [ADR-other] does not match identifier ADR-wrong"),
+        (
+            "specs/2026-10/20261014-gamma/plan.md",
+            "Heading token [SPEC-other] does not match identifier SPEC-gamma or PLAN-gamma",
+        ),
+    ]
+    check(RULE, tmp_path, fix=True)
+    for path in ("docs/decisions/2026-10/20261014-new-cache.md", "specs/2026-10/20261014-gamma/spec.md"):
+        assert _read(tmp_path, path) == files[path]
+    assert "# `ADR-wrong` Wrong, see `ADR-old-cache`\n" in _read(tmp_path, "docs/decisions/2026-10/20261014-wrong.md")
+    assert "# Technical Plan: `SPEC-gamma` Gamma\n" in _read(tmp_path, "specs/2026-10/20261014-gamma/plan.md")
+
+
+def test_dated_slugs_need_a_letter_in_their_first_segment(tmp_path: Path) -> None:
+    def doc(document_id: str) -> str:
+        return f"---\nid: {document_id}\ntitle: T\nstatus: draft\n---\n"
+
+    files = {
+        "docs/decisions/2026-10/20261014-2024-budget.md": doc("ADR-2024-budget"),
+        "docs/decisions/2026-10/20261014-budget-2024.md": doc("ADR-budget-2024"),
+        "specs/2026-10/20261014-20261006-foo/spec.md": doc("SPEC-20261006-foo"),
+        "specs/2026-10/20261014-q4-plan/spec.md": doc("SPEC-q4-plan"),
+        "specs/2026-10/20261014-q4-plan/feedback/2024-notes.md": doc("FB-2024-notes"),
+        "specs/2026-10/feedback/20261014-001-review.md": doc("FB-001-review"),
+    }
+    violations = check(RULE, tmp_path, files)
+    paths = sorted({v.file for v in violations if v.message.startswith("Invalid partition path")})
+    assert paths == [
+        "docs/decisions/2026-10/20261014-2024-budget.md",
+        "specs/2026-10/20261014-20261006-foo/spec.md",
+        "specs/2026-10/20261014-q4-plan/feedback/2024-notes.md",
+        "specs/2026-10/feedback/20261014-001-review.md",
+    ]
+    assert not any(
+        v.file in ("docs/decisions/2026-10/20261014-budget-2024.md", "specs/2026-10/20261014-q4-plan/spec.md")
+        for v in violations
+    )

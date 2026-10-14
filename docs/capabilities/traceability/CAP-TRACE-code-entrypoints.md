@@ -78,7 +78,7 @@ Phase `linter`, severity `error`, not fixable (`CAP-GOV-spec-rules`).
 
 `devkit spec list [capability|story] --file <path>` lists the documents whose `entrypoints` equal the path, lie under
 it, or are a directory containing it (`CAP-DOCS-document-lookup`). The path need not exist, so a deleted file still
-finds its documents.
+finds its documents; it MUST follow the path contract (`SPEC_ENTRYPOINTS_PATH_INVALID`).
 
 ### 3.4 Derivation Inputs
 
@@ -132,11 +132,13 @@ joins them.
    directory and files inside it.
 4. Folded and missing paths are reported as `kind=apply` with `reason=folded` or `missing-path`.
 5. Only the `entrypoints` block of the frontmatter is rewritten: in place (every line of the old value, including a
-   zero-indented sequence or a multi-line flow list), else before `created_at`, else at the end of the header. Every
-   other byte, the line endings included, MUST be kept, and the file is replaced atomically (its mode preserved).
+   zero-indented sequence, a multi-line flow list and blank or comment lines between its items; blank and comment
+   lines after its last item stay), else before `created_at`, else at the end of the header. Every other byte, the
+   line endings included, MUST be kept, and the file is replaced atomically (its mode preserved).
 6. A rerun MUST write nothing (every written path is then `declared`).
-7. A document that cannot be read or written fails with `SPEC_ENTRYPOINTS_APPLY_FAILED` after the result, which lists
-   the documents that were written; the others are still written.
+7. A document that cannot be read or written, or whose `entrypoints` is present but not a list of strings (a scalar,
+   a mapping, an item that is not a string), is left unchanged and fails with `SPEC_ENTRYPOINTS_APPLY_FAILED` after
+   the result, which lists the documents that were written; the others are still written.
 
 ### 3.7 Review Before Apply
 
@@ -202,9 +204,9 @@ could not be indexed are `SPEC_DOCUMENT_INVALID` warnings under `notices`.
 | --- | --- | --- | --- |
 | `SPEC_ENTRYPOINTS_INPUT_MISSING` | `ERROR` (`INPUT_ERROR`) | `EntrypointsInputMissingError` | `--spec`: the bundle has no `tasks.md` or `reconcile.md`. |
 | `SPEC_ENTRYPOINTS_INPUT_INVALID` | `ERROR` (`MAINTENANCE`) | `EntrypointsInputInvalidError` | `--spec`: `tasks.md` or `reconcile.md` cannot be read, or `reconcile.md` has no frontmatter or malformed `targets`. |
-| `SPEC_ENTRYPOINTS_PATH_INVALID` | `ERROR` (`INPUT_ERROR`) | `EntrypointsPathError` | A `--code` or `--exclude` path breaks the path contract. |
+| `SPEC_ENTRYPOINTS_PATH_INVALID` | `ERROR` (`INPUT_ERROR`) | `EntrypointsPathError` | A `--code` or `--exclude` path, or a `devkit spec list --file` path, breaks the path contract. |
 | `SPEC_ENTRYPOINTS_TARGET_UNKNOWN` | `ERROR` (`INPUT_ERROR`) | `EntrypointsTargetError` | A `--target` ID names no document, or the ID or path is not among the derived documents. |
-| `SPEC_ENTRYPOINTS_APPLY_FAILED` | `ERROR` (`MAINTENANCE`) | `EntrypointsApplyError` | `--apply` could not read or write some documents; `[TARGET]` lists them, the documents listed as applied were written. |
+| `SPEC_ENTRYPOINTS_APPLY_FAILED` | `ERROR` (`MAINTENANCE`) | `EntrypointsApplyError` | `--apply` could not read or write some documents, or their `entrypoints` is not a list of strings; `[TARGET]` lists them, the documents listed as applied were written. |
 | `SPEC_ID_DUPLICATE` | `ERROR` (`MAINTENANCE`) | `DuplicateIdError` | A `--target` ID is declared by several documents. |
 | `SPEC_DOCUMENT_INVALID` | `WARNING` | `DocumentInvalidWarning` | A file could not be indexed; a malformed `spec.md` leaves its bundle out of `--all`. |
 | `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit.core.ArgumentError` | An option conflict (section 4.1). |

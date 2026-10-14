@@ -81,8 +81,9 @@ resolve` maps IDs to paths, `devkit spec refs` follows the references of one doc
      always current); hidden by default.
    - `--file PATH`: documents whose frontmatter `entrypoints` overlap the workspace-relative path: an entry equal to
      it, under it, or a directory containing it (whole path segments, case-sensitive; `CAP-TRACE-code-entrypoints`).
-     The path need not exist, so a deleted file still finds its documents; an invalid path matches nothing. Only
-     capabilities and stories declare `entrypoints`.
+     The path need not exist, so a deleted file still finds its documents; a path that breaks the entrypoint path
+     contract (absolute, a glob, a `..` segment) MUST fail with `SPEC_ENTRYPOINTS_PATH_INVALID` (exit `2`) before
+     any document is read. Only capabilities and stories declare `entrypoints`.
    - `--namespace NAME` / `--all-namespaces`: the namespace selection (`CAP-DOCS-namespaces`). Default: the namespace
      of the current directory plus the global documents.
 3. **Order**: kind order (the table of `CAP-DOCS-document-model`), then, for feedback, `severity` (`critical`,
@@ -152,3 +153,4 @@ string when the value holds spaces, quotes or brackets.
 | `SPEC_DOCUMENT_INVALID` | `WARNING` | `DocumentInvalidWarning` | A file under `docs/` or `specs/` cannot be read or has malformed frontmatter; it is left out. |
 | `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit.core.ArgumentError` | A negative `--limit` or `--offset`; a `--where` item without `=`, field or value; an unknown `--namespace`, or `--namespace` combined with `--all-namespaces`. |
 | `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit_spec.errors.SpecConfigError` | `list`: a malformed `[tool.spec]` table, namespaces included (`CAP-DLV-project-policy`). |
+| `SPEC_ENTRYPOINTS_PATH_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit_spec.errors.EntrypointsPathError` | `list --file`: the path breaks the entrypoint path contract (`CAP-TRACE-code-entrypoints`). |

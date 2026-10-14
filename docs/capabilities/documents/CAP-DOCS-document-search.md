@@ -44,10 +44,12 @@ expansion. Going from a known ID to its path stays `devkit spec resolve` (`CAP-D
 3. **Pinning**: a query equal to a document's ID, workspace-relative path or file name (compared case-insensitively
    after trimming) MUST put that document first, whatever the ranking, with `score=-` (`null` in JSON) and
    `pinned=yes`. A pinned document is not repeated among the ranked hits.
-4. **Glossary expansion**: the optional, project-owned `docs/glossary.yaml` expands the query. When the query
-   contains a word of a cluster (a token of the query, or a multi-word term contained in it, case-insensitively), the
-   whole cluster (`primary` plus `synonyms`) is appended, minus terms the query already contains. Useful for terms in
-   another language. Without the file there is no expansion.
+4. **Glossary expansion**: the optional, project-owned `docs/glossary.yaml` expands the query. Terms and query are
+   compared as the words of devkit's `tokenize` (casefolded, split on `-`, `_`, `.` and other non-word characters,
+   Latin accents dropped), so `Work_Scope` matches the term `work-scope` and `cafe` the term `café`. When the query
+   contains every word of a term of a cluster, consecutively and in order, the whole cluster (`primary` plus
+   `synonyms`) is appended, minus terms whose words the query already contains. Useful for terms in another language.
+   Without the file there is no expansion.
 5. **Modes**: `--mode auto` (default) is `hybrid` when devkit's search extra is installed
    (`uv add 'devkit-spec[search]'`, which adds `devkit[search]`), else `lexical`. `lexical`, `dense` and `hybrid`
    force one; an explicit `dense` or `hybrid` without the extra MUST fail with devkit's `SEARCH_EXTRA_MISSING`.

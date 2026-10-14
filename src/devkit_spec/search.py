@@ -12,7 +12,7 @@ The policy on top of the generic ranking:
 - **Pinning**: a query equal to a document's ID, workspace-relative path or file name (case-insensitive) puts that
   document first, whatever the ranking.
 - **Glossary expansion**: ``docs/glossary.yaml`` (optional; ``terms: [{primary, synonyms: [...]}]``) adds a term's
-  whole synonym cluster to the query when the query contains any of its words.
+  whole synonym cluster to the query when the query contains any of its terms, compared as ``tokenize`` words.
 """
 
 from __future__ import annotations
@@ -52,8 +52,9 @@ class SpecSearchResult:
     hits: list[SpecHit]
 
 
-def load_glossary(root: Path) -> dict[str, list[str]]:
-    """Each glossary word (casefolded) mapped to its whole cluster; empty without ``docs/glossary.yaml``."""
+def load_glossary(root: Path) -> dict[tuple[str, ...], list[str]]:
+    """Each glossary term's words (devkit's ``tokenize``) mapped to its whole cluster; empty without
+    ``docs/glossary.yaml``."""
     path = root / GLOSSARY_PATH
     if not path.is_file():
         return {}
@@ -64,7 +65,7 @@ def load_glossary(root: Path) -> dict[str, list[str]]:
     terms = data.get("terms", []) if isinstance(data, dict) else None
     if not isinstance(terms, list):
         raise GlossaryInvalidError(f"{GLOSSARY_PATH}: terms must be a list of {{primary, synonyms}}")
-    index: dict[str, list[str]] = {}
+    index: dict[tuple[str, ...], list[str]] = {}
     for term in terms:
         if not isinstance(term, dict) or not isinstance(term.get("primary"), str):
             raise GlossaryInvalidError(f"{GLOSSARY_PATH}: every term needs a primary string")
@@ -73,21 +74,35 @@ def load_glossary(root: Path) -> dict[str, list[str]]:
             raise GlossaryInvalidError(f"{GLOSSARY_PATH}: synonyms of {term['primary']} must be a list of strings")
         cluster = [term["primary"], *synonyms]
         for word in cluster:
-            if word.strip():
-                index[word.strip().casefold()] = cluster
+            words = tuple(tokenize(word))
+            if words:
+                index[words] = cluster
     return index
 
 
-def expand_query(query: str, glossary: dict[str, list[str]]) -> str:
-    """``query`` followed by the synonym clusters of the glossary words it contains."""
+def _contains(words: list[str], sequence: tuple[str, ...]) -> bool:
+    """Whether ``sequence`` occurs in ``words`` as consecutive words."""
+    width = len(sequence)
+    return any(tuple(words[start : start + width]) == sequence for start in range(len(words) - width + 1))
+
+
+def expand_query(query: str, glossary: dict[tuple[str, ...], list[str]]) -> str:
+    """``query`` followed by the synonym clusters of the glossary terms it contains.
+
+    Terms and query are compared as devkit's ``tokenize`` words, so ``Work_Scope`` matches the term ``work-scope``
+    and ``cafe`` the term ``café``; a term of several words matches them consecutively.
+    """
     if not glossary:
         return query
-    lowered = query.casefold()
-    words = set(tokenize(query))
+    words = tokenize(query)
     extra: list[str] = []
-    for word, cluster in glossary.items():
-        if word in words or (" " in word and word in lowered):
-            extra.extend(term for term in cluster if term.casefold() not in lowered and term not in extra)
+    for sequence, cluster in glossary.items():
+        if _contains(words, sequence):
+            extra.extend(
+                term
+                for term in cluster
+                if term not in extra and not (tokenize(term) and _contains(words, tuple(tokenize(term))))
+            )
     return " ".join([query, *extra]) if extra else query
 
 

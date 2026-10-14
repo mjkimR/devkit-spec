@@ -4,8 +4,8 @@ Per document, the ``new`` pairs whose path exists and is not folded are written:
 ``/``, sorted, after the entries already declared. An addition an existing entry or another addition already
 covers is dropped, so a document never lists a directory and files inside it from one apply. Only the
 ``entrypoints`` block of the frontmatter changes: every other byte of the file stays as it was. A rerun writes
-nothing (every written path is ``declared``). A document that cannot be read or written is reported and the
-others are still written.
+nothing (every written path is ``declared``). A document that cannot be read or written, or whose ``entrypoints``
+is present but not a list of strings, is reported and left unchanged; the others are still written.
 """
 
 from __future__ import annotations
@@ -29,6 +29,8 @@ from devkit_spec.errors import EntrypointsPathError
 _KEY = re.compile(r"^entrypoints:[ \t]*(.*)$")
 # A line that continues a top-level key's value: indented, or a zero-indented sequence item.
 _CONTINUATION = re.compile(r"^(?:[ \t]+\S|-(?:[ \t]|$))")
+# A line inside a value that carries none of it: blank, or a comment.
+_FILLER = re.compile(r"^[ \t]*(?:#.*)?$")
 _CREATED = re.compile(r"^created_at:")
 
 
@@ -90,7 +92,15 @@ def _write(path: Path, additions: list[str]) -> list[str]:
     if data is None:
         raise ValueError("the document has no frontmatter block")
     value = data.get("entrypoints")
-    existing = [item for item in value if isinstance(item, str)] if isinstance(value, list) else []
+    if value is None:
+        existing: list[str] = []
+    elif isinstance(value, list) and all(isinstance(item, str) for item in value):
+        existing = value
+    else:
+        raise ValueError(
+            "entrypoints is not a list of path strings; rewrite it as a YAML list of paths (entrypoints:"
+            " followed by '  - <path>' lines), then rerun"
+        )
     added = collapse(existing, additions)
     if added:
         _write_atomic(path, set_entrypoints(text, [*existing, *added]))
@@ -137,9 +147,7 @@ def set_entrypoints(text: str, entries: Sequence[str]) -> str:
         if not inserted and _KEY.match(line):
             out.extend(rendered)
             inserted = True
-            index += 1
-            while index < len(lines) and _CONTINUATION.match(lines[index]):
-                index += 1
+            index = _value_end(lines, index + 1)
             continue
         if not inserted and _CREATED.match(line):
             out.extend(rendered)
@@ -150,6 +158,24 @@ def set_entrypoints(text: str, entries: Sequence[str]) -> str:
         out.extend(rendered)
     header = newline.join(out) + newline
     return text[: block.header_start] + header + text[block.header_end :]
+
+
+def _value_end(lines: list[str], start: int) -> int:
+    """The index after the last line of the value that starts at ``lines[start]``.
+
+    Blank and comment lines between continuation lines belong to the value; those after its last continuation line
+    precede the next key and are kept.
+    """
+    end = start
+    index = start
+    while index < len(lines):
+        line = lines[index]
+        if _CONTINUATION.match(line) and not line.lstrip().startswith("#"):
+            end = index + 1
+        elif not _FILLER.match(line):
+            break
+        index += 1
+    return end
 
 
 def _render(entries: list[str]) -> list[str]:

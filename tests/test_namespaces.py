@@ -41,6 +41,10 @@ def test_config(workspace: Path, write: Write) -> None:
         '[[tool.spec.namespaces]]\nname = "global"\npath = "x"\n',
         '[[tool.spec.namespaces]]\nname = "Api"\npath = "x"\n',
         '[[tool.spec.namespaces]]\nname = "api"\npath = "../x"\n',
+        '[[tool.spec.namespaces]]\nname = "api"\npath = "./services/api"\n',
+        '[[tool.spec.namespaces]]\nname = "api"\npath = "services//api"\n',
+        '[[tool.spec.namespaces]]\nname = "api"\npath = "services/api/"\n',
+        CONFIG + '[[tool.spec.namespaces]]\nname = "other"\npath = "./apps/web"\n',
         '[[tool.spec.namespaces]]\nname = "api"\npath = "x"\nextra = 1\n',
         CONFIG + '[[tool.spec.namespaces]]\nname = "api"\npath = "other"\n',
         CONFIG + '[[tool.spec.namespaces]]\nname = "other"\npath = "apps/web"\n',
@@ -50,6 +54,13 @@ def test_malformed_config(workspace: Path, write: Write, entries: str) -> None:
     write(".devkit/config.toml", entries)
     with pytest.raises(SpecConfigError):
         read_spec_config(workspace)
+
+
+def test_non_canonical_path_names_the_canonical_form(workspace: Path, write: Write) -> None:
+    write(".devkit/config.toml", '[[tool.spec.namespaces]]\nname = "api"\npath = "./services//api"\n')
+    with pytest.raises(SpecConfigError) as caught:
+        read_spec_config(workspace)
+    assert "path = 'services/api'" in str(caught.value.fix)
 
 
 def test_detect(workspace: Path) -> None:
@@ -66,7 +77,10 @@ def test_select(workspace: Path) -> None:
     assert select((API,), workspace, workspace / "services/api", None, False) == Selection("api")
     assert select((API,), workspace, workspace / "services/api", "global", False) == Selection("global")
     assert select((API,), workspace, workspace / "services/api", None, True) == Selection()
-    assert select((), workspace, workspace, "api", False) == Selection()  # no namespaces: nothing to narrow
+    assert select((), workspace, workspace, None, False) == Selection()  # no namespaces: nothing to narrow
+    assert select((), workspace, workspace, "global", False) == Selection()
+    with pytest.raises(ArgumentError):
+        select((), workspace, workspace, "api", False)  # validated even when none is registered
     with pytest.raises(ArgumentError):
         select((API,), workspace, workspace, "nope", False)
     with pytest.raises(ArgumentError):
@@ -88,6 +102,8 @@ def test_namespace_of_documents(workspace: Path, write: Write) -> None:
     write("specs/2026-10/20261001-b/spec.md", _doc("SPEC-b", "namespace: nope\n"))
     write("docs/proposals/PROP-c/proposal.md", _doc("PROP-c", "namespace: api\n"))
     write("docs/proposals/PROP-c/decisions/PADR-c.md", _doc("PADR-c"))
+    write("docs/proposals/PROP-d.md", _doc("PROP-d", "namespace: api\n"))
+    write("docs/proposals/PROP-e.md", _doc("PROP-e", "namespace: nope\n"))
     index = DocumentIndex.load(workspace)
     namespace_of = namespace_resolver(index, (API, WEB))
     assert {document.id: namespace_of(document) for document in index.documents} == {
@@ -98,6 +114,8 @@ def test_namespace_of_documents(workspace: Path, write: Write) -> None:
         "SPEC-b": "global",
         "PROP-c": "api",
         "PADR-c": "api",
+        "PROP-d": "api",
+        "PROP-e": "global",
     }
 
 

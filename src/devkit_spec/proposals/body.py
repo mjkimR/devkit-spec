@@ -149,26 +149,35 @@ def carry_proposal_body(text: str) -> CarriedProposal:
 def ensure_ac_ids(body: str) -> tuple[str, list[str]]:
     """An acceptance-criteria body every H3 of which carries exactly one ``[AC-NN]`` ID, and its IDs in order.
 
-    An H3 with one tag keeps it; another H3 becomes ``### Scenario <n> [AC-NN]: <text without tags>``. A body
+    An H3 with one tag keeps it; another H3 becomes ``### Scenario <n> [AC-NN]: <text without tags>`` whose ID is
+    its position, or the next number after it that no single-tag H3 of the body uses. A body
     without H3 gets a tagged scenario heading before each top-level list item (or one before everything when it has
     none), and an empty body one placeholder scenario.
     """
     lines = trim_blank(body.replace("\r\n", "\n").split("\n"))
     ids: list[str] = []
 
-    def next_id() -> str:
-        ids.append(f"AC-{len(ids) + 1:02d}")
-        return ids[-1]
-
     has_h3 = False
+    taken: set[str] = set()
     in_fence = False
     for line in lines:
         if _fence(line):
             in_fence = not in_fence
             continue
-        if not in_fence and _H3.match(line):
+        match = None if in_fence else _H3.match(line)
+        if match is not None:
             has_h3 = True
-            break
+            tags = _AC_TAG.findall(match.group(1))
+            if len(tags) == 1:
+                taken.add(tags[0])
+
+    def next_id() -> str:
+        number = len(ids) + 1
+        while f"AC-{number:02d}" in taken:
+            number += 1
+        taken.add(f"AC-{number:02d}")
+        ids.append(f"AC-{number:02d}")
+        return ids[-1]
 
     out: list[str] = []
     in_fence = False

@@ -10,11 +10,15 @@ not it declares a well-formed ID:
 - a frontmatter block that does not follow devkit's grammar (unclosed, invalid YAML, not a mapping);
 - a missing or blank ``id``, ``title`` or ``status`` (fixable), or one that is not a string.
 
-The fix prepends a block to a file without one (``id`` the file stem, ``title`` the first ``# `` heading without a
-leading ``[ID]``, else the stem, ``status: draft`` and ``created_at`` today) and fills the missing fields of an
-existing block with the same values, adding ``created_at`` when neither ``created_at``, ``created`` nor ``date`` is
-set. It never touches a file the check accepts, a malformed block or a field of the wrong type. None of these files
-can be work history (only spec bundle files are), so every targeted file is checked.
+The fix prepends a block to a file without one (``id`` the ID the path derives, ``title`` the first ``# `` heading
+without a leading ``[ID]``, else the file stem, ``status: draft`` and ``created_at`` today) and fills the missing
+fields of an existing block with the same values, adding ``created_at`` when neither ``created_at``, ``created`` nor
+``date`` is set. The path derives the ID (``_derived_id``) of a capability or story (the file stem), of a single-file
+proposal ``PROP-<slug>.md`` or a PADR ``PROP-<slug>/decisions/PADR-<name>.md`` (the stem), of a bundle's
+``proposal.md`` (``PROP-<slug>``) and of its ``target-docs.md`` (``PROP-<slug>-target``); any other file under
+``docs/proposals/`` derives none, so its missing ``id`` is reported but not fixed (the fix still fills the other
+fields). It never touches a file the check accepts, a malformed block or a field of the wrong type. None of these
+files can be work history (only spec bundle files are), so every targeted file is checked.
 
 The ``namespace`` field of a bundle anchor (a ``proposal.md`` under ``docs/proposals/``, a ``spec.md`` under
 ``specs/``), when present, must be a string naming ``global`` or a registered namespace; it is not fixable. Anchors are
@@ -42,7 +46,12 @@ from devkit_spec.documents import Document, DocumentIndex, in_source_directory, 
 from devkit_spec.rules import FIX_COMMAND, document_index, explicitly_targeted, namespaces, reportable
 
 RULE_ID = "RULE-spec-format"
-SCOPE = ("docs/capabilities", "docs/stories", "docs/proposals")
+PROPOSALS = "docs/proposals"
+# A proposal bundle's anchor and blueprint (``CAP-DLV-proposal-incubation``); not imported from
+# ``devkit_spec.proposals``, which imports the rules.
+PROPOSAL_FILE = "proposal.md"
+TARGET_DOCS = "target-docs.md"
+SCOPE = ("docs/capabilities", "docs/stories", PROPOSALS)
 NAMESPACE_SCOPE = ("capabilities", "stories")
 NAMESPACE_FIELD = "namespace"
 REQUIRED = ("id", "title", "status")
@@ -51,7 +60,11 @@ DEFAULT_STATUS = "draft"
 # The rest of a ``name:`` line whose value is empty or null (a comment may follow), up to its line ending.
 _BLANK_VALUE = r"""[ \t]*(?:""|''|~|null|Null|NULL)?[ \t]*(?:#[^\r\n]*)?(?=\r?$)"""
 REMEDIATION = {
-    "id": "Set id to the document's full ID, equal to the file stem (CAP-<AREA>-<slug>, US-<slug>, PROP-<slug>)",
+    "id": (
+        "Set id to the document's full ID: the file stem of a capability, story, single-file proposal or PADR"
+        " (CAP-<AREA>-<slug>, US-<slug>, PROP-<slug>, PADR-<slug>), PROP-<slug> in a bundle's proposal.md and"
+        " PROP-<slug>-target in its target-docs.md"
+    ),
     "title": "Set title to the document's title",
     "status": "Set status to the document's lifecycle status (for example draft, proposed, active)",
 }
@@ -66,6 +79,28 @@ class _Problem:
 
 def _blank(value: Any) -> bool:
     return value is None or (isinstance(value, str) and not value.strip())
+
+
+def _derived_id(path: str) -> str | None:
+    """The ID the workspace-relative ``path`` of a checked file requires, or ``None`` when its path derives none.
+
+    A capability or story declares its file stem. Under ``docs/proposals/``: ``PROP-<slug>.md`` and
+    ``PROP-<slug>/decisions/PADR-<name>.md`` their stems, ``PROP-<slug>/proposal.md`` ``PROP-<slug>`` and
+    ``PROP-<slug>/target-docs.md`` ``PROP-<slug>-target``; any other file there derives none."""
+    stem = Path(path).stem
+    if not path.startswith(f"{PROPOSALS}/"):
+        return stem
+    parts = path.removeprefix(f"{PROPOSALS}/").split("/")
+    if len(parts) == 1:
+        return stem if stem.startswith("PROP-") else None
+    bundle = parts[0]
+    if not bundle.startswith("PROP-"):
+        return None
+    if len(parts) == 2:
+        return {PROPOSAL_FILE: bundle, TARGET_DOCS: f"{bundle}-target"}.get(parts[1])
+    if len(parts) == 3 and parts[1] == "decisions" and stem.startswith("PADR-"):
+        return stem
+    return None
 
 
 def _problems(ctx: RuleContext, path: str) -> list[_Problem]:
@@ -85,12 +120,10 @@ def _problems(ctx: RuleContext, path: str) -> list[_Problem]:
     for name in REQUIRED:
         value = data.get(name)
         if _blank(value):
+            fixable = name != "id" or _derived_id(path) is not None
+            remediation = f"{REMEDIATION[name]}, or run `{FIX_COMMAND}`" if fixable else REMEDIATION[name]
             problems.append(
-                _Problem(
-                    f"frontmatter is missing the required field '{name}'",
-                    f"{REMEDIATION[name]}, or run `{FIX_COMMAND}`",
-                    fixable=True,
-                )
+                _Problem(f"frontmatter is missing the required field '{name}'", remediation, fixable=fixable)
             )
         elif not isinstance(value, str):
             problems.append(_Problem(f"frontmatter field '{name}' must be a string", REMEDIATION[name]))
@@ -188,7 +221,7 @@ class SpecFormatRule(BaseRule):
             text = ctx.cache.read_text_strict(path)
             if text is None:
                 continue
-            updated = _fixed(text, Path(path).stem, today)
+            updated = _fixed(text, Path(path).stem, _derived_id(path), today)
             if updated is not None and updated != text:
                 ctx.cache.write_text(path, updated, dry_run=ctx.dry_run)
                 changed.append(path)
@@ -197,10 +230,14 @@ class SpecFormatRule(BaseRule):
 
 def _is_anchor(path: str) -> bool:
     """Whether ``path`` is a bundle anchor that may declare a ``namespace``: a proposal's ``proposal.md`` under
-    ``docs/proposals/`` or a spec bundle's ``spec.md`` under ``specs/``."""
+    ``docs/proposals/``, a single-file proposal ``docs/proposals/<file>.md`` or a spec bundle's ``spec.md`` under
+    ``specs/``."""
     name = path.rsplit("/", 1)[-1]
-    return (path.startswith("docs/proposals/") and name == "proposal.md") or (
-        path.startswith("specs/") and name == "spec.md"
+    single_file = path.count("/") == 2 and path.startswith(f"{PROPOSALS}/") and name.startswith("PROP-")
+    return (
+        single_file
+        or (path.startswith(f"{PROPOSALS}/") and name == PROPOSAL_FILE)
+        or (path.startswith("specs/") and name == "spec.md")
     )
 
 
@@ -228,8 +265,9 @@ def _field_line(text: str, name: str) -> int:
     return text.count("\n", 0, block.header_start + match.start()) + 1
 
 
-def _fixed(text: str, stem: str, today: str) -> str | None:
-    """``text`` with its missing required fields filled in; ``None`` when its frontmatter cannot be fixed."""
+def _fixed(text: str, stem: str, document_id: str | None, today: str) -> str | None:
+    """``text`` with its missing required fields filled in (``id`` only when ``document_id`` is set, ``title``
+    defaulting to ``stem``); ``None`` when its frontmatter cannot be fixed."""
     try:
         block = locate(text)
     except FrontmatterError:
@@ -237,7 +275,8 @@ def _fixed(text: str, stem: str, today: str) -> str | None:
     if block is None:
         start = 1 if text.startswith(BOM) else 0
         newline = "\r\n" if text.split("\n", 1)[0].endswith("\r") else "\n"
-        values = {"id": stem, "title": _h1_title(text[start:]) or stem, "status": DEFAULT_STATUS, "created_at": today}
+        values = {"id": document_id, "title": _h1_title(text[start:]) or stem, "status": DEFAULT_STATUS}
+        values = {name: value for name, value in values.items() if value is not None} | {"created_at": today}
         header = "".join(_line(name, value) + newline for name, value in values.items())
         return f"{text[:start]}---{newline}{header}---{newline}{newline}{text[start:]}"
     header = block.header
@@ -245,8 +284,8 @@ def _fixed(text: str, stem: str, today: str) -> str | None:
         data = load_header(header)
     except FrontmatterError:
         return None
-    defaults = {"id": stem, "title": _h1_title(text[block.end :]) or stem, "status": DEFAULT_STATUS}
-    missing = {name: value for name, value in defaults.items() if _blank(data.get(name))}
+    defaults = {"id": document_id, "title": _h1_title(text[block.end :]) or stem, "status": DEFAULT_STATUS}
+    missing = {name: value for name, value in defaults.items() if value is not None and _blank(data.get(name))}
     if not missing:
         return None
     if all(_blank(data.get(name)) for name in CREATED_FIELDS):

@@ -40,7 +40,7 @@ from devkit.core.errors import ArgumentError
 from devkit_spec.cli.output import echo_page, page, sentinel
 from devkit_spec.config import Namespace, read_spec_config
 from devkit_spec.documents import Document, DocumentIndex, Kind, Reference
-from devkit_spec.entrypoints.paths import overlaps
+from devkit_spec.entrypoints.paths import normalize, overlaps
 from devkit_spec.namespaces import Selection, namespace_resolver, select
 
 WORKSPACE = workspace_option()
@@ -336,6 +336,8 @@ def list_cmd(
     """
     _check_page(limit, offset)
     where = _where(where_items)
+    if file is not None:
+        normalize(file)  # SPEC_ENTRYPOINTS_PATH_INVALID, as derive reports it, rather than matching nothing
     index = _load(workspace_root)
     scope = NamespaceScope.of(index, namespace, all_namespaces)
     statuses = {part.strip().lower() for part in status.split(",") if part.strip()} if status else set()

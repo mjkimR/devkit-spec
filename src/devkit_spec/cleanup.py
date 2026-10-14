@@ -9,7 +9,9 @@ removed. A project that deploys the ``spec`` bundle then needs two cleanups the 
   Only the records of the finished worktree are removed, at the revision read here, as ``scope sweep --apply``
   would remove them; other stale records stay for an explicit sweep.
 
-Each cleanup returns one notice line per change. A project without the ``spec`` bundle is left alone.
+Each cleanup returns one notice line per change. When the record removal fails (a malformed ``[tool.spec]``, a
+registry timeout), its error is returned next to the prune notices, which devkit reports as a warning, and its fix
+ends with ``devkit spec scope sweep --apply``. A project without the ``spec`` bundle is left alone.
 """
 
 from __future__ import annotations
@@ -38,7 +40,12 @@ def after_finish(base: Path, result: dict[str, Any]) -> list[str | AdvisoryError
     except SpecError:  # a slug that cannot name a proposal has none to prune
         pruned = []
     lines += [f"removed empty proposal directory {path}" for path in pruned]
-    lines += _sweep(base, Path(str(result.get("path", ""))))
+    try:
+        lines += _sweep(base, Path(str(result.get("path", ""))))
+    except AdvisoryError as exc:  # keep the prune notices; the record waits for an explicit sweep
+        sweep = "run devkit spec scope sweep --apply to remove the finished worktree's scope record"
+        exc.fix = f"{exc.fix.rstrip('.')}, then {sweep}" if exc.fix else sweep.capitalize()
+        lines.append(exc)
     return lines or None
 
 

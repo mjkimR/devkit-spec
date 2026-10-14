@@ -70,14 +70,16 @@ class Unresolved:
 @dataclass
 class RelocationPlan:
     """Absolute paths: the removed ``proposal`` (bundle directory or single file), the new target of a link to the
-    bundle directory itself, old file to new file (``exact``), old directory to new directory (``prefixes``), and new
-    directory to the old one its files were written for (``moved``), so their relative links resolve as written."""
+    bundle directory itself, old file to new file (``exact``), old directory to new directory (``prefixes``), new
+    directory to the old one its files were written for (``moved``) and new file to the old file it was written as
+    (``moved_files``), so their relative links resolve as written."""
 
     proposal: str
     dir_target: str | None = None
     exact: dict[str, str] = field(default_factory=dict)
     prefixes: dict[str, str] = field(default_factory=dict)
     moved: dict[str, str] = field(default_factory=dict)
+    moved_files: dict[str, str] = field(default_factory=dict)
 
     def contains(self, path: str) -> bool:
         return path == self.proposal or path.startswith(self.proposal + os.sep)
@@ -98,7 +100,7 @@ def completed_bundles(index: DocumentIndex) -> set[str]:
     found = set()
     for document in index.documents:
         parts = document.path.split("/")
-        if len(parts) == 4 and parts[0] == "specs" and parts[3] == "spec.md" and document.status == "completed":
+        if len(parts) == 4 and parts[0] == "specs" and parts[3] == "spec.md" and document.status.lower() == "completed":
             found.add(str(index.root / "/".join(parts[:3])))
     return found
 
@@ -169,10 +171,13 @@ def rewrite_links(root: Path, files: Iterable[str], plan: RelocationPlan, report
             continue
         here = os.path.dirname(file)
         base = here
-        for new, old in plan.moved.items():
-            if here == new or here.startswith(new + os.sep):
-                base = old + here[len(new) :]
-                break
+        if file in plan.moved_files:
+            base = os.path.dirname(plan.moved_files[file])
+        else:
+            for new, old in plan.moved.items():
+                if here == new or here.startswith(new + os.sep):
+                    base = old + here[len(new) :]
+                    break
         lines = text.split("\n")
         edits: list[tuple[int, int, int, str]] = []
         for link in extract_links(text):
@@ -244,10 +249,11 @@ def rewrite_ids(
     """Rewrite references (fields, prose, ``proposal`` provenance) to the IDs of relocated proposal documents.
 
     The mapping comes from the documents actually written (``plan.exact``: proposal to spec, PADR to ADR, the
-    blueprint to its copy), never from slug guesses. A reference to an ID declared inside the proposal that nothing
-    replaced is ``removed``; an ID other documents declare too is ``ambiguous`` and stays.
+    blueprint to its copy), never from slug guesses. A reference to an ID declared inside the proposal by a document
+    that was not carried anywhere is ``removed``; an ID other documents declare too is ``ambiguous`` and stays.
     """
-    removed = {d.id for d in index.documents if plan.contains(str(index.root / d.path))}
+    inside = [d for d in index.documents if plan.contains(str(index.root / d.path))]
+    removed = {d.id for d in inside if _new_location(plan, str(index.root / d.path)) is None}
     mapping: dict[str, str] = {}
     for old_path, new_path in sorted(plan.exact.items()):
         old, new = _parse(root, old_path), _parse(root, new_path)

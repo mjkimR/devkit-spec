@@ -235,8 +235,9 @@ def observe_git(
 ) -> tuple[list[ScopePath], list[Unresolved]]:
     """The paths changed in the worktree at ``root``: ``base_revision..HEAD``, staged, unstaged and untracked.
 
-    Paths are relative to ``root`` and limited to it. A path outside the entrypoint path contract (a glob character
-    or a colon in its name) is left out. An empty or unknown ``base_revision`` skips the committed range and is
+    Paths are relative to ``root`` and limited to it. Renames are not detected, so a moved file contributes both its
+    old and its new path. A path outside the entrypoint path contract (a glob character or a colon in its name) is
+    left out. An empty or unknown ``base_revision`` skips the committed range and is
     unresolved. Raises ``ScopeTimeoutError`` when the deadline passes and ``GitError`` when Git fails otherwise.
     """
     seen: set[str] = set()
@@ -253,17 +254,18 @@ def observe_git(
                 seen.add(path)
                 observed.append(ScopePath(path, kind_of(root, path), Source.OBSERVED, Stage.BUILD, first_seen))
 
+    changed = ("diff", "--name-only", "--no-renames", "-z", "--relative")
     if not base_revision:
         unresolved.append(Unresolved("", "missing-base-revision", Source.OBSERVED))
     else:
         try:
-            add(git_lines(root, "diff", "--name-only", "-z", "--relative", f"{base_revision}..HEAD", deadline=deadline))
+            add(git_lines(root, *changed, f"{base_revision}..HEAD", deadline=deadline))
         except GitError as exc:
             if exc.returncode is None:
                 raise
             unresolved.append(Unresolved(base_revision, "unknown-base-revision", Source.OBSERVED))
-    add(git_lines(root, "diff", "--name-only", "-z", "--relative", "--cached", deadline=deadline))
-    add(git_lines(root, "diff", "--name-only", "-z", "--relative", deadline=deadline))
+    add(git_lines(root, *changed, "--cached", deadline=deadline))
+    add(git_lines(root, *changed, deadline=deadline))
     add(git_lines(root, "ls-files", "-z", "--others", "--exclude-standard", deadline=deadline))
     observed.sort(key=lambda path: path.path)
     return observed, unresolved

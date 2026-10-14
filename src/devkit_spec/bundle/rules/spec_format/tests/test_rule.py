@@ -195,3 +195,44 @@ def test_namespace_fields_are_rechecked_when_the_config_changes(tmp_path: Path) 
     ]
     excluded = RuleContext(workspace_root=tmp_path, changed_files=[CONFIG], exclude=("docs/proposals/**",))
     assert [v.file for v in evaluate_rules(excluded, [RULE]).violations] == ["specs/2026-10/20261013-b/spec.md"]
+
+
+def test_fix_derives_proposal_bundle_ids(tmp_path: Path) -> None:
+    files = {
+        "docs/proposals/PROP-fast/proposal.md": "# [PROP-fast] Fast\n",
+        "docs/proposals/PROP-fast/target-docs.md": "---\ntitle: Target\nstatus: draft\n---\n",
+        "docs/proposals/PROP-fast/decisions/PADR-cache.md": "---\ntitle: Cache\nstatus: draft\n---\n",
+        "docs/proposals/PROP-single.md": "---\ntitle: Single\nstatus: draft\n---\n",
+    }
+    violations = check(RULE, tmp_path, files)
+    assert all(v.fixable for v in violations) and len(violations) == 4
+    assert _found(check(RULE, tmp_path, fix=True)) == []
+    expected = {
+        "docs/proposals/PROP-fast/proposal.md": "PROP-fast",
+        "docs/proposals/PROP-fast/target-docs.md": "PROP-fast-target",
+        "docs/proposals/PROP-fast/decisions/PADR-cache.md": "PADR-cache",
+        "docs/proposals/PROP-single.md": "PROP-single",
+    }
+    for path, document_id in expected.items():
+        assert f"\nid: {document_id}\n" in (tmp_path / path).read_text(), path
+
+
+def test_fix_leaves_an_underivable_id_missing(tmp_path: Path) -> None:
+    files = {
+        "docs/proposals/PROP-fast/notes.md": "---\ntitle: Notes\nstatus: draft\n---\n",
+        "docs/proposals/draft/proposal.md": "# Draft\n",
+    }
+    violations = check(RULE, tmp_path, files)
+    missing = [v for v in violations if v.message == "frontmatter is missing the required field 'id'"]
+    assert [v.file for v in missing] == ["docs/proposals/PROP-fast/notes.md"]
+    assert not missing[0].fixable and "devkit rules fix" not in missing[0].remediation
+    assert (tmp_path / "docs/proposals/PROP-fast/notes.md").read_text() == files["docs/proposals/PROP-fast/notes.md"]
+    # The fix writes the other fields of a file without a block, leaving the id to be set by hand.
+    assert _found(check(RULE, tmp_path, fix=True)) == [
+        ("docs/proposals/PROP-fast/notes.md", 1, "frontmatter is missing the required field 'id'"),
+        ("docs/proposals/draft/proposal.md", 1, "frontmatter is missing the required field 'id'"),
+    ]
+    assert (tmp_path / "docs/proposals/PROP-fast/notes.md").read_text() == files["docs/proposals/PROP-fast/notes.md"]
+    assert (tmp_path / "docs/proposals/draft/proposal.md").read_text() == (
+        f"---\ntitle: Draft\nstatus: draft\ncreated_at: {TODAY}\n---\n\n# Draft\n"
+    )

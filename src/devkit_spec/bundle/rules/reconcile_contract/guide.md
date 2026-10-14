@@ -28,7 +28,9 @@ Every violation is reported at line 1:
 - `targets` missing or not a list: `targets must be a list (empty when nothing in the Living Spec is affected)`.
 - A target that is not a mapping: `targets[<n>] must be a mapping of file, resolution and rationale`.
 - A `file` that is not a unique workspace-relative path: `targets[<n>].file <value> must be a unique
-  workspace-relative path`.
+  workspace-relative path`. A safe path not written in canonical form (`./docs/a.md`, `docs//a.md`, `docs/a/`):
+  `targets[<n>].file <value> must be written in canonical form: <path>`, since uniqueness and the diff evidence
+  compare paths as written.
 - A `resolution` other than `modified` or `waived`: `targets[<n>].resolution must be modified or waived, got
   <value>`.
 - A waiver whose `rationale` has fewer than 20 non-whitespace characters, since a waiver says why the file needs no

@@ -25,6 +25,7 @@ from collections.abc import Callable
 from pathlib import PurePosixPath
 
 from devkit.core import FrontmatterError
+from devkit.core.frontmatter import locate
 from devkit.rules import Phase, RuleContext, Severity, Violation, match_path
 from devkit.rules.rules import BaseRule
 
@@ -53,22 +54,25 @@ def _fence_width(stripped: str, char: str) -> int:
 
 
 def _contract_lines(text: str) -> list[str]:
-    """The lines of ``text`` with frontmatter, fenced code and HTML comment lines blanked, numbering kept.
+    """The lines of ``text`` with frontmatter (as devkit's grammar locates it), fenced code and HTML comment lines
+    blanked, numbering kept.
 
     Unlike ``devkit_spec.documents.visible_lines``, indented lines stay (nested tasks may be indented four or more
     spaces) and inline Markdown is left as written (``[AC-01]: Title`` is a heading's ID, not a link label).
     """
     lines = text.replace("\r\n", "\n").split("\n")
-    front = bool(lines) and lines[0] == "---"
+    try:
+        block = locate(text)
+        front = block.body_line - 1 if block is not None else 0
+    except FrontmatterError:  # never closed: every line belongs to the frontmatter
+        front = len(lines)
     fence = ""
     width = 0
     comment = False
     for number, line in enumerate(lines):
         stripped = line.strip()
-        if front:
+        if number < front:
             lines[number] = ""
-            if number > 0 and stripped == "---":
-                front = False
             continue
         if comment:
             lines[number] = ""

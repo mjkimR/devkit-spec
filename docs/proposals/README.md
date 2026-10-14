@@ -7,7 +7,7 @@ An incubation space to propose and mature new features, technical spikes, or arc
 ## 1. Zero-Clutter Lifecycle Principles
 
 - **Draft & Review (`draft` / `reviewing`)**: Scaffold the bundle using `devkit spec proposal new <slug>` and define the core hypothesis and spike questions in `proposal.md`. Isolate preliminary decisions into `decisions/PADR-{slug}.md` and research into `materials/`.
-- **Graduation (`accepted`)**: `devkit spec proposal handoff <slug>` creates the execution specification at `specs/{YYYY-MM}/{YYYYMMDD}-{slug}/` bound to the proposal's `handoff_workflow` (default `direct-delivery`), promotes PADRs into `docs/decisions/`, moves `materials/` into `docs/materials/`, copies `target-docs.md` (if present) to the spec directory, rewrites Markdown links and ID references pointing into the bundle, and removes the bundle directory. Follow up the reported unresolved links (`spec-next` skill).
+- **Graduation (`accepted`)**: `devkit spec proposal handoff <slug>` creates the execution specification at `specs/{YYYY-MM}/{YYYYMMDD}-{slug}/` bound to the proposal's `handoff_workflow` (default `direct-delivery`), promotes PADRs into `docs/decisions/`, moves `materials/` and any other bundle file (such as a `notes.md`) into `docs/materials/`, copies `target-docs.md` (if present) to the spec directory, rewrites Markdown links and ID references pointing into the bundle, and removes the bundle directory. Follow up the reported unresolved links (`spec-next` skill).
 - **Rejection (`rejected`)**: Record a brief rejection ADR in `docs/decisions/` and delete the bundle directory.
 - Historical context and discussions are tracked via Git history. No `archive/` directories are maintained.
 
@@ -45,7 +45,7 @@ docs/proposals/PROP-{slug}/
   - **`size`**: Estimated implementation scope (S=single fix, M=1-2 sessions, L=complex module, XL=major overhaul).
   - **`milestone`**: (Optional) Target milestone or phase name; carried over to `spec.md` on handoff.
   - **`boundaries`**: Declared scope impact (`owns`) and excluded scope (`excludes`).
-- **`materials/` Markdown**: `devkit rules check` checks bundle Markdown like the other proposal documents, so each file needs frontmatter `id`, `title` and `status` (`RULE-spec-format`). Follow the material convention: file `{YYYYMMDD}-{slug}.md`, `id: MAT-<slug>`, `created_at`, H1 `# [MAT-<slug>] <title>`. Non-Markdown files need no metadata. After handoff the files move to `docs/materials/`, where frontmatter is optional.
+- **`materials/` Markdown**: follow the material convention: file `{YYYYMMDD}-{slug}.md`, `id: MAT-<slug>`, `created_at`, H1 `# [MAT-<slug>] <title>`. `RULE-spec-format` skips `materials/` directories, so the frontmatter is recommended, not checked. Non-Markdown files need no metadata. After handoff the files move to `docs/materials/`.
 - **`target-docs.md` (Recommended)**: Focuses on "What docs/ changes will look like once accepted", while `proposal.md` focuses on "Why". Covers capability ledger, user stories, architecture & decisions, conventions & governance, and before/after comparisons. Recommended for `size: M/L/XL` or when Living Spec structural changes are expected.
 
 ---

@@ -16,6 +16,15 @@ def test_ensure_ac_ids_tags_every_h3() -> None:
     assert "### Scenario 3 [AC-03]: Two tags\n" in body
 
 
+def test_ensure_ac_ids_skips_ids_already_used() -> None:
+    body, ids = ensure_ac_ids("### [AC-02] first\n- a\n\n### second\n- b\n\n### third\n- c\n")
+    assert ids == ["AC-02", "AC-03", "AC-04"]
+    assert "### Scenario 2 [AC-03]: second\n" in body
+    body, ids = ensure_ac_ids("### first\n- a\n\n### [AC-01] second\n- b\n")
+    assert ids == ["AC-02", "AC-01"]
+    assert len(set(ids)) == len(ids)
+
+
 def test_ensure_ac_ids_wraps_list_items_and_prose() -> None:
     body, ids = ensure_ac_ids("- **Given** a\n- **Given** b\n  - nested\n")
     assert ids == ["AC-01", "AC-02"]

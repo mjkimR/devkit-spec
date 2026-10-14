@@ -61,6 +61,8 @@ integrated. It never grants or blocks a write, and it is not exclusive ownership
 9. **Cleanup after finish**: devkit-spec's `devkit.post_finish` extension (`devkit_spec.cleanup.after_finish`) runs in the
    base after `devkit worktree finish` succeeds and removes the records whose worktree is the finished one, at the
    revision it read (`sweep --apply` restricted to those tasks); other stale records stay for an explicit sweep.
+   When the removal fails (a malformed `[tool.spec]`, a registry timeout), its error is returned beside the proposal
+   prune notices, which devkit reports as a warning, and its fix ends with `devkit spec scope sweep --apply`.
    Nothing is released before the finish, so a refused finish leaves the task registered. Rationale:
    `ADR-cleanup-after-worktree-finish`.
 10. **Absolute shared path**: a configured `shared_path` MUST be absolute (a relative path would resolve to a
@@ -86,7 +88,8 @@ path, no `..`, case-sensitive, `./` and a trailing `/` normalized), with its gra
 `targets` is the same list in both files: `- file: <workspace-relative path>` with an optional `resolution`
 (`devkit spec proposal new --with-target-docs` scaffolds `targets: []`). Document IDs are not accepted. Observed paths
 are relative to the workspace root and limited to it; a changed path outside the path contract (a glob character or
-a colon in its name) is left out.
+a colon in its name) is left out. Renames are not detected: a moved file is observed at its old and its new path, so
+a task that moves a file overlaps a task editing it at its old path.
 
 | Unresolved reason | Input |
 | --- | --- |

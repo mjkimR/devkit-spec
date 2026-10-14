@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from devkit.core import TemplateKey, TemplateTable, is_safe_relpath, read_project_config
 
@@ -189,8 +189,14 @@ def _namespaces(value: object) -> tuple[Namespace, ...]:
         name, path = entry["name"], entry["path"]
         if not isinstance(name, str) or not NAMESPACE_NAME.match(name) or name == GLOBAL:
             raise SpecConfigError(f"{where}: name must be lowercase words joined by - and not {GLOBAL!r}, got {name!r}")
-        if not isinstance(path, str) or not is_safe_relpath(path) or path.endswith("/"):
+        if not isinstance(path, str) or not is_safe_relpath(path):
             raise SpecConfigError(f"{where}: path must be a workspace-relative directory, got {path!r}")
+        if not is_safe_relpath(path, canonical=True):
+            canonical = PurePosixPath(path).as_posix()
+            raise SpecConfigError(
+                f"{where}: path must be in canonical form (no ./, //, or trailing /), got {path!r}",
+                fix=f"Write path = {canonical!r} in [[tool.spec.namespaces]] of .devkit/config.toml",
+            )
         if any(other.name == name for other in found) or any(other.path == path for other in found):
             raise SpecConfigError(f"{where}: name {name!r} or path {path!r} is already registered")
         found.append(Namespace(name, path))

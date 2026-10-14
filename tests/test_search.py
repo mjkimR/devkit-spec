@@ -60,7 +60,18 @@ def test_glossary_expands_the_query(docs: Path, write: Write) -> None:
     write("docs/glossary.yaml", "terms:\n  - primary: cache\n    synonyms: [캐시, derived data]\n")
     glossary = load_glossary(docs)
     assert expand_query("캐시 정책", glossary) == "캐시 정책 cache derived data"
+    assert expand_query("derived  DATA", glossary) == "derived  DATA cache 캐시"
+    assert expand_query("data derived", glossary) == "data derived"  # a multi-word term matches in order
     assert _ids(docs, "캐시") == ["ADR-cache"]
+
+
+def test_glossary_terms_match_as_tokenized_words(docs: Path, write: Write) -> None:
+    write("docs/glossary.yaml", "terms:\n  - primary: work-scope\n    synonyms: [café, scope_registry]\n")
+    glossary = load_glossary(docs)
+    assert expand_query("Work Scope overlap", glossary) == "Work Scope overlap café scope_registry"
+    assert expand_query("cafe", glossary) == "cafe work-scope scope_registry"
+    assert expand_query("scope.registry", glossary) == "scope.registry work-scope café"
+    assert expand_query("workscope", glossary) == "workscope"
 
 
 @pytest.mark.parametrize(

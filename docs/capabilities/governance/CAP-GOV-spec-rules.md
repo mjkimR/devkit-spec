@@ -109,8 +109,9 @@ sequence numbers are forbidden (they collide across parallel branches).
 - **Dated partitions**: ADR `docs/decisions/<YYYY-MM>/<YYYYMMDD>-<slug>.md` with `ADR-<slug>`; spec bundle
   `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/{spec,plan,tasks,reconcile}.md` with `SPEC-`, `PLAN-`, `TASKS-<slug>` and
   `reconcile_id: REC-<slug>`; feedback `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/feedback/<name>.md` (no date prefix) or
-  `specs/<YYYY-MM>/feedback/<YYYYMMDD>-<name>.md` with `FB-<name>`. Slugs are kebab-case and the month partition
-  MUST match the date prefix.
+  `specs/<YYYY-MM>/feedback/<YYYYMMDD>-<name>.md` with `FB-<name>`. Slugs are kebab-case, their first segment MUST
+  contain a letter (a year or number there would read as a retired number-based ID), and the month partition MUST
+  match the date prefix.
 - **Living Spec stems** (the ID is the file stem): `docs/capabilities/<area>/CAP-<AREA>-<slug>.md` (`<AREA>`
   upper-case letters and digits, `area: <area>`); `docs/stories/<area>/US-<slug>.md` (`area: <area>`; only
   `README.md` directly under `docs/stories/`); `docs/architecture/ARCH-<slug>.md` or `ARCH-<NN>[-<n>]-<slug>.md` with
@@ -119,8 +120,9 @@ sequence numbers are forbidden (they collide across parallel branches).
   same layout.
 - MUST report: a path off the convention (nothing else is reported for that file until it moves; `README.md` files
   are not checked); no frontmatter; an `id`/`reconcile_id` or `area` other than the path requires (fixable); a first
-  `# ` heading whose bracket or code-span ID token is not the ID (fixable; a plan, tasks or reconcile heading MAY name
-  `SPEC-<slug>`); an ID another file's path also derives (slugs are unique per document type across partitions and
+  `# ` heading opened by a bracket or code-span ID token that is not the ID (fixable; in a spec bundle file the token
+  MAY follow a leading `<label>: `, and a plan, tasks or reconcile heading MAY name `SPEC-<slug>`; an ID later in the
+  heading is a reference, not the document's own); an ID another file's path also derives (slugs are unique per document type across partitions and
   areas, feedback slugs within their bundle; detected across the whole workspace); a date- or number-based reference
   (such as ``ADR-0006``, ``US-010``, ``CAP-HARN-007``, ``SPEC-20261006`` or an `ARCH-<NN>` without slug) in the
   frontmatter or prose of any Markdown file under `docs/` (materials excepted) or `specs/`. Code blocks, indented
@@ -140,9 +142,11 @@ non-blank strings.
   `namespace` in `proposal.md` (under `docs/proposals/`) or `spec.md` that is not a string naming `global` or a
   registered namespace (not fixable). The `namespace` field is checked in current proposals and specs, and in every
   one of them when the run targets `.devkit/config.toml`.
-- **Fix**: fills what is missing and leaves present values alone: `id` the file stem, `title` the first `# ` heading
-  (a leading ID token dropped) else the stem, `status: draft`, and `created_at` today when none of `created_at`,
-  `created`, `date` is set.
+- **Fix**: fills what is missing and leaves present values alone: `id` the ID the path derives, `title` the first
+  `# ` heading (a leading ID token dropped) else the file stem, `status: draft`, and `created_at` today when none of
+  `created_at`, `created`, `date` is set. The path derives the file stem for a capability, story, single-file
+  proposal or PADR, `PROP-<slug>` for a bundle's `proposal.md` and `PROP-<slug>-target` for its `target-docs.md`;
+  any other file under `docs/proposals/` derives none, and its missing `id` is reported without a fix.
 
 ### 3.6 `RULE-traceability-link`
 
@@ -206,7 +210,7 @@ so this hint is a rule of its own (`SPEC-open-feedback-and-progress`).
 
 - MUST report: no or malformed frontmatter, or no `reconcile_id`; `status` other than `pending` or `resolved`;
   `targets` missing or not a list (`targets: []` when nothing is affected); a target that is not a mapping, a `file`
-  that is not a unique workspace-relative path, a `resolution` other than `modified` or `waived`, or a waiver whose
+  that is not a unique workspace-relative path in canonical form (`docs/a.md`, not `./docs/a.md`), a `resolution` other than `modified` or `waived`, or a waiver whose
   `rationale` has fewer than 20 non-whitespace characters.
 - **Diff evidence**: in a snapshot run (`--staged`, `--ci`), a `resolved` record the diff changes MUST have every
   `modified` target changed or deleted by that diff. `--ci` judges the whole branch against its merge base. A record

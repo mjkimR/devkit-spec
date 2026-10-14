@@ -56,6 +56,19 @@ def test_a_well_formed_record_passes(tmp_path: Path) -> None:
             "targets[2].file 'a.md' must be a unique workspace-relative path",
         ),
         (
+            "status: resolved\ntargets:\n  - {file: ./docs/a.md, resolution: modified}\n",
+            "targets[1].file './docs/a.md' must be written in canonical form: docs/a.md",
+        ),
+        (
+            "status: resolved\ntargets:\n  - {file: docs//a.md, resolution: modified}\n",
+            "targets[1].file 'docs//a.md' must be written in canonical form: docs/a.md",
+        ),
+        (
+            "status: resolved\ntargets:\n  - {file: docs/a.md, resolution: modified}\n"
+            "  - {file: ./docs/a.md, resolution: modified}\n",
+            "targets[2].file './docs/a.md' must be written in canonical form: docs/a.md",
+        ),
+        (
             "status: resolved\ntargets:\n  - {file: a.md, resolution: kept}\n",
             "targets[1].resolution must be modified or waived, got 'kept'",
         ),

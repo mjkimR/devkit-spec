@@ -327,17 +327,72 @@ def test_rewrites_id_references_and_provenance(workspace: Path, write: Write) ->
     assert "SPEC_PROPOSAL_REFS_REWRITTEN" in _codes(result)
 
 
-def test_reports_references_to_documents_nothing_replaced(workspace: Path, write: Write) -> None:
+def test_carries_the_files_nothing_else_carries(workspace: Path, write: Write) -> None:
     proposal = _new(workspace, "relative")
-    accept(proposal)
     write("docs/proposals/PROP-relative/decisions/unpromoted.md", "---\nid: PADR-unpromoted\n---\n")
-    write("docs/README.md", "[PROP-relative] [PADR-unpromoted]\n")
+    write("docs/proposals/PROP-relative/notes.md", "# Notes\n[back](proposal.md) [mat](materials/a.md)\n")
+    write("docs/proposals/PROP-relative/diagram.png", "png")
+    write("docs/proposals/PROP-relative/materials/a.md", "# a\n")
+    write("docs/README.md", "[PROP-relative] [PADR-unpromoted] [notes](proposals/PROP-relative/notes.md)\n")
+    accept(proposal)
+
     result = handoff_proposal(workspace, "relative", today=TODAY)
+
+    mat_rel = f"docs/materials/{MONTH}/{STAMP}-relative"
+    assert result.materials == mat_rel
+    assert (workspace / mat_rel / "decisions/unpromoted.md").is_file()
+    assert (workspace / mat_rel / "diagram.png").read_text() == "png"
+    assert (workspace / mat_rel / "a.md").is_file()
+    notes = (workspace / mat_rel / "notes.md").read_text(encoding="utf-8")
+    assert f"[back](../../../../{SPEC}-relative/spec.md) [mat](a.md)" in notes
     readme = (workspace / "docs/README.md").read_text(encoding="utf-8")
     assert "`SPEC-relative`" in readme and "[PADR-unpromoted]" in readme
-    assert [u.to_dict() for u in result.unresolved] == [
-        {"path": "docs/README.md", "line": 1, "kind": "id", "target": "PADR-unpromoted", "reason": "removed"}
-    ]
+    assert f"[notes](materials/{MONTH}/{STAMP}-relative/notes.md)" in readme
+    assert result.unresolved == []
+    assert not proposal.parent.exists()
+
+
+def test_carried_files_only_need_a_materials_target(workspace: Path, write: Write) -> None:
+    proposal = _new(workspace, "loose")
+    write("docs/proposals/PROP-loose/notes.md", "# Notes\n")
+    accept(proposal)
+    result = handoff_proposal(workspace, "loose", today=TODAY)
+    mat_rel = f"docs/materials/{MONTH}/{STAMP}-loose"
+    assert result.materials == mat_rel
+    assert (workspace / mat_rel / "notes.md").is_file()
+
+
+def test_refuses_a_carried_file_that_clashes_with_materials(workspace: Path, write: Write) -> None:
+    proposal = _new(workspace, "dup")
+    write("docs/proposals/PROP-dup/notes.md", "# root\n")
+    write("docs/proposals/PROP-dup/materials/notes.md", "# material\n")
+    accept(proposal)
+    with pytest.raises(ProposalTargetExistsError) as raised:
+        handoff_proposal(workspace, "dup", today=TODAY)
+    assert raised.value.target_files == ("docs/proposals/PROP-dup/notes.md",)
+    assert proposal.is_file() and not (workspace / "specs").exists()
+
+
+def test_promoted_adrs_keep_working_links(workspace: Path, write: Write) -> None:
+    proposal = _new(workspace, "adr-links")
+    create_padr(workspace, "adr-links", "Pick A")
+    create_padr(workspace, "adr-links", "Pick B")
+    write("docs/capabilities/x/CAP-X.md", "# cap\n")
+    padr = proposal.parent / "decisions/PADR-pick-a.md"
+    padr.write_text(
+        padr.read_text(encoding="utf-8")
+        + "\n[cap](../../../capabilities/x/CAP-X.md) [b](PADR-pick-b.md) [p](../proposal.md)\n"
+        "Supersedes `PADR-pick-b`; unrelated to `PADR-elsewhere`.\n",
+        encoding="utf-8",
+    )
+    accept(proposal)
+
+    result = handoff_proposal(workspace, "adr-links", today=TODAY)
+
+    adr = (workspace / f"docs/decisions/{MONTH}/{STAMP}-pick-a.md").read_text(encoding="utf-8")
+    assert f"[cap](../../capabilities/x/CAP-X.md) [b]({STAMP}-pick-b.md) [p](../../../{SPEC}-adr-links/spec.md)" in adr
+    assert "Supersedes `ADR-pick-b`; unrelated to `PADR-elsewhere`." in adr
+    assert result.unresolved == []
 
 
 def test_leaves_completed_bundles_alone(workspace: Path, write: Write) -> None:

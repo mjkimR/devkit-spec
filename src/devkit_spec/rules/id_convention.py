@@ -12,9 +12,10 @@ Checks the identifier targets:
   ``docs/architecture/ARCH-[<NN>[-<n>]-]<slug>.md`` (``NN`` an arc42 chapter other than 09 and 12).
 
 A target is reported for a path off the convention (and then nothing else), a missing frontmatter, an ``id`` /
-``reconcile_id`` or ``area`` other than the path requires (fixable), a first H1 ``[ID]`` or `` `ID` `` token other
-than the ID (fixable; a plan, tasks or reconcile heading may also name its ``SPEC-<slug>``), and an ADR, spec or
-Living Spec ID that another target's path also derives. Every Markdown file under ``docs/`` (except
+``reconcile_id`` or ``area`` other than the path requires (fixable), a first H1 opened by an ``[ID]`` or `` `ID` ``
+token other than the ID (fixable; in a spec bundle file the token may follow a leading ``<label>: ``, and a plan,
+tasks or reconcile heading may also name its ``SPEC-<slug>``; an ID later in the heading is a reference, never the
+document's own), and an ADR, spec or Living Spec ID that another target's path also derives. Every Markdown file under ``docs/`` (except
 ``docs/materials/``) and ``specs/`` is reported for a date- or number-based reference (``ADR-0006``,
 ``SPEC-20261006``, ``US-010``, ``CAP-HARN-007``, ``ARCH-06``) in its frontmatter or prose; code, HTML comments and
 escapes are skipped, link labels and targets are not.
@@ -56,7 +57,11 @@ _MONTH_NAME = re.compile(r"^(\d{4})-(\d{2})$", re.ASCII)
 _CAP_STEM = re.compile(r"^CAP-([A-Z0-9]+)-([a-z0-9]+(?:-[a-z0-9]+)*)$", re.ASCII)
 _STORY_STEM = re.compile(r"^US-([a-z0-9]+(?:-[a-z0-9]+)*)$", re.ASCII)
 _ARCH_STEM = re.compile(r"^ARCH-(?:(\d{2})(?:-([1-9]))?-)?([a-z0-9]+(?:-[a-z0-9]+)*)$", re.ASCII)
-_HEADING_TOKEN = re.compile(r"(?:\[|`)((?:SPEC|PLAN|TASKS|REC|ADR|FB|CAP|US|ARCH)-[^\]`]+)(?:\]|`)")
+# The document's own ID token opens its first H1 (``# [ID] Title`` or ``# `ID` Title``); in a spec bundle file it may
+# follow a leading label (``# Technical Plan: `SPEC-<slug>` Title``). An ID later in the heading is a reference.
+_ID_TOKEN = r"(?P<token>(?:\[|`)(?P<id>(?:SPEC|PLAN|TASKS|REC|ADR|FB|CAP|US|ARCH)-[^\]`]+)(?:\]|`))"
+_HEADING_TOKEN = re.compile(rf"^#[ \t]+{_ID_TOKEN}")
+_LABELLED_HEADING_TOKEN = re.compile(rf"^#[ \t]+(?:[^`\[\]:\r\n]+:[ \t]+)?{_ID_TOKEN}")
 # Date- or number-based references that are never valid identifiers.
 _LEGACY_REF = re.compile(
     r"\b(SPEC-\d{8}(?:-[a-z0-9-]+)?|FB-\d{8}(?:-[a-z0-9-]+)?|P?ADR-\d{4}|US-\d{3,}|CAP-[A-Z0-9]+-\d{3,})\b", re.ASCII
@@ -111,10 +116,15 @@ def _has_letter(slug: str) -> bool:
 
 
 def _dated(month: str, name: str) -> tuple[str, str]:
-    """``(slug, issue)`` of a ``<YYYYMMDD>-<slug>`` name inside a ``<YYYY-MM>`` partition."""
+    """``(slug, issue)`` of a ``<YYYYMMDD>-<slug>`` name inside a ``<YYYY-MM>`` partition. The first slug segment
+    needs a letter, as in a Living Spec slug: ``20261014-2024-budget`` would give ``ADR-2024-budget``, which reads as
+    the retired number-based ``ADR-2024``."""
     match = _DATED_NAME.match(name)
-    if match is None:
-        return "", f"name must be {{YYYYMMDD}}-{{slug}} with a kebab-case slug: {name}"
+    if match is None or not _has_letter(match.group(2)):
+        return "", (
+            "name must be {YYYYMMDD}-{slug} with a kebab-case slug whose first segment has a letter"
+            f" (not a date or sequence number): {name}"
+        )
     partition = _MONTH_NAME.match(month)
     if partition is None or partition.group(1) + partition.group(2) != match.group(1)[:6]:
         return match.group(2), f'month partition "{month}" does not match date prefix "{match.group(1)}"'
@@ -152,8 +162,11 @@ def _feedback(path: str) -> _Target:
     if len(parts) == 5 and parts[3] == "feedback":
         _, issue = _dated(parts[1], parts[2])
         if not issue:
-            if _DATED_NAME.match(name) or not _SLUG_NAME.match(name):
-                issue = f"feedback file name must be a kebab-case slug without a date: {name}"
+            if _DATED_NAME.match(name) or not _SLUG_NAME.match(name) or not _has_letter(name):
+                issue = (
+                    "feedback file name must be a kebab-case slug without a date, whose first segment has a letter:"
+                    f" {name}"
+                )
             else:
                 slug = name
     elif len(parts) == 4 and parts[2] == "feedback":
@@ -291,9 +304,13 @@ def _heading(text: str, block: FrontmatterBlock | None) -> VisibleLine | None:
     return None
 
 
-def _heading_token(heading: VisibleLine | None) -> str | None:
-    match = _HEADING_TOKEN.search(heading.text) if heading else None
-    return match.group(1) if match else None
+def _heading_token(heading: VisibleLine | None, kind: Kind) -> re.Match[str] | None:
+    """The ID token that opens ``heading`` (after a leading label in a spec bundle file), naming the document's own
+    ID; groups ``token`` (with its delimiters) and ``id``."""
+    if heading is None:
+        return None
+    pattern = _LABELLED_HEADING_TOKEN if kind is Kind.SPEC else _HEADING_TOKEN
+    return pattern.match(heading.text)
 
 
 def _convention_lines(text: str) -> Iterator[VisibleLine]:
@@ -448,12 +465,12 @@ class IdConventionRule(BaseRule):
                     fixable=True,
                 )
         heading = _heading(text, block)
-        token = _heading_token(heading)
-        if heading is not None and token is not None and token not in target.allowed_tokens():
+        token = _heading_token(heading, target.kind)
+        if heading is not None and token is not None and token.group("id") not in target.allowed_tokens():
             add(
                 path,
                 heading.number,
-                f"Heading token [{token}] does not match identifier {' or '.join(target.allowed_tokens())}",
+                f"Heading token [{token.group('id')}] does not match identifier {' or '.join(target.allowed_tokens())}",
                 f"Run `{FIX_COMMAND}` or rewrite the heading token to the slug-based identifier",
                 fixable=True,
             )
@@ -479,14 +496,10 @@ class IdConventionRule(BaseRule):
             block = _block(text)
             updated = text
             heading = _heading(text, block)
-            token = _heading_token(heading)
-            if heading is not None and token is not None and token not in target.allowed_tokens():
-                replacement = target.heading_id()
-                if f"`{token}`" in heading.text:
-                    line = heading.text.replace(f"`{token}`", f"`{replacement}`", 1)
-                else:
-                    line = heading.text.replace(f"[{token}]", f"[{replacement}]", 1)
-                updated = updated[: heading.offset] + line + updated[heading.offset + len(heading.text) :]
+            token = _heading_token(heading, target.kind)
+            if heading is not None and token is not None and token.group("id") not in target.allowed_tokens():
+                start, end = (heading.offset + offset for offset in token.span("id"))
+                updated = updated[:start] + target.heading_id() + updated[end:]
             if block is not None:  # the heading follows the header, so the header offsets still hold
                 header = block.header
                 newline = block.newline or "\n"

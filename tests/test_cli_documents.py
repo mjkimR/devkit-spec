@@ -145,6 +145,9 @@ def test_list_by_entrypoint_overlap(workspace: Path, write: Write) -> None:
     assert ids("src/app") == ["CAP-CORE-a", "US-b"]
     assert ids("src/cli.py") == ["CAP-CORE-a"]
     assert ids("src/other.py") == []
+    for invalid in ("/src/app", "src/*.py", "../src", "src/../app"):
+        result = _spec("list", "--file", invalid, workspace=workspace)
+        assert result.exit_code == 2 and "(SPEC_ENTRYPOINTS_PATH_INVALID)" in result.stderr, invalid
 
 
 def _feedback(write: Write, name: str, **fields: str) -> None:

@@ -23,7 +23,8 @@ non-blank strings; their values are checked by the other spec rules (`RULE-id-co
   frontmatter block (--- ... --- on the first line)`.
 - A malformed block (never closed, invalid YAML, duplicate keys, or not a mapping): `frontmatter is malformed:
   <reason>`.
-- A missing or blank `id`, `title` or `status`, fixable: `frontmatter is missing the required field '<name>'`.
+- A missing or blank `id`, `title` or `status`, fixable (an `id` only where the path derives it, see Remediation):
+  `frontmatter is missing the required field '<name>'`.
 - One of them that is not a string (quote a value such as `id: "123"`): `frontmatter field '<name>' must be a string`.
 - A `namespace` in a bundle anchor that is not a string: `frontmatter field 'namespace' must be a string`; or that
   names neither `global` nor a registered namespace: `frontmatter namespace '<value>' is not global or a registered
@@ -32,10 +33,16 @@ non-blank strings; their values are checked by the other spec rules (`RULE-id-co
 ## 3. Remediation
 
 - **Autofix**: `devkit rules fix` fills what is missing and leaves every present value alone:
-  - a file without a block gets one: `id` the file stem, `title` the first `# ` heading (a leading `[ID]` dropped),
-    else the stem, `status: draft` and `created_at` today;
+  - a file without a block gets one: `id` the ID its path derives, `title` the first `# ` heading (a leading `[ID]`
+    dropped), else the file stem, `status: draft` and `created_at` today;
   - a block missing `id`, `title` or `status` (or setting it to an empty or null value) gets the same values for the
     missing fields, plus `created_at` when none of `created_at`, `created` or `date` is set.
+
+  The path derives the ID of a capability or story (`CAP-<AREA>-<slug>`, `US-<slug>`: the file stem), a single-file
+  proposal `docs/proposals/PROP-<slug>.md` (`PROP-<slug>`), a bundle's `PROP-<slug>/proposal.md` (`PROP-<slug>`) and
+  `PROP-<slug>/target-docs.md` (`PROP-<slug>-target`), and a PADR `PROP-<slug>/decisions/PADR-<name>.md`
+  (`PADR-<name>`). Any other file under `docs/proposals/` derives no ID: its missing `id` is reported without a fix
+  (the fix still fills the other fields), and is set by hand.
 
   It never touches a malformed block, a field of the wrong type or a file that is not valid UTF-8. Review the
   filled-in values: `status: draft` and a title taken from the heading are starting points, not decisions.

@@ -72,3 +72,10 @@ def test_files_of_completed_spec_bundles_are_historical(workspace: Path, write: 
         "FB-x": False,
         "FB-y": False,
     }
+
+
+def test_a_completed_status_is_read_case_insensitively(workspace: Path, write: Write) -> None:
+    write("specs/2026-10/20261001-done/spec.md", _doc("SPEC-done", status="Completed"))
+    write("specs/2026-10/20261001-done/plan.md", _doc("PLAN-done"))
+    index = DocumentIndex.load(workspace)
+    assert all(index.is_historical(document) for document in index.documents)

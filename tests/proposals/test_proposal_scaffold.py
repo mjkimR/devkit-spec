@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 from conftest import Write
+from devkit.advisory import AdvisoryError
 from devkit.core.frontmatter import parse
 from proposals.support import INCUBATED, TODAY, write_workflow
 
@@ -13,7 +14,7 @@ from devkit_spec.errors import (
     ProposalSlugConflictError,
     ProposalSlugError,
 )
-from devkit_spec.proposals import clean_slug, create_padr, create_proposal, yaml_scalar
+from devkit_spec.proposals import clean_slug, create_padr, create_proposal, create_spec, yaml_scalar
 
 
 @pytest.mark.parametrize(
@@ -118,6 +119,20 @@ def test_create_proposal_refuses_an_empty_slug(workspace: Path) -> None:
     with pytest.raises(ProposalSlugError) as raised:
         create_proposal(workspace, "--!")
     assert raised.value.code == "SPEC_PROPOSAL_SLUG_INVALID"
+
+
+def test_new_documents_get_slugs_the_id_convention_accepts(workspace: Path) -> None:
+    assert create_proposal(workspace, "fast_engine", today=TODAY).id == "PROP-fast-engine"
+    for call in (
+        lambda: create_proposal(workspace, "2024-budget", today=TODAY),
+        lambda: create_padr(workspace, "fast-engine", "2024 Budget"),
+        lambda: create_spec(workspace, "SPEC-20261006-foo", day=TODAY),
+    ):
+        with pytest.raises(AdvisoryError) as raised:
+            call()
+        assert raised.value.code in ("SPEC_PROPOSAL_SLUG_INVALID", "SPEC_SLUG_INVALID")
+        assert "first segment has no letter" in raised.value.message
+    assert not (workspace / "docs/proposals/PROP-2024-budget").exists()
 
 
 def test_slug_conflicts_with_an_existing_spec(workspace: Path, write: Write) -> None:

@@ -80,8 +80,31 @@ def test_apply_collects_failures_and_continues(workspace: Path, write: Write) ->
 
 
 @pytest.mark.parametrize(
+    "declared",
+    ["entrypoints: src/keep.py\n", "entrypoints:\n  - src/a.go\n  - {path: src/b}\n", "entrypoints: {a: 1}\n"],
+)
+def test_apply_refuses_entrypoints_that_are_not_a_list_of_strings(workspace: Path, write: Write, declared: str) -> None:
+    text = f"---\nid: CAP-X\n{declared}---\n"
+    write("docs/capabilities/x/CAP-X.md", text)
+    write("src/new.go", "package a\n")
+    result = apply(workspace, [Pair("CAP-X", "docs/capabilities/x/CAP-X.md", "src/new.go", State.NEW, True)])
+    assert result.applied == []
+    assert [path for path, _ in result.failures] == ["docs/capabilities/x/CAP-X.md"]
+    assert "not a list of path strings" in result.failures[0][1]
+    assert (workspace / "docs/capabilities/x/CAP-X.md").read_text() == text
+
+
+@pytest.mark.parametrize(
     ("before", "after"),
     [
+        (
+            "---\nid: A\nentrypoints:\n  - a\n# note\n\n  - c\n# next\n\nstatus: x\n---\n",
+            "---\nid: A\nentrypoints:\n  - src/a\n# next\n\nstatus: x\n---\n",
+        ),
+        (
+            "---\nid: A\nentrypoints:\n- a\n# note\n- c\n---\n",
+            "---\nid: A\nentrypoints:\n  - src/a\n---\n",
+        ),
         (
             "---\nid: A\nentrypoints: []\nstories: []\n---\nbody\n",
             "---\nid: A\nentrypoints:\n  - src/a\nstories: []\n---\nbody\n",

@@ -117,7 +117,8 @@ class DocumentIndex:
         for document in index.documents:
             bundle = _spec_bundle(document.path)
             spec = specs.get(f"{bundle}/spec.md") if bundle else None
-            if spec is not None and spec.status == COMPLETED and not in_feedback(document.path):
+            # Statuses compare case-insensitively, as the spec rules compare them (``RULE-spec-lifecycle``).
+            if spec is not None and spec.status.lower() == COMPLETED and not in_feedback(document.path):
                 index.historical.add(document.path)
         return index
 

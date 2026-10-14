@@ -164,3 +164,17 @@ def test_excluded_files_are_not_reported(tmp_path: Path) -> None:
     ctx = RuleContext(workspace_root=tmp_path, changed_files=[SPEC], exclude=("specs/**/tasks.md",))
     result = evaluate_rules(ctx, [RULE])
     assert _found(result.violations) == [(SPEC, 4, "duplicate acceptance criterion ID AC-02")]
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        pytest.param("---\nstatus: active\n...\n", id="dots-closer"),
+        pytest.param("--- \nstatus: active\n---\n", id="opener-trailing-space"),
+        pytest.param("﻿---\nstatus: active\n---\n", id="bom"),
+    ],
+)
+def test_frontmatter_follows_devkits_grammar(tmp_path: Path, header: str) -> None:
+    assert _messages(tmp_path, header + SPEC_ONE, header + "- [ ] Task [AC-01]\n") == []
+    tasks_in_header = "---\n- [ ] In the header [AC-01]\n...\n- [ ] Visible\n"
+    assert _messages(tmp_path, header + SPEC_ONE, tasks_in_header) == [MISSING_01]
