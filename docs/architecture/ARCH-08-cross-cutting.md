@@ -78,7 +78,7 @@ Libraries never print: modules below `cli` return results and notices or raise `
   without reading this documentation.
 - Agents read the effective policy with `devkit spec policy`, never by parsing the file (`CAP-DLV-project-policy`).
 - A malformed `[tool.spec]` is `SPEC_CONFIG_INVALID`. In a rule run it is not a violation: it fails the run
-  (devkit's `RULES_EXECUTION_FAILED`, exit `2`), because no document can be checked against a registry that cannot
+  (`SPEC_CONFIG_INVALID` with the rule's ID, exit `2`), because no document can be checked against a registry that cannot
   be read.
 - `docs/glossary.yaml` is the project-owned synonym list of `devkit spec search` (`CAP-DOCS-document-search`).
 

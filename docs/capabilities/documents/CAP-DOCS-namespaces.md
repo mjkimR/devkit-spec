@@ -45,7 +45,7 @@ reference rules stay repository-wide. `devkit_spec.namespaces` implements it.
 4. Names and paths MUST be unique across entries.
 5. A namespace's docs root is `docs/packages/<name>/`.
 6. A malformed registry MUST fail with `SPEC_CONFIG_INVALID` in every command that reads it, and fail a rules run
-   (`RULES_EXECUTION_FAILED`, exit `2`; `CAP-GOV-spec-rules`).
+   (`SPEC_CONFIG_INVALID` attributed to the rule, exit `2`; `CAP-GOV-spec-rules`).
 
 ### 3.2 Membership
 

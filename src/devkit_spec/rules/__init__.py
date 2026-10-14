@@ -22,7 +22,7 @@ Document namespaces (``[[tool.spec.namespaces]]``) are read with
 ``namespaces(ctx)``: a namespace docs root ``docs/packages/<name>/`` holds
 Living Spec documents under the same conventions as ``docs/``. A malformed
 ``[tool.spec]`` table is not a violation: ``SpecConfigError`` propagates and
-fails the run (``RULES_EXECUTION_FAILED``, exit 2), as devkit treats its own
+fails the run (``SPEC_CONFIG_INVALID`` with the rule's ID, exit 2), as devkit treats its own
 malformed configuration, because no document can be checked against a
 namespace registry that cannot be read.
 """

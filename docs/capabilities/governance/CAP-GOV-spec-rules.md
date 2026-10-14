@@ -73,7 +73,7 @@ Every rule is phase `linter` and is deployed by the `core` preset; every rule is
 5. **Namespaces**: `docs/packages/<name>/` follows the conventions of `docs/` (`CAP-DOCS-namespaces`); IDs and
    references stay repository-wide.
 6. **Malformed `[tool.spec]`**: a malformed `[tool.spec]` table is not a violation. It MUST fail the run
-   (`RULES_EXECUTION_FAILED` naming the table, exit `2`), as devkit fails on its own malformed configuration, because
+   (`SPEC_CONFIG_INVALID` naming the table, attributed to the rule, exit `2`), as devkit fails on its own malformed configuration, because
    the rules cannot tell which documents follow which conventions.
 7. **Fixes**: fixes are deterministic, idempotent, honor `devkit rules fix --dry-run`, write only targeted current
    files, and change only the bytes they own.
@@ -284,4 +284,4 @@ without IDs every rule's tests. The repository's own `pytest` collects the same 
 
 | Code | Level | Condition |
 | --- | --- | --- |
-| `RULES_EXECUTION_FAILED` | `ERROR` (devkit's) | A rule could not run, including a malformed `[tool.spec]` table (`SPEC_CONFIG_INVALID` as the cause); exit `2`. |
+| `RULES_EXECUTION_FAILED` | `ERROR` (devkit's) | A rule raised an exception that is not an advisory; exit `2`. An advisory a rule raises keeps its own code: a malformed `[tool.spec]` table is `SPEC_CONFIG_INVALID` with the rule's ID. |

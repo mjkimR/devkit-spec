@@ -135,7 +135,7 @@ sequenceDiagram
 - `RULE-reconcile-contract` requires every `modified` target of a resolved `reconcile.md` changed in the snapshot's
   diff; `RULE-code-entrypoints` also reports current documents declaring a path the diff deletes.
 - `devkit rules check --ci --base <ref>` runs the same evaluation on merge-base through HEAD in CI.
-- A malformed `[tool.spec]` table fails the run (`SPEC_CONFIG_INVALID` inside devkit's `RULES_EXECUTION_FAILED`,
+- A malformed `[tool.spec]` table fails the run (`SPEC_CONFIG_INVALID`, which devkit keeps with the rule's ID,
   exit `2`) instead of being reported as a violation.
 
 ---
