@@ -1,0 +1,9 @@
+request: gate:integration
+kind: approve
+action: accept
+workflow: direct-delivery
+stage: integration-approval
+note: 'User: ''커밋 및 push 했음 이후 작업 해줘'' after the G3 report listing worktree finish
+  --merge (fast-forward main and push).'
+by: user
+at: '2026-10-13T23:59:13Z'
