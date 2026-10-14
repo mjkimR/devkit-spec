@@ -254,7 +254,7 @@ def handoff_proposal(
             materials_target = preserved
             targets.append(materials_target)
     _check_targets(root, index, targets, decisions)
-    for _, destination in extras:
+    for destination in [*targets, *(destination for _, destination in extras)]:
         _require_inside(root, destination)
 
     title = text_value(meta.get("title")) or slug
@@ -536,14 +536,16 @@ def _plan_extras(
     carried; other hidden files are. Symbolic links are never followed: one is carried as a file.
 
     Raises ``ProposalTargetExistsError`` when a destination is also the destination of a path in ``materials/``, or
-    lies below a file or symbolic link there (moving into it would leave the preserved directory).
+    lies below a file or symbolic link there or below a ``materials/`` that is a symbolic link (moving into it would
+    leave the preserved directory).
     """
     carried = {bundle / PROPOSAL_FILE, bundle / TARGET_DOCS, *(decision.padr for decision in decisions)}
     materials_dir = bundle / MATERIALS
 
     def taken(rel: Path) -> bool:
-        """Whether moving ``materials/`` already puts something at ``rel``, or a file or symlink at a parent."""
-        if os.path.lexists(materials_dir / rel):
+        """Whether moving ``materials/`` already puts something at ``rel``, or a file or symlink at a parent (a
+        ``materials/`` that is itself one takes every destination)."""
+        if materials_dir.is_symlink() or materials_dir.is_file() or os.path.lexists(materials_dir / rel):
             return True
         return any(
             (materials_dir / parent).is_symlink() or (materials_dir / parent).is_file() for parent in rel.parents[:-1]
@@ -571,13 +573,13 @@ def _plan_extras(
 
 
 def _require_inside(root: Path, destination: Path) -> None:
-    """Refuse to carry a file to ``destination`` when its directory resolves outside the workspace ``root`` (a
-    symbolic link on the way)."""
+    """Refuse to write or carry anything to ``destination`` when its directory resolves outside the workspace
+    ``root`` (a symbolic link on the way)."""
     if destination.parent.resolve().is_relative_to(root):
         return
     rel = destination.relative_to(root).as_posix()
     raise ProposalTargetExistsError(
-        f"the handoff would move a file to {rel}, whose directory resolves outside the workspace",
+        f"the handoff would write {rel}, whose directory resolves outside the workspace",
         target_files=[rel],
         fix="Replace the symbolic link on the way to [TARGET] with a directory, then rerun the handoff",
     )

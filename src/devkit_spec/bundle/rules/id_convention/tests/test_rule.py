@@ -501,6 +501,31 @@ def test_a_heading_must_open_with_its_own_id(tmp_path: Path) -> None:
     assert all(_read(tmp_path, path) == text for path, text in files.items())
 
 
+def test_feedback_headings_must_open_with_their_own_id_inside_a_bundle_too(tmp_path: Path) -> None:
+    def doc(document_id: str, heading: str) -> str:
+        return f"---\nid: {document_id}\nstatus: open\n---\n\n# {heading}\n"
+
+    files = {
+        "specs/2026-10/20261014-zeta/spec.md": doc("SPEC-zeta", "Zeta replaces [SPEC-old-zeta]"),
+        "specs/2026-10/20261014-zeta/feedback/late.md": doc("FB-late", "Friction [FB-late] late token"),
+        "specs/2026-10/20261014-zeta/feedback/fine.md": doc("FB-fine", "[FB-fine] Fine, unlike [FB-late]"),
+        "specs/2026-10/feedback/20261014-lane.md": doc("FB-lane", "Friction: `FB-lane` labelled"),
+    }
+    violations = check(RULE, tmp_path, files)
+    assert [(v.file, v.message, v.fixable) for v in violations] == [
+        (
+            "specs/2026-10/20261014-zeta/feedback/late.md",
+            "Heading does not open with the document's own ID FB-late but names [FB-late]",
+            False,
+        ),
+        (
+            "specs/2026-10/feedback/20261014-lane.md",
+            "Heading does not open with the document's own ID FB-lane but names [FB-lane]",
+            False,
+        ),
+    ], "only spec bundle files (spec, plan, tasks, reconcile) may label their heading or name another ID of their kind"
+
+
 def test_dated_slugs_need_a_letter_in_their_first_segment(tmp_path: Path) -> None:
     def doc(document_id: str) -> str:
         return f"---\nid: {document_id}\ntitle: T\nstatus: draft\n---\n"

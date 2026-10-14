@@ -54,8 +54,9 @@ removes it.
    `SPEC_PROPOSAL_INVALID`), the slug conflict, the workflow binding and every path it would create before its first
    write. A path that already exists, two PADRs that would become the same ADR, an ADR ID another document already
    declares, a carried bundle file whose path under the materials directory a file or symbolic link of `materials/`
-   takes too (or lies below), or a carried file whose destination resolves outside the workspace is
-   `SPEC_PROPOSAL_TARGET_EXISTS`; a legacy proposal or PADR slug whose first segment has no letter is
+   takes too (or lies below; a `materials/` that is itself a symbolic link takes every such path), or a path it would
+   create (the spec bundle, an ADR, the materials directory, a carried file) whose directory resolves outside the
+   workspace is `SPEC_PROPOSAL_TARGET_EXISTS`; a legacy proposal or PADR slug whose first segment has no letter is
    `SPEC_PROPOSAL_SLUG_INVALID`.
 5. **Roll back a failed write**: any failure while writing the spec bundle, the blueprint, the ADRs or moving the
    materials and carried files removes what was written, moves them back and keeps the proposal, so the handoff can
@@ -178,8 +179,9 @@ With `<YYYY-MM>` and `<YYYYMMDD>` today's date:
    hidden file other than junk) moves into the same directory at its path relative to the bundle, which is created
    for them when `materials/` is not moved. Junk is never carried and is deleted with the proposal. Symbolic links
    are moved as links, never followed: a carried file whose path in `materials/` is taken, or lies below a file or
-   symbolic link there, and a destination whose directory resolves outside the workspace are refused before
-   writing (`SPEC_PROPOSAL_TARGET_EXISTS`).
+   symbolic link there or below a `materials/` that is itself a symbolic link, and a destination (the spec bundle,
+   an ADR, the materials directory, a carried file) whose directory resolves outside the workspace are refused
+   before writing (`SPEC_PROPOSAL_TARGET_EXISTS`).
 6. **Rewriting** of what pointed into the proposal (4.7).
 7. **Removal** of the proposal.
 
@@ -344,7 +346,7 @@ directory whose namespace applies when `namespace` is omitted);
 | `SPEC_PROPOSAL_NOT_APPROVED` | `ERROR` (`INTERACTION`) | `ProposalNotApprovedError` | Status is not `accepted` (or `draft`/`reviewing` with `--direction-chosen`). |
 | `SPEC_PROPOSAL_WRONG_WORKTREE` | `ERROR` (`INPUT_ERROR`) | `ProposalWrongWorktreeError` | `handoff` in a linked worktree on another branch than the slug under `[tool.spec] worktree = true` (rule 11); `[FIX]` starts the slug's worktree and reruns the handoff there. |
 | `SPEC_PROPOSAL_WORKFLOW_INVALID` | `ERROR` (`MAINTENANCE`) | `ProposalWorkflowError` | `handoff_workflow` is not a string, names a definition that does not resolve or validate, or names by path a definition other than the one discovered for its id (`WORKFLOW_NOT_BINDABLE`); `[DETAIL]` carries devkit's code. |
-| `SPEC_PROPOSAL_TARGET_EXISTS` | `ERROR` (`BLOCKED`) | `ProposalTargetExistsError` | The spec bundle, an ADR file or the materials directory exists, two PADRs map to one ADR, another document declares a promoted ADR's ID, a carried bundle file clashes with a file or symbolic link of `materials/`, or a carried file's destination resolves outside the workspace. |
+| `SPEC_PROPOSAL_TARGET_EXISTS` | `ERROR` (`BLOCKED`) | `ProposalTargetExistsError` | The spec bundle, an ADR file or the materials directory exists, two PADRs map to one ADR, another document declares a promoted ADR's ID, a carried bundle file clashes with a file or symbolic link of `materials/` (or `materials/` is itself a symbolic link), or the directory of the spec bundle, an ADR, the materials directory or a carried file resolves outside the workspace. |
 | `SPEC_PROPOSAL_HANDOFF_FAILED` | `ERROR` (`MAINTENANCE`) | `ProposalHandoffError` | A write failed; what was written is removed, the materials and carried files moved back, the proposal kept. When the roll-back was incomplete, `[DETAIL]` lists what could not be moved back or removed (kept, never deleted). |
 | `SPEC_PROPOSAL_CLEANUP_FAILED` | `WARNING` | `ProposalCleanupWarning` | The handoff completed but the proposal could not be removed, or the post-finish prune of the slug's empty proposal directories failed (`CAP-COLL-work-scope-registry`). |
 | `SPEC_PROPOSAL_LINK_UNRESOLVED` | `WARNING` | `ProposalLinkUnresolvedWarning` | Links or references into the proposal were left as they were; the `[UNRESOLVED_LINK]` lines list them. |

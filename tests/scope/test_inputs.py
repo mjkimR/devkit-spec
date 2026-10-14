@@ -138,6 +138,26 @@ def test_observe_git_from_the_fork_point_of_the_base_ref(repo: Path) -> None:
     assert "src/b/b.py" in {item.path for item in observed}, "an unresolvable base ref falls back to base_revision"
 
 
+def test_observe_git_registered_after_a_task_commit_skips_a_later_merge_of_the_base_ref(repo: Path) -> None:
+    git(repo, "switch", "-q", "-c", "task")
+    write(repo, "src/a/a.py", "a = 2\n")
+    git(repo, "commit", "-q", "-am", "task")
+    base = git(repo, "rev-parse", "HEAD")  # registered after the task's first commit
+    git(repo, "switch", "-q", "main")
+    write(repo, "src/b/b.py", "b = 2\n")
+    git(repo, "commit", "-q", "-am", "upstream")
+    git(repo, "switch", "-q", "task")
+    git(repo, "merge", "-q", "--no-edit", "main")  # the fork point and base_revision have diverged
+    write(repo, "src/shared.py", "s = 'task'\n")
+    git(repo, "commit", "-q", "-am", "after the merge")
+
+    observed, unresolved = observe_git(repo, base, Deadline(30), "", base_ref="refs/heads/main")
+    assert unresolved == []
+    assert [item.path for item in observed] == ["src/shared.py"], "what the task merged in is not observed"
+    observed, unresolved = observe_git(repo, "deadbeef", Deadline(30), "", base_ref="refs/heads/main")
+    assert [item.reason for item in unresolved] == ["unknown-base-revision"]
+
+
 @pytest.mark.parametrize("stage", ["committed", "staged", "unstaged"])
 def test_observe_git_lists_both_sides_of_a_rename(repo: Path, stage: str) -> None:
     base = git(repo, "rev-parse", "HEAD")

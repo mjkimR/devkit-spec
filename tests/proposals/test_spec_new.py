@@ -111,9 +111,30 @@ def test_any_failure_while_writing_is_rolled_back(
         raise error
 
     monkeypatch.setattr("devkit_spec.proposals.specs.write_binding", write_binding)
-    with pytest.raises(raised_type):
+    with pytest.raises(raised_type) as raised:
         create_spec(workspace, "broken", day=TODAY)
     assert not (workspace / "specs").exists()
+    if isinstance(raised.value, SpecWriteError):
+        assert raised.value.message == "creating SPEC-broken failed; the files it wrote were removed"
+
+
+@pytest.mark.parametrize("error", [FrontmatterError("bad"), RuntimeError("bug")])
+def test_an_incomplete_roll_back_says_so(workspace: Path, monkeypatch: pytest.MonkeyPatch, error: Exception) -> None:
+    write_workflow(workspace, "direct-delivery")
+
+    def write_binding(*_: object) -> None:
+        raise error
+
+    def rmtree(path: object, *_: object, **__: object) -> None:
+        raise OSError("simulated failure")
+
+    monkeypatch.setattr("devkit_spec.proposals.specs.write_binding", write_binding)
+    monkeypatch.setattr("devkit_spec.proposals.specs.shutil.rmtree", rmtree)
+    with pytest.raises(SpecWriteError) as raised:
+        create_spec(workspace, "broken", day=TODAY)
+    assert "roll-back was incomplete" in raised.value.message and "were removed" not in raised.value.message
+    assert any("could not be removed: simulated failure" in detail for detail in raised.value.details)
+    assert (workspace / "specs").is_dir(), "what the roll-back could not remove is left in place"
 
 
 def test_refuses_a_taken_slug(workspace: Path, write: Write) -> None:

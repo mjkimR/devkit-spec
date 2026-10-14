@@ -258,20 +258,23 @@ def roll_back(written: list[Path], moved: Sequence[tuple[Path, Path]] = ()) -> l
 
     A written path a move-back carried along (a directory ``make_dirs`` created inside a moved directory) is followed
     to where it went: a file is removed there, a directory only when it holds no file (``remove_empty_tree``). A
-    written directory that holds something whose move-back failed is never removed, so nothing moved is lost.
+    written directory that holds something whose move-back failed is never removed, so nothing moved is lost; such a
+    path is reported where it is after the later move-backs, which may have carried it along too.
     """
     problems: list[str] = []
     back: list[tuple[Path, Path]] = []
-    stuck: list[tuple[Path, int]] = []  # a path left at its new location, and how many move-backs ran before it
+    # A path left at its new location, where it should have gone, why not, and how many move-backs ran before it.
+    stuck: list[tuple[Path, Path, OSError, int]] = []
     for new, old in reversed(moved):
         try:
             shutil.move(new, old)
         except OSError as exc:
-            problems.append(f"{new} could not be moved back to {old}: {exc}")
-            stuck.append((new, len(back)))
+            stuck.append((new, old, exc, len(back)))
         else:
             back.append((new, old))
-    kept = [_relocate(path, back[ran:]) for path, ran in stuck]
+    kept = [_relocate(path, back[ran:]) for path, _, _, ran in stuck]
+    for here, (_, old, exc, _) in zip(kept, stuck, strict=True):
+        problems.append(f"{here} could not be moved back to {old}: {exc}")
     for path in reversed(written):
         here = _relocate(path, back)
         holding = [item for item in kept if item == here or item.is_relative_to(here)]
@@ -339,7 +342,8 @@ def create_spec(
     (``SPEC-<slug>`` or ``PROP-<slug>`` is declared, a proposal of the slug exists, or the directory exists),
     ``SpecWorkflowError`` (an explicit workflow that does not resolve or validate). A failure while writing removes
     what was written, then raises ``SpecWriteError``, or the ``AdvisoryError`` itself when the failure was one (such
-    as a ``FrontmatterError`` binding ``spec.md``).
+    as a ``FrontmatterError`` binding ``spec.md``) and the roll-back was complete; what the roll-back could not remove is
+    in the ``SpecWriteError`` details.
     """
     root = root.resolve()
     slug = new_slug(slug.strip().removeprefix("SPEC-"), error=SpecSlugError)
@@ -380,9 +384,12 @@ def create_spec(
         problems = roll_back(written)
         if isinstance(exc, AdvisoryError) and not problems:
             raise
-        raise SpecWriteError(
-            f"creating SPEC-{slug} failed; the files it wrote were removed", str(exc), *problems
-        ) from exc
+        what = (
+            "the files it wrote were removed"
+            if not problems
+            else "the roll-back was incomplete; inspect the paths in the details before retrying"
+        )
+        raise SpecWriteError(f"creating SPEC-{slug} failed; {what}", str(exc), *problems) from exc
     rel = directory.relative_to(root).as_posix()
     created = CreatedSpec(
         id=f"SPEC-{slug}", dir=rel, workflow=binding.workflow if binding else None, namespace=reported

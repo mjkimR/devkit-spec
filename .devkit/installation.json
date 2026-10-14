@@ -873,7 +873,7 @@
     },
     ".devkit/managed/spec/rules/id_convention/guide.md": {
       "mode": 420,
-      "sha256": "026bd8f7253f6aa9dd0767672f3a09c845f397644bb12fdc52ae1e85d311ce46"
+      "sha256": "72134db4a02262522475b74af9d6faf84a5a24b9418f987b606e4d40eed61af7"
     },
     ".devkit/managed/spec/rules/id_convention/rule.py": {
       "mode": 420,
@@ -881,7 +881,7 @@
     },
     ".devkit/managed/spec/rules/id_convention/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "db2307ddc36327bcf8a26e37f1d56dedd1d08fdc4601584b426eb927bc2f1d52"
+      "sha256": "8d1bed4e525e89d809c40da128410170d07b0c493645e0d9d47b9658394cdded"
     },
     ".devkit/managed/spec/rules/reconcile_contract/guide.md": {
       "mode": 420,

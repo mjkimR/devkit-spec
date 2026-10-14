@@ -6,9 +6,9 @@
   ``reconcile.md``, ``target-docs.md`` (``prop`` stage); ``tasks.md`` ``_Boundary`` entries are declared code (they win
   over a candidate of the same path), the targets' ``entrypoints`` candidates. When both target lists exist, the
   paths only one names are reported as ``Diff`` and not merged.
-- Observed (``build`` stage): the paths changed on the task's side of its base branch (``<start>..HEAD``, the start
-  being the fork point ``git merge-base <base ref> HEAD`` when the record's fixed base revision is its ancestor, else
-  that base revision), staged, unstaged and untracked, relative to the workspace root.
+- Observed (``build`` stage): the paths changed on the task's side of its base branch (from the fork point
+  ``git merge-base <base ref> HEAD`` to ``HEAD``, never wider than the record's fixed base revision to ``HEAD``; see
+  ``observe_git``), staged, unstaged and untracked, relative to the workspace root.
 
 ``targets`` is a list of ``{file: <workspace-relative path>, resolution: ...}`` in both files. Paths follow the
 entrypoint path contract. What cannot become a path is ``Unresolved`` with its reason, never dropped silently.
@@ -255,19 +255,21 @@ def _is_ancestor(root: Path, ancestor: str, descendant: str, deadline: Deadline)
 def observe_git(
     root: Path, base_revision: str, deadline: Deadline, first_seen: str, *, base_ref: str = ""
 ) -> tuple[list[ScopePath], list[Unresolved]]:
-    """The paths changed in the worktree at ``root``: ``<fork point>..HEAD``, staged, unstaged and untracked.
+    """The paths changed in the worktree at ``root``: the committed range, staged, unstaged and untracked.
 
     The committed range starts where ``HEAD`` forks from the branch ``base_ref`` (``git merge-base``), so what the
-    task merged or rebased in from that branch is not observed while its own changes and conflict resolutions are.
-    That fork point is used only when ``base_revision`` is its ancestor: the range is never wider than
-    ``base_revision..HEAD``, so a ``base_ref`` that is not the branch the task forked from (the base checkout was on
-    another branch at registration) cannot pull another branch's commits in. Without ``base_ref``, or when the fork
-    point predates ``base_revision``, it starts at ``base_revision``; a ``base_ref`` that does not resolve or shares no
-    history with ``HEAD`` (a shallow clone) falls back to ``base_revision`` and is unresolved (``missing-base-ref``).
-    An empty or unknown start skips the committed range and is unresolved. Paths are relative to ``root`` and limited to it. Renames are not detected, so a moved file
-    contributes both its old and its new path. A path outside the entrypoint path contract (a glob character or a
-    colon in its name) is left out. Raises ``ScopeTimeoutError`` when the deadline passes and ``GitError`` when Git
-    fails otherwise.
+    task merged or rebased in from that branch is not observed while its own changes and conflict resolutions are. It
+    is never wider than ``base_revision..HEAD``, so a ``base_ref`` that is not the branch the task forked from (the
+    base checkout was on another branch at registration) cannot pull another branch's commits in: the range is
+    ``<fork point>..HEAD`` when ``base_revision`` is the fork point or its ancestor, ``base_revision..HEAD`` when the
+    fork point predates ``base_revision``, and only the paths both ranges change when neither is the other's
+    ancestor (the task registered after its own commits, then merged its base branch). Without ``base_ref`` it is
+    ``base_revision..HEAD``; a ``base_ref`` that does not resolve or shares no history with ``HEAD`` (a shallow clone)
+    falls back to ``base_revision`` and is unresolved (``missing-base-ref``). An empty or unknown ``base_revision``
+    skips the committed range and is unresolved, unless an empty one has a fork point to start from. Paths are
+    relative to ``root`` and limited to it. Renames are not detected, so a moved file contributes both its old and its
+    new path. A path outside the entrypoint path contract (a glob character or a colon in its name) is left out.
+    Raises ``ScopeTimeoutError`` when the deadline passes and ``GitError`` when Git fails otherwise.
     """
     seen: set[str] = set()
     observed: list[ScopePath] = []
@@ -283,23 +285,30 @@ def observe_git(
                 seen.add(path)
                 observed.append(ScopePath(path, kind_of(root, path), Source.OBSERVED, Stage.BUILD, first_seen))
 
-    start = base_revision
+    start, diverged = base_revision, ""
     if base_ref:
         fork = _fork_point(root, base_ref, deadline)
         if not fork:
             unresolved.append(Unresolved(base_ref, "missing-base-ref", Source.OBSERVED))
         elif not base_revision or _is_ancestor(root, base_revision, fork, deadline):
             start = fork  # no wider than base_revision..HEAD: the fork point is base_revision or descends from it
+        elif not _is_ancestor(root, fork, base_revision, deadline):
+            diverged = fork  # base_revision is a task-side commit and the task merged base_ref in since
     changed = ("diff", "--name-only", "--no-renames", "-z", "--relative")
     if not start:
         unresolved.append(Unresolved("", "missing-base-revision", Source.OBSERVED))
     else:
         try:
-            add(git_lines(root, *changed, f"{start}..HEAD", deadline=deadline))
+            committed = git_lines(root, *changed, f"{start}..HEAD", deadline=deadline)
         except GitError as exc:
             if exc.returncode is None:
                 raise
             unresolved.append(Unresolved(start, "unknown-base-revision", Source.OBSERVED))
+        else:
+            if diverged:  # what HEAD no longer differs in from the fork point came in from base_ref
+                since_fork = set(git_lines(root, *changed, f"{diverged}..HEAD", deadline=deadline))
+                committed = [path for path in committed if path in since_fork]
+            add(committed)
     add(git_lines(root, *changed, "--cached", deadline=deadline))
     add(git_lines(root, *changed, deadline=deadline))
     add(git_lines(root, "ls-files", "-z", "--others", "--exclude-standard", deadline=deadline))

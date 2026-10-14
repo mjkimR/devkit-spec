@@ -744,6 +744,62 @@ def test_refuses_a_destination_that_resolves_outside_the_workspace(
     assert (proposal.parent / "notes.md").is_file()
 
 
+def test_refuses_materials_whose_destination_resolves_outside_the_workspace(
+    workspace: Path, write: Write, tmp_path_factory: pytest.TempPathFactory
+) -> None:
+    outside = tmp_path_factory.mktemp("outside")
+    (workspace / "docs/materials").mkdir(parents=True)
+    (workspace / f"docs/materials/{MONTH}").symlink_to(outside, target_is_directory=True)
+    proposal = _new(workspace, "away")
+    write("docs/proposals/PROP-away/materials/survey.md", "# survey\n")  # materials/ only, no other file
+    accept(proposal)
+    with pytest.raises(ProposalTargetExistsError) as raised:
+        handoff_proposal(workspace, "away", today=TODAY)
+    assert "outside the workspace" in raised.value.message
+    assert raised.value.target_files == (f"docs/materials/{MONTH}/{STAMP}-away",)
+    assert list(outside.iterdir()) == [] and not (workspace / "specs").exists()
+    assert (proposal.parent / "materials/survey.md").is_file() and proposal.is_file()
+
+
+@pytest.mark.parametrize("decision", [False, True], ids=["spec", "decision"])
+def test_refuses_a_spec_or_decision_whose_directory_resolves_outside_the_workspace(
+    workspace: Path, tmp_path_factory: pytest.TempPathFactory, decision: bool
+) -> None:
+    outside = tmp_path_factory.mktemp("outside")
+    proposal = _new(workspace, "away")
+    if decision:
+        create_padr(workspace, "away", "Pick One")
+    linked = workspace / (f"docs/decisions/{MONTH}" if decision else f"specs/{MONTH}")
+    linked.parent.mkdir(parents=True, exist_ok=True)
+    linked.symlink_to(outside, target_is_directory=True)
+    accept(proposal)
+    with pytest.raises(ProposalTargetExistsError) as raised:
+        handoff_proposal(workspace, "away", today=TODAY)
+    assert "outside the workspace" in raised.value.message
+    assert list(outside.iterdir()) == [] and proposal.is_file()
+
+
+@pytest.mark.parametrize("inside", [True, False], ids=["inside", "outside"])
+def test_never_writes_extras_through_a_symlinked_materials_directory(
+    workspace: Path, write: Write, tmp_path_factory: pytest.TempPathFactory, inside: bool
+) -> None:
+    linked = workspace / "docs/research" if inside else tmp_path_factory.mktemp("outside")
+    write("docs/research/keep.md", "# keep\n")
+    if not inside:
+        (linked / "keep.md").write_text("# keep\n", encoding="utf-8")
+    proposal = _new(workspace, "linky")
+    shutil.rmtree(proposal.parent / "materials", ignore_errors=True)
+    (proposal.parent / "materials").symlink_to(linked, target_is_directory=True)
+    write("docs/proposals/PROP-linky/notes.md", "# notes\n")
+    accept(proposal)
+    with pytest.raises(ProposalTargetExistsError) as raised:
+        handoff_proposal(workspace, "linky", today=TODAY)
+    assert raised.value.target_files == ("docs/proposals/PROP-linky/notes.md",)
+    assert sorted(path.name for path in linked.iterdir()) == ["keep.md"]
+    assert not (workspace / "specs").exists() and not (workspace / f"docs/materials/{MONTH}").exists()
+    assert (proposal.parent / "materials").is_symlink() and (proposal.parent / "notes.md").is_file()
+
+
 def _failing_move(fail: Callable[[Path], bool]) -> Callable[..., None]:
     """``move_path`` that raises for the sources ``fail`` selects."""
     move = specs_module.move_path
@@ -797,6 +853,36 @@ def test_a_roll_back_never_removes_what_it_could_not_move_back(
     assert any("was kept" in detail for detail in raised.value.details)
     assert (preserved / "a.md").read_text(encoding="utf-8") == "# a\n"
     assert not (workspace / "specs" / MONTH).exists()
+
+
+def test_a_roll_back_reports_a_stuck_file_where_a_later_move_back_carried_it(
+    workspace: Path, write: Write, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    proposal = _new(workspace, "carried")
+    write("docs/proposals/PROP-carried/materials/a.md", "# a\n")
+    write("docs/proposals/PROP-carried/notes.md", "# notes\n")
+    write("docs/proposals/PROP-carried/z.md", "# z\n")
+    accept(proposal)
+    bundle = proposal.parent.resolve()
+    preserved = workspace.resolve() / f"docs/materials/{MONTH}/{STAMP}-carried"
+    monkeypatch.setattr("devkit_spec.proposals.handoff.move_path", _failing_move(lambda path: path.name == "z.md"))
+    move = shutil.move
+
+    def refuse(source: object, destination: object) -> object:
+        if Path(str(source)) == preserved / "notes.md":
+            raise OSError("simulated failure")
+        return move(source, destination)  # type: ignore[arg-type]
+
+    monkeypatch.setattr("devkit_spec.proposals.specs.shutil.move", refuse)
+    with pytest.raises(ProposalHandoffError) as raised:
+        handoff_proposal(workspace, "carried", today=TODAY)
+    assert "roll-back was incomplete" in raised.value.message
+    stuck = [detail for detail in raised.value.details if "could not be moved back" in detail]
+    assert stuck == [
+        f"{bundle / 'materials/notes.md'} could not be moved back to {bundle / 'notes.md'}: simulated failure"
+    ]
+    assert (bundle / "materials/notes.md").read_text(encoding="utf-8") == "# notes\n", "moving materials/ back took it"
+    assert not preserved.exists()
 
 
 def test_links_into_an_unmoved_materials_directory_stay_unmapped(workspace: Path, write: Write) -> None:

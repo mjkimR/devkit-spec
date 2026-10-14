@@ -122,7 +122,8 @@ sequence numbers are forbidden (they collide across parallel branches).
   are not checked); no frontmatter; an `id`/`reconcile_id` or `area` other than the path requires (fixable); a first
   `# ` heading opened by a bracket or code-span ID token that is not the ID (fixable; in a spec bundle file the token
   MAY follow a leading `<label>: `, and a plan, tasks or reconcile heading MAY name `SPEC-<slug>`; an ID later in the
-  heading is a reference, not the document's own, and never rewritten); outside a spec bundle, a first `# ` heading
+  heading is a reference, not the document's own, and never rewritten); in any file but a spec bundle file
+  (`spec.md`, `plan.md`, `tasks.md`, `reconcile.md`; feedback, in a bundle or not, is checked), a first `# ` heading
   that does not open with an ID token but names an ID of the document's own kind (`# Capability [CAP-X-old] Title`;
   reported, not fixable: the heading should read `# [<ID>] <title>`); an ID another file's path also derives (slugs are unique per document type across partitions and
   areas, feedback slugs within their bundle; detected across the whole workspace); a date- or number-based reference

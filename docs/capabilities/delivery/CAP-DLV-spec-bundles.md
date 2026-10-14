@@ -69,6 +69,8 @@ creates one without a proposal, writing the document IDs the spec rules expect (
    fallback); otherwise no field is written and the bundle is global.
 8. **Roll back on failure**: any failure while writing removes what was written. An advisory error (such as
    `FRONTMATTER_INVALID` binding `spec.md`) is reported with its own code, any other failure as `SPEC_WRITE_FAILED`.
+   A roll-back that could not remove something is always `SPEC_WRITE_FAILED`, whose message says the roll-back was
+   incomplete and whose `[DETAIL]` lists what is left.
 
 ## 4. Interfaces & Data Contracts
 
@@ -158,7 +160,7 @@ before anything is written; `DEFAULT_WORKFLOW` is `direct-delivery`, `BUGFIX_WOR
 | `SPEC_SLUG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecSlugError` | The slug keeps no letter or digit after normalization. |
 | `SPEC_EXISTS` | `ERROR` (`INPUT_ERROR`) | `SpecExistsError` | A document declares `SPEC-<slug>` or `PROP-<slug>`, a proposal of the slug exists, or the bundle directory exists; `[TARGET]` lists them. |
 | `SPEC_WORKFLOW_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecWorkflowError` | `--workflow` names a workflow that does not resolve or validate, or a definition path other than the one discovered for its id; `[DETAIL]` carries devkit's code (`WORKFLOW_NOT_BINDABLE` for the latter). |
-| `SPEC_WRITE_FAILED` | `ERROR` (`MAINTENANCE`) | `SpecWriteError` | A write failed; what was written is removed. |
+| `SPEC_WRITE_FAILED` | `ERROR` (`MAINTENANCE`) | `SpecWriteError` | A write failed; what was written is removed. When the roll-back was incomplete, `[DETAIL]` lists what could not be removed. |
 | `SPEC_UNBOUND` | `NOTICE` | `SpecUnboundNotice` | No `--workflow` and `direct-delivery` is not available: `spec.md` is unbound. |
 | `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | devkit's `ArgumentError` | `--namespace` is neither `global` nor registered, or `--summary` is empty or not English. |
 | `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecConfigError` | `[tool.spec]` is malformed and the namespace is not `--namespace global` (it is validated or detected; `CAP-DLV-project-policy`). |

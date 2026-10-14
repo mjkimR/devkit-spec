@@ -87,7 +87,7 @@ path, no `..`, case-sensitive, `./` and a trailing `/` normalized), with its gra
 | Spec bundle: `targets` of `reconcile.md` (not `waived`); without `reconcile.md`, those of `target-docs.md` | document | `declared-doc` | `spec` (`prop` for `target-docs.md`) |
 | `entrypoints` of each capability or story target (also under `docs/packages/<name>/`) | code | `candidate` | as its target |
 | `tasks.md` `_Boundary` entries | code | `declared-code` (wins over a candidate of the same path) | `spec` |
-| Git in the registering worktree: `<fork point>..HEAD`, staged, unstaged, untracked | code | `observed` | `build` |
+| Git in the registering worktree: the committed range (below), staged, unstaged, untracked | code | `observed` | `build` |
 
 `targets` is the same list in both files: `- file: <workspace-relative path>` with an optional `resolution`
 (`devkit spec proposal new --with-target-docs` scaffolds `targets: []`). Document IDs are not accepted. Observed paths
@@ -99,15 +99,23 @@ The committed range starts at the fork point, `git merge-base <base ref> HEAD`, 
 `update`: what a task merges or rebases in from its base branch is not observed, while its own changes, including
 conflict resolutions, are. The base ref is the branch the base checkout is on when the task registers: devkit records
 no branch a worktree forked from, so it is a guess, and the base checkout may be on another branch than the one the
-worktree was created from. The fork point is therefore used only when the base revision is its ancestor; otherwise
-(the fork point predates the base revision) the range starts at the base revision, so it is never wider than
-`<base revision>..HEAD` and another branch's commits are never observed. In the base checkout itself, on the base
-branch, or when the base checkout is detached, the record has no base ref and the range starts at the fixed base
-revision. A base ref that no longer resolves (or shares no history with HEAD) falls back to the base revision and is
-unresolved (`missing-base-ref`); the update still applies. An `update` whose record has no base ref, or one that no
-longer names a commit (the base branch was renamed or deleted), detects the base checkout's branch again and keeps it
-in the record when it names a commit, which clears `missing-base-ref`. A shallow clone whose history does not reach
-the fork point stays unresolved until it is deepened (`git fetch --unshallow`).
+worktree was created from. The range is therefore never wider than `<base revision>..HEAD`, so another branch's
+commits are never observed:
+
+- the base revision is the fork point or its ancestor: the range is `<fork point>..HEAD`;
+- the fork point is an ancestor of the base revision (it predates the base revision): the range is
+  `<base revision>..HEAD`;
+- neither is the other's ancestor (the task registered after committing, so its base revision is a commit of its own,
+  and later merged its base branch in): the committed paths are those changed in both `<fork point>..HEAD` and
+  `<base revision>..HEAD`, so the paths merged in from the base branch drop out.
+
+In the base checkout itself, on the base branch, or when the base checkout is detached, the record has no base ref
+and the range starts at the fixed base revision. A base ref that no longer resolves (or shares no history with HEAD)
+falls back to the base revision and is unresolved (`missing-base-ref`); the update still applies. An `update` whose
+record has no base ref, or one that no longer names a commit (the base branch was renamed or deleted), detects the
+base checkout's branch again and keeps it in the record when it names a commit, which clears `missing-base-ref`. A
+shallow clone whose history does not reach the fork point stays unresolved until it is deepened
+(`git fetch --unshallow`).
 
 | Unresolved reason | Input |
 | --- | --- |

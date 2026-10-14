@@ -15,9 +15,9 @@ A target is reported for a path off the convention (and then nothing else), a mi
 ``reconcile_id`` or ``area`` other than the path requires (fixable), a first H1 opened by an ``[ID]`` or `` `ID` ``
 token other than the ID (fixable; in a spec bundle file the token may follow a leading ``<label>: ``, and a plan,
 tasks or reconcile heading may also name its ``SPEC-<slug>``; an ID later in the heading is a reference, never the
-document's own), outside a spec bundle a first H1 that does not open with an ID token but names one of the
-document's own kind (``# Capability [CAP-X-old] Title``; reported, not fixed), and an ADR, spec or Living Spec ID
-that another target's path also derives. Every Markdown file under ``docs/`` (except ``docs/materials/``) and
+document's own), in any target but a spec bundle file (feedback included, in a bundle or not) a first H1 that does
+not open with an ID token but names one of the document's own kind (``# Capability [CAP-X-old] Title``; reported, not
+fixed), and an ADR, spec or Living Spec ID that another target's path also derives. Every Markdown file under ``docs/`` (except ``docs/materials/``) and
 ``specs/`` is reported for a date- or number-based reference (``ADR-0006``,
 ``SPEC-20261006``, ``US-010``, ``CAP-HARN-007``, ``ARCH-06``) in its frontmatter or prose; code, HTML comments and
 escapes are skipped, link labels and targets are not.
@@ -321,8 +321,9 @@ def _heading_token(heading: VisibleLine | None, kind: Kind) -> re.Match[str] | N
 
 
 def _same_kind_token(heading: VisibleLine, target: _Target) -> str | None:
-    """Outside a spec bundle, the first ID token in ``heading`` of the document's own kind (``CAP-`` in a capability):
-    the heading should open with the document's own ID instead (``# [ID] Title``)."""
+    """In any target but a spec bundle file (``spec``, ``plan``, ``tasks``, ``reconcile``; feedback inside a bundle is
+    checked), the first ID token in ``heading`` of the document's own kind (``CAP-`` in a capability): the heading
+    should open with the document's own ID instead (``# [ID] Title``)."""
     if target.kind is Kind.SPEC:
         return None
     prefix = target.expected_id.split("-", 1)[0] + "-"

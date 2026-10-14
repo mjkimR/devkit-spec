@@ -213,7 +213,8 @@ class SpecWorkflowError(SpecError):
 
 
 class SpecWriteError(SpecError):
-    """``devkit spec new``: writing the bundle failed (``MAINTENANCE``); what was written was removed."""
+    """``devkit spec new``: writing the bundle failed (``MAINTENANCE``); what was written was removed, except what
+    the details list when the roll-back was incomplete."""
 
     code = "SPEC_WRITE_FAILED"
     fix = "Fix the file system problem in [DETAIL], then rerun the command"
