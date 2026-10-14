@@ -16,6 +16,7 @@ from devkit.core import GitError, run_git
 from devkit_spec.errors import ScopeTimeoutError
 
 JOURNAL_SECONDS = 5.0  # one journal append, independent of the operation's own deadline
+ROLLBACK_SECONDS = 5.0  # removing a record whose token could not be saved, independent of the command's deadline
 
 
 class Deadline:

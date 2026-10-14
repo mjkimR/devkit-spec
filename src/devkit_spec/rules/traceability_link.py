@@ -66,7 +66,7 @@ def _lists(document: Document, field: str, document_id: str) -> bool:
 
 def _gaps(index: DocumentIndex, registered: tuple[Namespace, ...]) -> list[_Gap]:
     """Every one-sided link, stories before capabilities, each reported once per target document."""
-    current = [(d, living_path(registered, d.path)) for d in index.documents if not is_material(d)]
+    current = [(d, living_path(d.path, namespaces=registered)) for d in index.documents if not is_material(d)]
     stories = [d for d, path in current if path.startswith(STORIES_DIRECTORY)]
     capabilities = [d for d, path in current if path.startswith(CAPABILITIES_DIRECTORY)]
     gaps: list[_Gap] = []

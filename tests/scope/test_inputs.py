@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
-from scope.support import CAP_A, CAP_B, CAP_EMPTY, CAP_PLANNED, SPEC, git, make_repo, write
+from scope.support import CAP_A, CAP_B, CAP_EMPTY, CAP_PLANNED, GIT_ENV, SPEC, git, make_repo, write
 
 from devkit_spec.errors import ProposalNotFoundError, ScopeInputInvalidError, ScopeSpecNotFoundError
 from devkit_spec.scope import (
@@ -106,6 +108,34 @@ def test_observe_git(repo: Path) -> None:
     }
     assert [item.reason for item in observe_git(repo, "deadbeef", Deadline(30), "")[1]] == ["unknown-base-revision"]
     assert [item.reason for item in observe_git(repo, "", Deadline(30), "")[1]] == ["missing-base-revision"]
+
+
+def test_observe_git_from_the_fork_point_of_the_base_ref(repo: Path) -> None:
+    base = git(repo, "rev-parse", "HEAD")
+    git(repo, "switch", "-q", "-c", "task")
+    write(repo, "src/a/a.py", "a = 2\n")
+    write(repo, "src/shared.py", "s = 'task'\n")
+    git(repo, "commit", "-q", "-am", "task")
+    git(repo, "switch", "-q", "main")
+    write(repo, "src/b/b.py", "b = 2\n")
+    write(repo, "src/shared.py", "s = 'main'\n")
+    git(repo, "commit", "-q", "-am", "upstream")
+    git(repo, "switch", "-q", "task")
+    merge = subprocess.run(
+        ["git", "merge", "-q", "main"], cwd=repo, env={**os.environ, **GIT_ENV}, capture_output=True, check=False
+    )
+    assert merge.returncode == 1, "the merge conflicts on src/shared.py"
+    write(repo, "src/shared.py", "s = 'resolved'\n")  # the conflict resolution is the task's own change
+    git(repo, "commit", "-q", "-am", "merge main")
+
+    observed, unresolved = observe_git(repo, base, Deadline(30), "", base_ref="refs/heads/main")
+    assert unresolved == []
+    assert [item.path for item in observed] == ["src/a/a.py", "src/shared.py"], "upstream changes are not observed"
+    fixed, _ = observe_git(repo, base, Deadline(30), "")
+    assert "src/b/b.py" in {item.path for item in fixed}, "without a base ref the range starts at base_revision"
+    observed, unresolved = observe_git(repo, base, Deadline(30), "", base_ref="refs/heads/gone")
+    assert [(item.value, item.reason) for item in unresolved] == [("refs/heads/gone", "missing-base-ref")]
+    assert "src/b/b.py" in {item.path for item in observed}, "an unresolvable base ref falls back to base_revision"
 
 
 @pytest.mark.parametrize("stage", ["committed", "staged", "unstaged"])

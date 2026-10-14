@@ -31,10 +31,18 @@ from devkit_spec.errors import (
     ScopeTokenMissingError,
 )
 from devkit_spec.scope.compare import compare_with
-from devkit_spec.scope.deadline import JOURNAL_SECONDS, Deadline
+from devkit_spec.scope.deadline import JOURNAL_SECONDS, ROLLBACK_SECONDS, Deadline
 from devkit_spec.scope.inputs import from_spec, observe_git
 from devkit_spec.scope.localfs import LocalRegistry
-from devkit_spec.scope.location import Location, head_revision, load_token, locate, remove_token, save_token
+from devkit_spec.scope.location import (
+    Location,
+    base_ref,
+    head_revision,
+    load_token,
+    locate,
+    remove_token,
+    save_token,
+)
 from devkit_spec.scope.model import (
     AckCounts,
     Event,
@@ -141,10 +149,13 @@ class Registered:
     notices: list[AdvisoryError] = field(default_factory=list)
 
 
-def collect(location: Location, spec_dir: str, base_revision: str, deadline: Deadline, stamp: str) -> ScopeSet:
-    """The declared scope of the bundle plus what Git observes in the worktree since ``base_revision``."""
+def collect(
+    location: Location, spec_dir: str, base_revision: str, deadline: Deadline, stamp: str, *, base_ref: str = ""
+) -> ScopeSet:
+    """The declared scope of the bundle plus what Git observes in the worktree on the task's side of ``base_ref``
+    (since ``base_revision`` without one)."""
     scope = from_spec(location.root, spec_dir)
-    observed, unresolved = observe_git(location.root, base_revision, deadline, stamp)
+    observed, unresolved = observe_git(location.root, base_revision, deadline, stamp, base_ref=base_ref)
     scope.observed = observed
     scope.unresolved += unresolved
     return scope
@@ -153,19 +164,23 @@ def collect(location: Location, spec_dir: str, base_revision: str, deadline: Dea
 def register(session: Session, spec_dir: str, task_id: str | None = None, *, source: str = "") -> Registered:
     """Register the bundle at the workspace-relative ``spec_dir`` as this worktree's task and save its token.
 
-    ``task_id`` defaults to the spec ID. Raises ``ScopeTokenExistsError`` when this worktree already holds a token.
+    ``task_id`` defaults to the spec ID. The record keeps HEAD as ``base_revision`` and the branch the base checkout
+    is on as ``base_ref``. Raises ``ScopeTokenExistsError`` when this worktree already holds a token, also when a
+    concurrent registration saved its token first; a record whose token could not be saved is removed again.
     """
     location, registry, deadline = session.location, session.registry, session.deadline
     if location.token_path.exists():
         raise ScopeTokenExistsError("this worktree already registered a task", target_files=[str(location.token_path)])
     stamp = utc_now()
     base = head_revision(location.root, deadline)
-    scope = collect(location, spec_dir, base, deadline, stamp)
+    ref = base_ref(location, deadline)
+    scope = collect(location, spec_dir, base, deadline, stamp, base_ref=ref)
     record = Record(
         namespace=location.namespace,
         task_id=task_id or scope.id,
         worktree=str(location.root),
         base_revision=base,
+        base_ref=ref,
         spec=spec_dir,
         scopes=tuple(scope.all_paths()),
         unresolved=tuple(scope.unresolved),
@@ -174,10 +189,14 @@ def register(session: Session, spec_dir: str, task_id: str | None = None, *, sou
     try:
         save_token(location.token_path, token)
     except OSError as exc:
-        registry.release(stored.namespace, stored.task_id, token, deadline)  # never leave a record nobody can release
-        raise ScopeSharedPathError(
-            f"the token could not be saved: {exc}", target_files=[str(location.token_path)]
-        ) from exc
+        # never leave a record nobody can release; a failed rollback is a detail of the original error
+        details = _rollback(registry, stored, token)
+        target = [str(location.token_path)]
+        if isinstance(exc, FileExistsError):
+            raise ScopeTokenExistsError(
+                "another registration in this worktree saved its token first", *details, target_files=target
+            ) from exc
+        raise ScopeSharedPathError(f"the token could not be saved: {exc}", *details, target_files=target) from exc
     notices: list[AdvisoryError] = []
     if stored.shared_worktree:
         notices.append(
@@ -188,6 +207,16 @@ def register(session: Session, spec_dir: str, task_id: str | None = None, *, sou
         )
     notices += journal(registry, location.namespace, [record_event(EventKind.REGISTER, stored, source)])
     return Registered(location, stored, token, notices)
+
+
+def _rollback(registry: Registry, stored: Record, token: str) -> list[str]:
+    """Release the record just registered, under its own deadline; the failure as a detail line, if any."""
+    try:
+        registry.release(stored.namespace, stored.task_id, token, Deadline(ROLLBACK_SECONDS))
+    except (AdvisoryError, OSError) as exc:
+        message = exc.message if isinstance(exc, AdvisoryError) else str(exc)
+        return [f"the record of task {stored.task_id} could not be removed again and has no token: {message}"]
+    return []
 
 
 def auto_register(root: Path, spec_dir: str, *, source: str) -> tuple[Registered | None, list[AdvisoryError]]:
@@ -312,8 +341,10 @@ def update(session: Session, spec_dir: str, request_id: str | None = None, *, so
     """Recollect the bundle's declared and observed scope, write it with this worktree's token and the revision just
     read, and compare it with the namespace's other records.
 
-    ``request_id`` retries an update whose outcome was not observed: an ID the record already applied is answered
-    from the stored record without a second write. Never raises for a registry failure: the ACK carries it.
+    The observed range forks from the record's ``base_ref`` (``observe_git``). ``request_id`` retries an update
+    whose outcome was not observed: an ID the record already applied is answered from the stored record, with the
+    ``added`` and ``removed`` counts that request recorded, before anything is collected or written. Never raises
+    for a registry failure: the ACK carries it.
     """
     location, registry, deadline = session.location, session.registry, session.deadline
     ack = Ack(status=AckStatus.APPLIED, request_id=request_id or new_request_id())
@@ -322,11 +353,20 @@ def update(session: Session, spec_dir: str, request_id: str | None = None, *, so
         mine = own(session)
         current = mine.record
         ack.problems = mine.problems
-        stamp = utc_now()
-        scope = collect(location, spec_dir, current.base_revision, deadline, stamp)
-        proposed = current.with_(spec=spec_dir, scopes=tuple(scope.all_paths()), unresolved=tuple(scope.unresolved))
-        ack.added, ack.removed = _diff_scopes(current.scopes, proposed.scopes)
-        stored = registry.update(mine.token, current.revision, ack.request_id, proposed, deadline)
+        if request_id and current.last_request_id == request_id:
+            stored = current  # already applied: answered from the stored record
+        else:
+            stamp = utc_now()
+            scope = collect(location, spec_dir, current.base_revision, deadline, stamp, base_ref=current.base_ref)
+            added, removed = _diff_scopes(current.scopes, scope.all_paths())
+            proposed = current.with_(
+                spec=spec_dir,
+                scopes=tuple(scope.all_paths()),
+                unresolved=tuple(scope.unresolved),
+                last_added=added,
+                last_removed=removed,
+            )
+            stored = registry.update(mine.token, current.revision, ack.request_id, proposed, deadline)
     except AdvisoryError as exc:
         ack.error = exc
         if isinstance(exc, ScopeStaleRevisionError):
@@ -340,6 +380,7 @@ def update(session: Session, spec_dir: str, request_id: str | None = None, *, so
         ack.status = AckStatus.FAILED
     else:
         ack.revision = stored.revision
+        ack.added, ack.removed = stored.last_added, stored.last_removed  # a replay reports the counts it recorded
         ack.record = stored
         ack.unresolved = len(stored.unresolved)
         ack.pairs = compare_with(stored.to_set(), [other.to_set() for other in mine.others])

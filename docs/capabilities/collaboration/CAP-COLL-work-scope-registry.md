@@ -48,12 +48,14 @@ integrated. It never grants or blocks a write, and it is not exclusive ownership
    them names is reported as a `DIFF`; the two lists are never merged.
 4. **One token per worktree**: registration returns an opaque owner token once and stores only its SHA-256; a second
    registration from the same worktree MUST be refused (`SPEC_SCOPE_TOKEN_EXISTS`) so the first record is never
-   orphaned.
+   orphaned. The token file is created exclusively: of two registrations racing in one worktree, the one that saves
+   its token second is refused the same way, and its record is removed again. A record whose token cannot be saved
+   is always removed again; when that removal fails, the original error is reported with the failure as a detail.
 5. **Optimistic concurrency**: `update` MUST present the owner token and the revision the caller read; a changed
    record is never overwritten (`SPEC_SCOPE_STALE_REVISION`, nothing written).
 6. **Idempotent retries**: an `update` whose `request_id` equals the record's `last_request_id` is answered from the
-   stored record without a second write. `release` repeated, or run where nothing is registered, succeeds and changes
-   nothing.
+   stored record before anything is collected, without a second write, with the `added` and `removed` counts that
+   request recorded. `release` repeated, or run where nothing is registered, succeeds and changes nothing.
 7. **Atomic publication**: every operation holds the namespace lock while it reads, compares and writes; readers never
    see a partial record.
 8. **The journal is diagnostic**: it is never an input to an overlap, stale or stage verdict, and a failed append
@@ -83,13 +85,21 @@ path, no `..`, case-sensitive, `./` and a trailing `/` normalized), with its gra
 | Spec bundle: `targets` of `reconcile.md` (not `waived`); without `reconcile.md`, those of `target-docs.md` | document | `declared-doc` | `spec` (`prop` for `target-docs.md`) |
 | `entrypoints` of each capability or story target (also under `docs/packages/<name>/`) | code | `candidate` | as its target |
 | `tasks.md` `_Boundary` entries | code | `declared-code` (wins over a candidate of the same path) | `spec` |
-| Git in the registering worktree: `<base revision>..HEAD`, staged, unstaged, untracked | code | `observed` | `build` |
+| Git in the registering worktree: `<fork point>..HEAD`, staged, unstaged, untracked | code | `observed` | `build` |
 
 `targets` is the same list in both files: `- file: <workspace-relative path>` with an optional `resolution`
 (`devkit spec proposal new --with-target-docs` scaffolds `targets: []`). Document IDs are not accepted. Observed paths
 are relative to the workspace root and limited to it; a changed path outside the path contract (a glob character or
 a colon in its name) is left out. Renames are not detected: a moved file is observed at its old and its new path, so
 a task that moves a file overlaps a task editing it at its old path.
+
+The committed range starts at the fork point, `git merge-base <base ref> HEAD`, recomputed on every `register` and
+`update`: what a task merges or rebases in from its base branch is not observed, while its own changes, including
+conflict resolutions, are. The base ref is the branch the base checkout was on at registration (what
+`devkit worktree finish` integrates into). In the base checkout itself, on the base branch, or when the base
+checkout is detached, the record has no base ref and the range starts at the fixed base revision. A base ref that no
+longer resolves (or shares no history with HEAD) falls back to the base revision and is unresolved
+(`missing-base-ref`); the update still applies.
 
 | Unresolved reason | Input |
 | --- | --- |
@@ -101,6 +111,7 @@ a task that moves a file overlaps a task editing it at its old path.
 | `no-targets` | A `target-docs.md` without a `targets` key. |
 | `missing-target-docs`, `missing-reconcile`, `missing-tasks` | The input file does not exist. |
 | `missing-base-revision`, `unknown-base-revision` | The record has no base commit, or Git does not know it. |
+| `missing-base-ref` | The record's base branch does not resolve or shares no history with HEAD; the base revision is used instead. |
 
 ### 4.2 Comparison
 
@@ -119,10 +130,13 @@ sides. Ranking and weighting are the consumer's.
   entrypoints like any other.
 - **Record**: `<shared>/<namespace>/<task-id>.json` (the task ID mapped to a file-name-safe form), schema version 1:
   `namespace`, `task_id`, `token_hash`, `revision` (1 on register, +1 per update), `base_revision` (HEAD at
-  registration), `worktree` (the absolute workspace root), `hostname`, `shared_worktree`, `spec` (workspace-relative),
-  `scopes` (`path`, `kind`, `source`, `stage`, `first_seen`), `unresolved`, `updated_at`, `last_request_id`.
+  registration), `base_ref` (the base checkout's branch at registration, `refs/heads/<name>`; empty when there is
+  none, 4.1), `worktree` (the absolute workspace root), `hostname`, `shared_worktree`, `spec` (workspace-relative),
+  `scopes` (`path`, `kind`, `source`, `stage`, `first_seen`), `unresolved`, `updated_at`, `last_request_id`,
+  `last_added` and `last_removed` (the counts of the update `last_request_id` applied; 0 after registration).
 - **Token**: saved in the worktree's own Git directory as `devkit-spec-scope-token` (mode 0600), never in the working
-  tree or the registry.
+  tree or the registry; it is written to a temporary file and linked into place, so it is created exclusively and
+  never read half-written.
 - **Atomicity**: an exclusive `flock` on `<shared>/<namespace>/.lock`; a record is published by writing a `.tmp-*`
   file in the same directory and renaming it over the record. Temp files an interrupted publish left behind are
   removed at the next lock acquisition, and the OS releases the lock of a process that died.
@@ -133,7 +147,8 @@ sides. Ranking and weighting are the consumer's.
   - `update`: requires the owner token and the read revision (`SPEC_SCOPE_TOKEN_MISMATCH`,
     `SPEC_SCOPE_STALE_REVISION`); `first_seen` survives updates; observed paths are replaced on each update,
     declared ones are never removed by an observation.
-  - `release`: deletes the record when the token owns it; a missing record is a no-op.
+  - `release`: deletes the record when the token owns it; a missing record is a no-op. A record left alone in the
+    worktree the released one shared loses its `shared_worktree` flag.
   - `sweep`: classifies each record: `active`; `stale` (`worktree-missing`: same host, and the worktree path is gone
     or no longer a Git work tree); `unverifiable` (`other-host`); `error` (`parse`, `permission`). With `--apply` a
     stale record is removed (`removed`, `worktree-missing`) only if its revision still equals the one read before,
@@ -240,7 +255,7 @@ A malformed table is `SPEC_CONFIG_INVALID` (`CAP-DLV-project-policy`).
 | `SPEC_SCOPE_SPEC_NOT_FOUND` | `ERROR` (`INPUT_ERROR`) | `ScopeSpecNotFoundError` | `--spec` names no directory. |
 | `SPEC_SCOPE_INPUT_INVALID` | `ERROR` (`MAINTENANCE`) | `ScopeInputInvalidError` | `tasks.md`, `reconcile.md` or `target-docs.md` cannot be read, or its `targets` is not a list of mappings with a string `file`. |
 | `SPEC_SCOPE_TOKEN_MISSING` | `ERROR` (`INPUT_ERROR`) | `ScopeTokenMissingError` | This worktree registered nothing (update, release `--task-id`). |
-| `SPEC_SCOPE_TOKEN_EXISTS` | `ERROR` (`INPUT_ERROR`) | `ScopeTokenExistsError` | This worktree already registered a task. |
+| `SPEC_SCOPE_TOKEN_EXISTS` | `ERROR` (`INPUT_ERROR`) | `ScopeTokenExistsError` | This worktree already registered a task, or a concurrent registration in it saved its token first. |
 | `SPEC_SCOPE_TASK_EXISTS` | `ERROR` (`INPUT_ERROR`) | `ScopeTaskExistsError` | Another record has the task ID. |
 | `SPEC_SCOPE_RECORD_MISSING` | `ERROR` (`INPUT_ERROR`) | `ScopeRecordMissingError` | The token's record was released or swept; `release` removes the orphaned token. |
 | `SPEC_SCOPE_TOKEN_MISMATCH` | `ERROR` (`BLOCKED`) | `ScopeTokenMismatchError` | The token does not own the record. |

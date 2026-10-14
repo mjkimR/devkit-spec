@@ -20,7 +20,7 @@ from devkit_spec.entrypoints.derive import (
     exclude,
     select,
 )
-from devkit_spec.entrypoints.paths import covers, entrypoint_bearing, exists, living_path, normalize, overlaps
+from devkit_spec.entrypoints.paths import covers, entrypoint_bearing, exists, normalize, overlaps
 
 __all__ = [
     "Applied",
@@ -43,7 +43,6 @@ __all__ = [
     "entrypoint_bearing",
     "exclude",
     "exists",
-    "living_path",
     "load_bundle",
     "normalize",
     "overlaps",

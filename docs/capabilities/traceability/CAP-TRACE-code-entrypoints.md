@@ -213,7 +213,8 @@ could not be indexed are `SPEC_DOCUMENT_INVALID` warnings under `notices`.
 
 ### 4.6 Library
 
-`devkit_spec.entrypoints`: `normalize`, `covers`, `overlaps`, `exists`, `entrypoint_bearing`, `living_path` (the path
-contract); `load_bundle`, `parse_boundaries` (inputs); `derive`, `aggregate`, `select`, `exclude`, `classify_boundary`,
-`declared_entrypoints` (pairs); `apply`, `collapse`, `set_entrypoints` (writing). Libraries never print; the command
-renders the results.
+`devkit_spec.entrypoints`: `normalize`, `covers`, `overlaps`, `exists`, `entrypoint_bearing` (the path contract;
+it maps every `docs/packages/<name>/` through `devkit_spec.namespaces.living_path`, registered or not, so it needs no
+configuration); `load_bundle`, `parse_boundaries` (inputs); `derive`, `aggregate`, `select`, `exclude`,
+`classify_boundary`, `declared_entrypoints` (pairs); `apply`, `collapse`, `set_entrypoints` (writing). Libraries never
+print; the command renders the results.

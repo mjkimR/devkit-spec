@@ -66,7 +66,8 @@ creates one without a proposal, writing the document IDs the spec rules expect (
    the field when removing the marker. `namespace` is written when `--namespace` is given, else when the current
    directory lies in a registered namespace (`CAP-DOCS-namespaces` section 3.3, rule 3, without the every-namespace
    fallback); otherwise no field is written and the bundle is global.
-8. **Roll back on failure**: a file system error removes what was written (`SPEC_WRITE_FAILED`).
+8. **Roll back on failure**: any failure while writing removes what was written. An advisory error (such as
+   `FRONTMATTER_INVALID` binding `spec.md`) is reported with its own code, any other failure as `SPEC_WRITE_FAILED`.
 
 ## 4. Interfaces & Data Contracts
 

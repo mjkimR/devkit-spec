@@ -263,6 +263,8 @@ class LocalRegistry:
             revision=1,
             updated_at=stamp,
             last_request_id="",
+            last_added=0,
+            last_removed=0,
             hostname=record.hostname or self.hostname,
             scopes=tuple(path if path.first_seen else _seen(path, stamp) for path in record.scopes),
         )
@@ -324,7 +326,7 @@ class LocalRegistry:
             return updated
 
     def release(self, namespace: str, task_id: str, token: str, deadline: Deadline) -> None:
-        with self._locked(namespace, deadline):
+        with self._locked(namespace, deadline) as directory:
             path = self.record_path(namespace, task_id)
             existing = self._read_own(path)
             if existing is None:
@@ -334,6 +336,22 @@ class LocalRegistry:
                     f"the token does not own the record of task {task_id}", target_files=[str(path)]
                 )
             path.unlink()
+            if existing.shared_worktree:
+                self._unshare(directory, existing)
+
+    def _unshare(self, directory: Path, released: Record) -> None:
+        """Clear ``shared_worktree`` on the record left alone in the worktree ``released`` shared; the flag is
+        advisory, so a failure to write it never fails the release."""
+        records, _ = self._read_all(directory)
+        peers = [
+            record
+            for record in records
+            if record.worktree == released.worktree and record.hostname == released.hostname
+        ]
+        if len(peers) == 1 and peers[0].shared_worktree:
+            peer = peers[0]
+            with contextlib.suppress(OSError):
+                self._write(self.record_path(peer.namespace, peer.task_id), peer.with_(shared_worktree=False))
 
     def sweep(
         self,

@@ -6,8 +6,9 @@
   ``reconcile.md``, ``target-docs.md`` (``prop`` stage); ``tasks.md`` ``_Boundary`` entries are declared code (they win
   over a candidate of the same path), the targets' ``entrypoints`` candidates. When both target lists exist, the
   paths only one names are reported as ``Diff`` and not merged.
-- Observed (``build`` stage): the paths changed since the record's base revision (``base..HEAD``), staged, unstaged
-  and untracked, relative to the workspace root.
+- Observed (``build`` stage): the paths changed on the task's side of its base branch (``<fork point>..HEAD``, the
+  fork point being ``git merge-base <base ref> HEAD``, else the record's fixed base revision), staged, unstaged and
+  untracked, relative to the workspace root.
 
 ``targets`` is a list of ``{file: <workspace-relative path>, resolution: ...}`` in both files. Paths follow the
 entrypoint path contract. What cannot become a path is ``Unresolved`` with its reason, never dropped silently.
@@ -29,7 +30,7 @@ from devkit_spec.errors import (
     ScopeSpecNotFoundError,
 )
 from devkit_spec.proposals.scaffold import PROPOSAL_FILE, PROPOSALS, TARGET_DOCS, clean_slug
-from devkit_spec.scope.deadline import Deadline, git_lines
+from devkit_spec.scope.deadline import Deadline, git, git_lines
 from devkit_spec.scope.model import Diff, Granularity, ScopePath, ScopeSet, Source, Stage, Unresolved
 
 RECONCILE = "reconcile.md"
@@ -230,15 +231,29 @@ def from_spec(root: Path, spec_dir: str) -> ScopeSet:
     return scope
 
 
-def observe_git(
-    root: Path, base_revision: str, deadline: Deadline, first_seen: str
-) -> tuple[list[ScopePath], list[Unresolved]]:
-    """The paths changed in the worktree at ``root``: ``base_revision..HEAD``, staged, unstaged and untracked.
+def _fork_point(root: Path, base_ref: str, deadline: Deadline) -> str:
+    """``git merge-base <base_ref> HEAD``; ``""`` when the ref does not resolve or shares no history with HEAD."""
+    try:
+        return git(root, "merge-base", base_ref, "HEAD", deadline=deadline).decode().strip()
+    except GitError as exc:
+        if exc.returncode is None:
+            raise
+        return ""
 
-    Paths are relative to ``root`` and limited to it. Renames are not detected, so a moved file contributes both its
-    old and its new path. A path outside the entrypoint path contract (a glob character or a colon in its name) is
-    left out. An empty or unknown ``base_revision`` skips the committed range and is
-    unresolved. Raises ``ScopeTimeoutError`` when the deadline passes and ``GitError`` when Git fails otherwise.
+
+def observe_git(
+    root: Path, base_revision: str, deadline: Deadline, first_seen: str, *, base_ref: str = ""
+) -> tuple[list[ScopePath], list[Unresolved]]:
+    """The paths changed in the worktree at ``root``: ``<fork point>..HEAD``, staged, unstaged and untracked.
+
+    The committed range starts where ``HEAD`` forks from the branch ``base_ref`` (``git merge-base``), so what the
+    task merged or rebased in from that branch is not observed while its own changes and conflict resolutions are.
+    Without ``base_ref`` it starts at ``base_revision``; a ``base_ref`` that does not resolve falls back to
+    ``base_revision`` and is unresolved (``missing-base-ref``). An empty or unknown start skips the committed range
+    and is unresolved. Paths are relative to ``root`` and limited to it. Renames are not detected, so a moved file
+    contributes both its old and its new path. A path outside the entrypoint path contract (a glob character or a
+    colon in its name) is left out. Raises ``ScopeTimeoutError`` when the deadline passes and ``GitError`` when Git
+    fails otherwise.
     """
     seen: set[str] = set()
     observed: list[ScopePath] = []
@@ -254,16 +269,23 @@ def observe_git(
                 seen.add(path)
                 observed.append(ScopePath(path, kind_of(root, path), Source.OBSERVED, Stage.BUILD, first_seen))
 
+    start = base_revision
+    if base_ref:
+        fork = _fork_point(root, base_ref, deadline)
+        if fork:
+            start = fork
+        else:
+            unresolved.append(Unresolved(base_ref, "missing-base-ref", Source.OBSERVED))
     changed = ("diff", "--name-only", "--no-renames", "-z", "--relative")
-    if not base_revision:
+    if not start:
         unresolved.append(Unresolved("", "missing-base-revision", Source.OBSERVED))
     else:
         try:
-            add(git_lines(root, *changed, f"{base_revision}..HEAD", deadline=deadline))
+            add(git_lines(root, *changed, f"{start}..HEAD", deadline=deadline))
         except GitError as exc:
             if exc.returncode is None:
                 raise
-            unresolved.append(Unresolved(base_revision, "unknown-base-revision", Source.OBSERVED))
+            unresolved.append(Unresolved(start, "unknown-base-revision", Source.OBSERVED))
     add(git_lines(root, *changed, "--cached", deadline=deadline))
     add(git_lines(root, *changed, deadline=deadline))
     add(git_lines(root, "ls-files", "-z", "--others", "--exclude-standard", deadline=deadline))

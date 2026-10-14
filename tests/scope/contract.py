@@ -61,10 +61,10 @@ def update_revision_token(registry: Registry) -> None:
 
 def idempotent_request(registry: Registry) -> None:
     token, stored = registry.register(record("a", "/wt/a"), _deadline())
-    applied = registry.update(token, stored.revision, "same", stored, _deadline())
+    applied = registry.update(token, stored.revision, "same", stored.with_(last_added=2, last_removed=1), _deadline())
     again = registry.update(token, 42, "same", stored, _deadline())
     assert again.revision == applied.revision, "a replayed request id is answered without a write"
-    assert again.last_request_id == "same"
+    assert (again.last_request_id, again.last_added, again.last_removed) == ("same", 2, 1)
 
 
 def release(registry: Registry) -> None:
@@ -81,9 +81,18 @@ def release(registry: Registry) -> None:
 def shared_worktree(registry: Registry) -> None:
     _, first = registry.register(record("a", "/wt/same"), _deadline())
     assert not first.shared_worktree
-    _, second = registry.register(record("b", "/wt/same"), _deadline())
+    token_b, second = registry.register(record("b", "/wt/same"), _deadline())
     assert second.shared_worktree
+    token_c, _ = registry.register(record("c", "/wt/same"), _deadline())
     assert all(item.shared_worktree for item in registry.query("ns", _deadline())[0])
+
+    def shared() -> dict[str, bool]:
+        return {item.task_id: item.shared_worktree for item in registry.query("ns", _deadline())[0]}
+
+    registry.release("ns", "b", token_b, _deadline())
+    assert shared() == {"a": True, "c": True}, "two records still share the worktree"
+    registry.release("ns", "c", token_c, _deadline())
+    assert shared() == {"a": False}, "the record left alone no longer shares its worktree"
 
 
 def claim_reserved(registry: Registry) -> None:

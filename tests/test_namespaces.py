@@ -120,10 +120,14 @@ def test_namespace_of_documents(workspace: Path, write: Write) -> None:
 
 
 def test_living_path_and_roots() -> None:
-    assert (
-        living_path((API,), "docs/packages/api/capabilities/core/CAP-API-x.md") == "docs/capabilities/core/CAP-API-x.md"
-    )
-    assert living_path((API,), "docs/capabilities/x.md") == "docs/capabilities/x.md"
+    cap = "docs/packages/api/capabilities/core/CAP-API-x.md"
+    assert living_path(cap, namespaces=(API,)) == "docs/capabilities/core/CAP-API-x.md"
+    assert living_path("docs/capabilities/x.md", namespaces=(API,)) == "docs/capabilities/x.md"
+    # Registered namespaces only, unless no configuration is given.
+    assert living_path(cap, namespaces=(WEB,)) == cap
+    assert living_path(cap, namespaces=None) == "docs/capabilities/core/CAP-API-x.md"
+    assert living_path("docs/packages/api", namespaces=None) == "docs/packages/api"
+    assert living_path("docs/packages/api/x.md", namespaces=(API,)) == "docs/x.md"
     assert docs_roots((API, WEB)) == ["docs", "docs/packages/api", "docs/packages/web"]
 
 

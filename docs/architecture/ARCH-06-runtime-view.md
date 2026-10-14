@@ -95,7 +95,7 @@ sequenceDiagram
 
 - Handoff refuses without approval (`SPEC_PROPOSAL_NOT_APPROVED`): `status: accepted`, or `--direction-chosen` passed
   only when the user explicitly chose the direction.
-- A file system failure while writing the bundle, ADRs or materials removes what was written and keeps the proposal
+- A failure while writing the bundle, ADRs or materials removes what was written and keeps the proposal
   (`SPEC_PROPOSAL_HANDOFF_FAILED`); a failed scope registration is a `SPEC_SCOPE_REGISTER_FAILED` warning and the
   handoff stays done.
 - devkit's own `devkit workflow handoff` is not used: it rebinds a unit in place and cannot move a proposal bundle

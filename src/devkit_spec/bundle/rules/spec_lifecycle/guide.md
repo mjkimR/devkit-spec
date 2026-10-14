@@ -40,7 +40,8 @@ Reported at line 1 of `spec.md` when that is a target, otherwise of the first na
 2. A completed spec whose `reconcile.md` is not resolved: reconcile the remaining targets, or waive them with a
    substantive rationale, then set the reconcile `status: resolved`.
 3. **Autofix** for a stale spec status: `devkit rules fix` sets `status: completed` in `spec.md`. It rewrites only the
-   frontmatter's top-level `status:` line, keeps every other character, and writes only a targeted `spec.md` that is
+   value of the frontmatter's top-level `status:` line, keeps every other character (a trailing comment on that line
+   included), and writes only a targeted `spec.md` that is
    valid UTF-8 (a whole-workspace run targets every one). When only `tasks.md` or `reconcile.md` is targeted, the
    violation is not fixable; target the spec too (`devkit rules fix specs/<YYYY-MM>/<YYYYMMDD>-<slug>/spec.md`). A
    `spec.md` without a `status:` line is fixed by hand.

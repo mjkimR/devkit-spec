@@ -47,6 +47,15 @@ def test_fix_sets_in_progress_in_place(tmp_path: Path) -> None:
     assert path.read_text() == before.replace("status: planned", "status: in-progress")
 
 
+def test_fix_keeps_a_trailing_comment(tmp_path: Path) -> None:
+    spec = _bundle(tmp_path, "started", "planned", "- [x] A\n- [ ] B\n")
+    path = tmp_path / spec
+    before = path.read_text().replace("status: planned", "status: planned   # draft | planned | in-progress")
+    path.write_text(before)
+    assert [v.fixed for v in check(RULE, tmp_path, fix=True)] == [True]
+    assert path.read_text() == before.replace("status: planned", "status: in-progress")
+
+
 def test_targeting_follows_spec_lifecycle(tmp_path: Path) -> None:
     spec = _bundle(tmp_path, "started", "planned", "- [x] A\n- [ ] B\n")
     tasks = "specs/2026-10/20261006-started/tasks.md"

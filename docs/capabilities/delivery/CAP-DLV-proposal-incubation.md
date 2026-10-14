@@ -55,9 +55,12 @@ removes it.
    write. A path that already exists, two PADRs that would become the same ADR, an ADR ID another document already
    declares, or a carried bundle file whose path under the materials directory a file of `materials/` takes too is
    `SPEC_PROPOSAL_TARGET_EXISTS`.
-5. **Roll back a failed write**: a file system error while writing the spec bundle, the blueprint, the ADRs or moving
-   the materials and carried files removes what was written, moves them back and keeps the proposal
-   (`SPEC_PROPOSAL_HANDOFF_FAILED`).
+5. **Roll back a failed write**: any failure while writing the spec bundle, the blueprint, the ADRs or moving the
+   materials and carried files removes what was written, moves them back and keeps the proposal, so the handoff can
+   be rerun. An advisory error (such as `FRONTMATTER_INVALID` binding `spec.md`) is reported with its own code, any
+   other failure as `SPEC_PROPOSAL_HANDOFF_FAILED`. Across file systems the materials and carried files are copied
+   and their sources removed only after every write succeeded, so a partial copy is removed like any other written
+   file.
 6. **Promoted decisions are accepted**: a PADR promoted to an ADR is accepted by definition.
 7. **Rewriting never fails a handoff**: what cannot be mapped stays as it was and is reported
    (`SPEC_PROPOSAL_LINK_UNRESOLVED`); rewritten ID references are reported for rereading

@@ -17,7 +17,6 @@ from devkit_spec.cli.output import fields_line, sentinel
 from devkit_spec.config import read_spec_config
 
 GATES = ("intent", "direction", "integration")
-DEFAULT_APPROVAL = "ask"
 
 
 @click.command(name="policy")
@@ -33,12 +32,12 @@ def policy_cmd(workspace_root: str | None, output_format: str) -> None:
     gates = [*GATES, *sorted(set(workflow.approvals) - set(GATES))]
     approvals = {
         gate: {
-            "policy": workflow.approvals.get(gate, DEFAULT_APPROVAL),
+            "policy": workflow.policy(gate),
             "source": "config" if gate in workflow.approvals else "default",
         }
         for gate in gates
     }
-    stages_off = sorted(stage for stage, state in workflow.stages.items() if state == "off")
+    stages_off = sorted(stage for stage in workflow.stages if workflow.stage_policy(stage) == "off")
     git = {
         "worktree": spec.worktree,
         "pull_request": worktree.pull_request,

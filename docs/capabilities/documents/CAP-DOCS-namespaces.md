@@ -116,5 +116,6 @@ path = "services/api"   # the package's source directory
 
 `devkit_spec.namespaces`: `select` (the selection of the options or the current directory), `detect` (the namespace
 of a directory), `require` (validate a name), `namespace_resolver` (the namespace of each indexed document),
-`living_path` (`docs/packages/<name>/X` as the `docs/X` it mirrors) and `docs_roots` (`docs` plus every namespace
-docs root). `devkit_spec.config.read_spec_config(root).namespaces` reads the registry.
+`living_path` (`docs/packages/<name>/X` as the `docs/X` it mirrors, for the given namespaces or, given `None`, for
+every `docs/packages/<name>/`) and `docs_roots` (`docs` plus every namespace docs root).
+`devkit_spec.config.read_spec_config(root).namespaces` reads the registry.

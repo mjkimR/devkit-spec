@@ -27,9 +27,10 @@ A bundle whose every task is checked and whose `reconcile.md` is `resolved` is n
 
 ## 3. Remediation
 
-**Autofix**: `devkit rules fix` sets `status: in-progress` in `spec.md`. It rewrites only the frontmatter's top-level
-`status:` line, keeps every other character, and writes only a targeted `spec.md`. When only `tasks.md` is targeted,
-the violation is not fixable; target the spec too (`devkit rules fix specs/<YYYY-MM>/<YYYYMMDD>-<slug>/spec.md`).
+**Autofix**: `devkit rules fix` sets `status: in-progress` in `spec.md`. It rewrites only the value of the frontmatter's
+top-level `status:` line, keeps every other character (a trailing comment on that line included), and writes only a
+targeted `spec.md`. When only `tasks.md` is targeted, the violation is not fixable; target the spec too
+(`devkit rules fix specs/<YYYY-MM>/<YYYYMMDD>-<slug>/spec.md`).
 
 ## 4. Configuration
 

@@ -23,7 +23,7 @@ from pathlib import Path
 
 from devkit.core.errors import ArgumentError
 
-from devkit_spec.config import GLOBAL, Namespace
+from devkit_spec.config import GLOBAL, PACKAGES_DIR, Namespace
 from devkit_spec.documents import Document, DocumentIndex
 
 
@@ -117,12 +117,19 @@ def namespace_resolver(index: DocumentIndex, namespaces: Sequence[Namespace]) ->
     return namespace_of
 
 
-def living_path(namespaces: Sequence[Namespace], path: str) -> str:
-    """``docs/packages/<name>/X`` as the global ``docs/X`` it mirrors; any other path unchanged."""
-    for namespace in namespaces:
-        if _within(path, namespace.docs) and path != namespace.docs:
-            return "docs/" + path[len(namespace.docs) + 1 :]
-    return path
+def living_path(path: str, *, namespaces: Sequence[Namespace] | None) -> str:
+    """``docs/packages/<name>/X`` as the global ``docs/X`` it mirrors; any other path unchanged.
+
+    ``namespaces`` limits the mapping to their docs roots: the rules pass the registered namespaces, so an unregistered
+    ``docs/packages/<name>/`` stays a plain directory of ``docs/``. ``None`` maps every ``docs/packages/<name>/``,
+    registered or not, for a caller without the configuration (``entrypoints.entrypoint_bearing``).
+    """
+    parts = path.split("/")
+    if len(parts) < 4 or "/".join(parts[:2]) != PACKAGES_DIR:
+        return path
+    if namespaces is not None and parts[2] not in {namespace.name for namespace in namespaces}:
+        return path
+    return "/".join(["docs", *parts[3:]])
 
 
 def docs_roots(namespaces: Sequence[Namespace]) -> list[str]:

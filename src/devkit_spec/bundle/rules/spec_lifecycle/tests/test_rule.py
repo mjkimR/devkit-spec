@@ -79,6 +79,19 @@ def test_fix_sets_stale_status_in_place(tmp_path: Path) -> None:
     assert path.read_bytes() == expected
 
 
+def test_fix_keeps_a_trailing_comment(tmp_path: Path) -> None:
+    spec = _bundle(tmp_path, "stale", "planned", "resolved", "- [x] A\n")
+    path = tmp_path / spec
+    path.write_text(
+        "---\nid: SPEC-stale\nstatus: draft # draft | planned | in-progress | completed\n---\n", encoding="utf-8"
+    )
+    assert [v.fixed for v in check(RULE, tmp_path, fix=True)] == [True]
+    assert path.read_text(encoding="utf-8") == (
+        "---\nid: SPEC-stale\nstatus: completed # draft | planned | in-progress | completed\n---\n"
+    )
+    assert check(RULE, tmp_path) == []
+
+
 def test_stale_spec_without_status_line_is_not_fixable(tmp_path: Path) -> None:
     spec = _bundle(tmp_path, "stale", "planned", "resolved", "- [x] A\n")
     violations = check(RULE, tmp_path, {spec: "---\nid: SPEC-stale\n---\n"}, fix=True)

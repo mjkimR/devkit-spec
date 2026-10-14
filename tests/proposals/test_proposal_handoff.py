@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import errno
+import os
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 from conftest import Write
+from devkit.core import FrontmatterError
 from devkit.core.frontmatter import parse
 from proposals.support import INCUBATED, MONTH, STAMP, TODAY, WORKFLOW, accept, spec_dir, write_workflow
 
@@ -373,6 +377,19 @@ def test_refuses_a_carried_file_that_clashes_with_materials(workspace: Path, wri
     assert proposal.is_file() and not (workspace / "specs").exists()
 
 
+def test_promotes_a_draft_status_with_a_comment(workspace: Path) -> None:
+    proposal = _new(workspace, "commented")
+    create_padr(workspace, "commented", "Pick One")
+    padr = proposal.parent / "decisions/PADR-pick-one.md"
+    text = padr.read_text(encoding="utf-8")
+    assert "\nstatus: draft\n" in text
+    padr.write_text(text.replace("\nstatus: draft\n", "\nstatus: draft  # draft | accepted\n", 1), encoding="utf-8")
+    accept(proposal)
+    handoff_proposal(workspace, "commented", today=TODAY)
+    adr = (workspace / f"docs/decisions/{MONTH}/{STAMP}-pick-one.md").read_text(encoding="utf-8")
+    assert "\nstatus: accepted  # draft | accepted\n" in adr
+
+
 def test_promoted_adrs_keep_working_links(workspace: Path, write: Write) -> None:
     proposal = _new(workspace, "adr-links")
     create_padr(workspace, "adr-links", "Pick A")
@@ -546,6 +563,83 @@ def test_a_failed_write_is_rolled_back(workspace: Path, write: Write) -> None:
     assert not (workspace / "specs" / MONTH).exists()
     assert proposal.is_file() and (proposal.parent / "materials/a.md").is_file()
     assert (proposal.parent / "decisions/PADR-decision.md").is_file()
+
+
+def _fail_binding(error: Exception) -> Callable[..., None]:
+    def write_binding(*_: object) -> None:
+        raise error
+
+    return write_binding
+
+
+@pytest.mark.parametrize(
+    ("error", "raised_type"), [(FrontmatterError("bad"), FrontmatterError), (RuntimeError("bug"), ProposalHandoffError)]
+)
+def test_any_failure_while_writing_is_rolled_back(
+    workspace: Path, write: Write, monkeypatch: pytest.MonkeyPatch, error: Exception, raised_type: type[Exception]
+) -> None:
+    write_workflow(workspace, "direct-delivery")
+    proposal = _new(workspace, "bind")
+    write("docs/proposals/PROP-bind/materials/a.md", "# a\n")
+    accept(proposal)
+    with monkeypatch.context() as patch:
+        patch.setattr("devkit_spec.proposals.specs.write_binding", _fail_binding(error))
+        with pytest.raises(raised_type) as raised:
+            handoff_proposal(workspace, "bind", today=TODAY)
+    # An advisory error keeps its own code; anything else is a handoff failure.
+    assert raised.value is error or isinstance(raised.value, ProposalHandoffError)
+    assert not (workspace / "specs" / MONTH).exists()
+    assert proposal.is_file() and (proposal.parent / "materials/a.md").is_file()
+    # Nothing is left behind, so the handoff can be rerun.
+    assert handoff_proposal(workspace, "bind", today=TODAY).workflow == "direct-delivery"
+
+
+def _cross_device(bundle: Path) -> Callable[[object, object], None]:
+    """``os.rename`` that fails with ``EXDEV`` for every path in ``bundle``, as across file systems."""
+    rename = os.rename
+
+    def fake(source: object, destination: object) -> None:
+        if Path(str(source)).is_relative_to(bundle):
+            raise OSError(errno.EXDEV, "Invalid cross-device link")
+        rename(source, destination)  # type: ignore[arg-type]
+
+    return fake
+
+
+def test_moves_across_file_systems(workspace: Path, write: Write, monkeypatch: pytest.MonkeyPatch) -> None:
+    proposal = _new(workspace, "far")
+    write("docs/proposals/PROP-far/materials/a.md", "# a\n")
+    write("docs/proposals/PROP-far/notes.md", "# notes\n")
+    accept(proposal)
+    monkeypatch.setattr("devkit_spec.proposals.specs.os.rename", _cross_device(proposal.parent))
+    result = handoff_proposal(workspace, "far", today=TODAY)
+    preserved = workspace / f"docs/materials/{MONTH}/{STAMP}-far"
+    assert result.materials == preserved.relative_to(workspace).as_posix()
+    assert (preserved / "a.md").read_text(encoding="utf-8") == "# a\n"
+    assert (preserved / "notes.md").is_file()
+    assert not proposal.parent.exists()
+
+
+def test_a_partial_copy_across_file_systems_is_removed(
+    workspace: Path, write: Write, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    proposal = _new(workspace, "partial")
+    write("docs/proposals/PROP-partial/materials/a.md", "# a\n")
+    write(f"docs/materials/{MONTH}/kept.md", "# kept\n")  # the month directory exists already
+    accept(proposal)
+
+    def copytree(source: Path, destination: Path, **_: object) -> None:
+        destination.mkdir()
+        (destination / "a.md").write_text("# a", encoding="utf-8")
+        raise OSError("No space left on device")
+
+    monkeypatch.setattr("devkit_spec.proposals.specs.os.rename", _cross_device(proposal.parent))
+    monkeypatch.setattr("devkit_spec.proposals.specs.shutil.copytree", copytree)
+    with pytest.raises(ProposalHandoffError):
+        handoff_proposal(workspace, "partial", today=TODAY)
+    assert sorted(p.name for p in (workspace / f"docs/materials/{MONTH}").iterdir()) == ["kept.md"]
+    assert not (workspace / "specs" / MONTH).exists()
+    assert (proposal.parent / "materials/a.md").read_text(encoding="utf-8") == "# a\n"
 
 
 def test_single_file_proposal(workspace: Path, write: Write) -> None:

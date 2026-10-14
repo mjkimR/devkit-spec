@@ -13,7 +13,9 @@ when given; a skeleton-marked ``spec.md`` is exempt from the rule until it is wr
 
 from __future__ import annotations
 
+import errno
 import logging
+import os
 import shutil
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -200,6 +202,47 @@ def make_dirs(path: Path, written: list[Path]) -> None:
         written.append(missing)
 
 
+def move_path(
+    source: Path,
+    destination: Path,
+    written: list[Path],
+    moved: list[tuple[Path, Path]],
+    leftovers: list[Path],
+) -> None:
+    """Move ``source`` to the absent ``destination`` so that ``roll_back`` undoes it whichever step fails.
+
+    A rename is recorded in ``moved``. Across file systems (``EXDEV``) ``source`` is copied instead: ``destination``
+    is recorded in ``written`` before the copy starts, so a partial copy is removed on roll-back, and the untouched
+    ``source`` is appended to ``leftovers`` for the caller to remove (``remove_paths``) once every write succeeded.
+    """
+    try:
+        os.rename(source, destination)
+    except OSError as exc:
+        if exc.errno != errno.EXDEV:
+            raise
+    else:
+        moved.append((destination, source))
+        return
+    written.append(destination)
+    if source.is_dir() and not source.is_symlink():
+        shutil.copytree(source, destination, symlinks=True)
+    else:
+        shutil.copy2(source, destination, follow_symlinks=False)
+    leftovers.append(source)
+
+
+def remove_paths(paths: Sequence[Path]) -> None:
+    """Remove each of ``paths`` (a directory with its contents), newest first; a failure is logged, not raised."""
+    for path in reversed(paths):
+        try:
+            if path.is_dir() and not path.is_symlink():
+                shutil.rmtree(path)
+            else:
+                path.unlink(missing_ok=True)
+        except OSError as exc:
+            _log.info("%s could not be removed: %s", path, exc)
+
+
 def roll_back(written: list[Path], moved: Sequence[tuple[Path, Path]] = ()) -> None:
     """Undo a failed write: move each ``(new, old)`` of ``moved`` back, newest first, then remove what was written,
     newest first."""
@@ -208,14 +251,7 @@ def roll_back(written: list[Path], moved: Sequence[tuple[Path, Path]] = ()) -> N
             shutil.move(new, old)
         except OSError as exc:
             _log.info("%s could not be moved back to %s: %s", new, old, exc)
-    for path in reversed(written):
-        try:
-            if path.is_dir() and not path.is_symlink():
-                shutil.rmtree(path)
-            else:
-                path.unlink(missing_ok=True)
-        except OSError as exc:
-            _log.info("%s could not be removed: %s", path, exc)
+    remove_paths(written)
 
 
 @dataclass
@@ -263,8 +299,9 @@ def create_spec(
     ``SpecSlugError``, ``ArgumentError`` (a ``namespace`` that is neither ``global`` nor registered, a ``summary``
     that is empty or not English), ``SpecExistsError``
     (``SPEC-<slug>`` or ``PROP-<slug>`` is declared, a proposal of the slug exists, or the directory exists),
-    ``SpecWorkflowError`` (an explicit workflow that does not resolve or validate); ``SpecWriteError`` when a write
-    fails (what was written is removed).
+    ``SpecWorkflowError`` (an explicit workflow that does not resolve or validate). A failure while writing removes
+    what was written, then raises ``SpecWriteError``, or the ``AdvisoryError`` itself when the failure was one (such
+    as a ``FrontmatterError`` binding ``spec.md``).
     """
     root = root.resolve()
     slug = new_slug(slug.strip().removeprefix("SPEC-"), error=SpecSlugError)
@@ -301,8 +338,10 @@ def create_spec(
     written: list[Path] = []
     try:
         write_spec_bundle(directory, files, binding, written)
-    except OSError as exc:
+    except Exception as exc:
         roll_back(written)
+        if isinstance(exc, AdvisoryError):
+            raise
         raise SpecWriteError(f"creating SPEC-{slug} failed; the files it wrote were removed", str(exc)) from exc
     rel = directory.relative_to(root).as_posix()
     created = CreatedSpec(

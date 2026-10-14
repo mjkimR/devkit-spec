@@ -10,10 +10,11 @@ import pytest
 from click.testing import CliRunner, Result
 from conftest import Write
 from devkit.cli import cli as devkit_cli
+from devkit.core import FrontmatterError
 from devkit.core.frontmatter import parse
 from proposals.support import MONTH, STAMP, TODAY, WORKFLOW, spec_dir, write_workflow
 
-from devkit_spec.errors import SpecExistsError, SpecSlugError, SpecWorkflowError
+from devkit_spec.errors import SpecExistsError, SpecSlugError, SpecWorkflowError, SpecWriteError
 from devkit_spec.proposals import SKELETON_MARKER, create_proposal, create_spec
 
 
@@ -83,6 +84,23 @@ def test_without_the_default_workflow_the_spec_stays_unbound(workspace: Path) ->
     assert created.workflow is None and created.next_command is None
     assert [notice.code for notice in created.notices] == ["SPEC_UNBOUND"]
     assert "workflow" not in _meta(spec_dir(workspace, "loose") / "spec.md")
+
+
+@pytest.mark.parametrize(
+    ("error", "raised_type"), [(FrontmatterError("bad"), FrontmatterError), (RuntimeError("bug"), SpecWriteError)]
+)
+def test_any_failure_while_writing_is_rolled_back(
+    workspace: Path, monkeypatch: pytest.MonkeyPatch, error: Exception, raised_type: type[Exception]
+) -> None:
+    write_workflow(workspace, "direct-delivery")
+
+    def write_binding(*_: object) -> None:
+        raise error
+
+    monkeypatch.setattr("devkit_spec.proposals.specs.write_binding", write_binding)
+    with pytest.raises(raised_type):
+        create_spec(workspace, "broken", day=TODAY)
+    assert not (workspace / "specs").exists()
 
 
 def test_refuses_a_taken_slug(workspace: Path, write: Write) -> None:

@@ -68,8 +68,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from devkit.rules import Phase, RuleContext, Severity, Violation
-from devkit.rules.engine.settings import match_path, validate_pattern
+from devkit.rules import Phase, RuleContext, Severity, Violation, match_path, validate_pattern
 from devkit.rules.rules import BaseRule
 
 

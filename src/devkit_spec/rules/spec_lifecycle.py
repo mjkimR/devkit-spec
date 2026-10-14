@@ -14,7 +14,8 @@ The relationship spans three files, so a change to any of them can break it. A b
 targets its ``spec.md`` (every bundle in a whole-workspace run, excluded ones aside) or names its ``reconcile.md`` or
 ``tasks.md`` as an explicit target; the violation then lands on ``spec.md`` when that is targeted, otherwise on the
 first named file, so it is always reported in a file the run targets. The fix rewrites only a targeted ``spec.md``
-whose frontmatter has a top-level ``status:`` line, and keeps every other character of the file.
+whose frontmatter has a top-level ``status:`` line, and keeps every other character of the file, a trailing comment
+on that line included.
 """
 
 from __future__ import annotations
@@ -33,6 +34,7 @@ RULE_ID = "RULE-spec-lifecycle"
 COMPLETED = "completed"
 RESOLVED = "resolved"
 _STATUS_LINE = re.compile(r"^status:[ \t]*[^\r\n]*", re.MULTILINE)
+_COMMENT = re.compile(r"[ \t]+#[^\r\n]*$")  # a trailing YAML comment: "#" after whitespace
 
 
 @dataclass(frozen=True, slots=True)
@@ -207,12 +209,18 @@ def has_status_line(ctx: RuleContext, path: str) -> bool:
 
 
 def with_status(text: str, status: str) -> str | None:
-    """``text`` with its frontmatter ``status:`` line set to ``status``; ``None`` when there is no such line."""
+    """``text`` with its frontmatter ``status:`` line set to ``status``, keeping a trailing comment (the templates'
+    ``# draft | planned | ...``); ``None`` when there is no such line."""
     try:
         block = locate(text)
     except FrontmatterError:
         return None
     if block is None or not _STATUS_LINE.search(block.header):
         return None
-    header = _STATUS_LINE.sub(f"status: {status}", block.header)
+
+    def replace(match: re.Match[str]) -> str:
+        comment = _COMMENT.search(match.group(), len("status:"))
+        return f"status: {status}" + (comment.group() if comment else "")
+
+    header = _STATUS_LINE.sub(replace, block.header)
     return text[: block.header_start] + header + text[block.header_end :]

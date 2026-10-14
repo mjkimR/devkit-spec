@@ -7,7 +7,8 @@ adapter (``localfs``) is the only implementation; ``claim`` (an exclusive publis
 - ``register``: ``ScopeTaskExistsError`` when the namespace has the task ID;
 - ``update``: ``ScopeRecordMissingError``, ``ScopeTokenMismatchError``, ``ScopeStaleRevisionError`` (the revision read
   is not the stored one); a ``request_id`` the record last applied is answered from the stored record unchanged;
-- ``release``: a missing record is a no-op, a foreign token ``ScopeTokenMismatchError``;
+- ``release``: a missing record is a no-op, a foreign token ``ScopeTokenMismatchError``; a record left alone in the
+  worktree the released one shared loses its ``shared_worktree`` flag;
 - every operation: ``ScopeTimeoutError``, ``ScopeNamespaceError``, ``ScopeLockUnsupportedError``,
   ``ScopeSharedPathError``.
 """
@@ -53,7 +54,8 @@ class Registry(Protocol):
         ...
 
     def release(self, namespace: str, task_id: str, token: str, deadline: Deadline) -> None:
-        """Delete the record when ``token`` owns it; a missing record is a no-op."""
+        """Delete the record when ``token`` owns it (a missing record is a no-op) and clear ``shared_worktree`` on a
+        record left alone in its worktree."""
         ...
 
     def sweep(

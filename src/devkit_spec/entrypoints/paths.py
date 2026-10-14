@@ -18,11 +18,11 @@ from pathlib import Path
 from devkit.core import UnsafePathError, resolve_within
 
 from devkit_spec.errors import EntrypointsPathError
+from devkit_spec.namespaces import living_path
 
 ROOT = "."
 _FORBIDDEN = frozenset("\\:*?[]\x00\r\n")
 _LIVING_DIRECTORIES = ("docs/capabilities/", "docs/stories/")
-_PACKAGES = ("docs", "packages")
 
 
 def normalize(value: str) -> str:
@@ -50,17 +50,12 @@ def overlaps(first: str, second: str) -> bool:
     return covers(a, b) or covers(b, a)
 
 
-def living_path(path: str) -> str:
-    """``docs/packages/<name>/X`` as the global ``docs/X`` it mirrors; any other path unchanged."""
-    parts = path.split("/")
-    if len(parts) >= 4 and tuple(parts[:2]) == _PACKAGES:
-        return "/".join(["docs", *parts[3:]])
-    return path
-
-
 def entrypoint_bearing(path: str) -> bool:
-    """Whether the workspace-relative ``path`` is a capability or story file, which may declare ``entrypoints``."""
-    living = living_path(path)
+    """Whether the workspace-relative ``path`` is a capability or story file, which may declare ``entrypoints``.
+
+    Every ``docs/packages/<name>/`` counts, registered as a namespace or not, so callers need no configuration.
+    """
+    living = living_path(path, namespaces=None)
     return living.startswith(_LIVING_DIRECTORIES) and living.endswith(".md")
 
 

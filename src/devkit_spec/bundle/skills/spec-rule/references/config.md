@@ -4,7 +4,7 @@ Read this when a rule needs settings a project may tune (limits, extensions, pat
 
 ## Declaring settings (rule author)
 
-Pass a frozen dataclass instance with every default as `settings=` to `BaseRule` ([templates](templates.md#rule-file)). Fields are `int`, `float`, `str`, `bool` or `list[str]`, each optionally `| None` (the only fields that accept `null`); nested tables are rejected when the rule loads. Override `validate_settings(settings)` to raise `ValueError` for values the types cannot express (a non-positive limit, a malformed pattern via `devkit.rules.engine.settings.validate_pattern`); it runs on the defaults, the configured values and every override layer before any rule executes. Read the effective values per file with `ctx.settings(self, rel)` inside `check` and `fix`; never cache them across runs or mutate them.
+Pass a frozen dataclass instance with every default as `settings=` to `BaseRule` ([templates](templates.md#rule-file)). Fields are `int`, `float`, `str`, `bool` or `list[str]`, each optionally `| None` (the only fields that accept `null`); nested tables are rejected when the rule loads. Override `validate_settings(settings)` to raise `ValueError` for values the types cannot express (a non-positive limit, a malformed pattern via `devkit.rules.validate_pattern`); it runs on the defaults, the configured values and every override layer before any rule executes. Read the effective values per file with `ctx.settings(self, rel)` inside `check` and `fix`; never cache them across runs or mutate them.
 
 When settings can change the result for unchanged files, the rule rescans its own targets: there is no per-rule configuration file to watch.
 

@@ -85,8 +85,8 @@ class Unresolved:
     """An input the analysis could not turn into a scope path; it never counts as ``no overlap``.
 
     ``reason``: ``planned-doc``, ``no-entrypoints``, ``not-a-path``, ``invalid-path``, ``excluded-tree``, ``waived``,
-    ``no-targets``, ``missing-target-docs``, ``missing-reconcile``, ``missing-tasks``, ``missing-base-revision`` or
-    ``unknown-base-revision``.
+    ``no-targets``, ``missing-target-docs``, ``missing-reconcile``, ``missing-tasks``, ``missing-base-revision``,
+    ``unknown-base-revision`` or ``missing-base-ref``.
     """
 
     value: str
@@ -194,7 +194,12 @@ class PairResult:
 
 @dataclass(frozen=True)
 class Record:
-    """One registered task scope (schema version 1). The registry stores the token's hash, never the token."""
+    """One registered task scope (schema version 1). The registry stores the token's hash, never the token.
+
+    ``base_ref`` is the base branch the observed range forks from (``""``: the fixed ``base_revision``);
+    ``last_added`` and ``last_removed`` are the counts of the update ``last_request_id`` applied, so a retried
+    request is answered with them.
+    """
 
     namespace: str
     task_id: str
@@ -203,12 +208,15 @@ class Record:
     token_hash: str = ""
     revision: int = 0
     base_revision: str = ""
+    base_ref: str = ""
     shared_worktree: bool = False
     spec: str = ""
     scopes: tuple[ScopePath, ...] = ()
     unresolved: tuple[Unresolved, ...] = ()
     updated_at: str = ""
     last_request_id: str = ""
+    last_added: int = 0
+    last_removed: int = 0
     schema_version: int = SCHEMA_VERSION
 
     def with_(self, **changes: Any) -> Record:
@@ -234,6 +242,7 @@ class Record:
             "token_hash": self.token_hash,
             "revision": self.revision,
             "base_revision": self.base_revision,
+            "base_ref": self.base_ref,
             "worktree": self.worktree,
             "hostname": self.hostname,
             "shared_worktree": self.shared_worktree,
@@ -242,6 +251,8 @@ class Record:
             "unresolved": [item.to_dict() for item in self.unresolved],
             "updated_at": self.updated_at,
             "last_request_id": self.last_request_id,
+            "last_added": self.last_added,
+            "last_removed": self.last_removed,
         }
 
     def public_dict(self) -> dict[str, object]:
@@ -255,8 +266,9 @@ class Record:
         mapping = _mapping(data, "record")
         revision = mapping.get("revision", 0)
         version = mapping.get("schema_version", SCHEMA_VERSION)
-        if isinstance(revision, bool) or not isinstance(revision, int) or not isinstance(version, int):
-            raise ValueError("revision and schema_version must be integers")
+        counts = [mapping.get(key, 0) for key in ("last_added", "last_removed")]
+        if any(isinstance(value, bool) or not isinstance(value, int) for value in (revision, version, *counts)):
+            raise ValueError("revision, schema_version, last_added and last_removed must be integers")
         shared = mapping.get("shared_worktree", False)
         if not isinstance(shared, bool):
             raise ValueError("shared_worktree must be a boolean")
@@ -267,6 +279,7 @@ class Record:
             token_hash=_text(mapping, "token_hash"),
             revision=revision,
             base_revision=_text(mapping, "base_revision"),
+            base_ref=_text(mapping, "base_ref"),
             worktree=_text(mapping, "worktree"),
             hostname=_text(mapping, "hostname"),
             shared_worktree=shared,
@@ -275,6 +288,8 @@ class Record:
             unresolved=tuple(Unresolved.from_dict(item) for item in _list(mapping, "unresolved")),
             updated_at=_text(mapping, "updated_at"),
             last_request_id=_text(mapping, "last_request_id"),
+            last_added=counts[0],
+            last_removed=counts[1],
         )
 
 

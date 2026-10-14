@@ -12,6 +12,7 @@ from devkit_spec.config import ScopeConfig
 from devkit_spec.errors import (
     ScopeNotAWorktreeError,
     ScopeRecordMissingError,
+    ScopeSharedPathError,
     ScopeStaleRevisionError,
     ScopeTimeoutError,
     ScopeTokenExistsError,
@@ -30,6 +31,7 @@ from devkit_spec.scope import (
     Stage,
     auto_register,
     default_namespace,
+    flow,
     locate,
     open_session,
     own,
@@ -38,7 +40,7 @@ from devkit_spec.scope import (
     slug_from_spec,
     update,
 )
-from devkit_spec.scope.location import SHARED_DIR, TOKEN_FILE
+from devkit_spec.scope.location import SHARED_DIR, TOKEN_FILE, save_token
 
 
 @pytest.fixture
@@ -76,9 +78,10 @@ def test_register_update_release_flow(repo: Path) -> None:
 
     registered = register(session, SPEC)
     stored = registered.record
-    assert (stored.task_id, stored.base_revision, stored.worktree) == (
+    assert (stored.task_id, stored.base_revision, stored.base_ref, stored.worktree) == (
         "SPEC-s",
         git(repo, "rev-parse", "HEAD"),
+        "",  # the base checkout itself: the range starts at base_revision
         str(repo),
     )
     assert session.location.token_path.read_text().strip() == registered.token
@@ -122,6 +125,99 @@ def test_second_registration_in_a_worktree_is_refused(repo: Path) -> None:
     with pytest.raises(ScopeTokenExistsError):
         register(session, SPEC, "second")
     assert [item.task_id for item in session.registry.query(session.location.namespace, Deadline(5))[0]] == ["first"]
+
+
+def test_a_registration_that_loses_the_token_race_is_rolled_back(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    session = open_session(repo)
+    namespace = session.location.namespace
+    winner, _ = session.registry.register(Record(namespace=namespace, task_id="first", worktree=str(repo)), Deadline(5))
+
+    def raced(path: Path, token: str) -> None:  # the concurrent registration saves its token first
+        save_token(path, winner)
+        save_token(path, token)
+
+    monkeypatch.setattr(flow, "save_token", raced)
+    with pytest.raises(ScopeTokenExistsError) as raised:
+        register(session, SPEC, "second")
+    assert raised.value.details == ()
+    records = session.registry.query(namespace, Deadline(5))[0]
+    assert [(item.task_id, item.shared_worktree) for item in records] == [("first", False)], (
+        "the losing record is removed and the winner no longer shares the worktree"
+    )
+    assert own(session).record.task_id == "first", "the winner keeps its token"
+
+
+def test_save_token_is_exclusive(tmp_path: Path) -> None:
+    path = tmp_path / "git" / TOKEN_FILE
+    save_token(path, "one")
+    with pytest.raises(FileExistsError):
+        save_token(path, "two")
+    assert path.read_text() == "one\n" and path.stat().st_mode & 0o777 == 0o600
+    assert [entry.name for entry in path.parent.iterdir()] == [TOKEN_FILE], "no temporary file is left"
+
+
+def test_a_failed_rollback_is_a_detail_of_the_original_error(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    session = open_session(repo)
+
+    def unwritable(path: Path, token: str) -> None:
+        raise PermissionError("read-only git directory")
+
+    monkeypatch.setattr(flow, "save_token", unwritable)
+    with pytest.raises(ScopeSharedPathError) as raised:
+        register(session, SPEC)
+    assert raised.value.details == ()
+    assert session.registry.query(session.location.namespace, Deadline(5))[0] == [], "the record is rolled back"
+
+    def timed_out(*args: object) -> None:
+        raise ScopeTimeoutError("waiting for the namespace lock exceeded the scope timeout of 5s")
+
+    monkeypatch.setattr(session.registry, "release", timed_out)
+    with pytest.raises(ScopeSharedPathError) as raised:
+        register(session, SPEC)
+    assert "read-only git directory" in raised.value.message, "the original error is kept"
+    assert len(raised.value.details) == 1 and "SPEC-s could not be removed" in raised.value.details[0]
+    assert "scope timeout" in raised.value.details[0]
+
+
+def test_a_retried_request_is_answered_from_the_stored_record(repo: Path) -> None:
+    session = open_session(repo)
+    register(session, SPEC)
+    write(repo, "src/new.py", "n = 1\n")
+    write(repo, "src/other.py", "o = 1\n")
+    applied = update(session, SPEC)
+    assert (applied.status, applied.revision, applied.added, applied.removed) == (AckStatus.APPLIED, 2, 2, 0)
+    (repo / SPEC).rename(repo / "specs/moved")  # collecting again would fail
+    replay = update(session, SPEC, applied.request_id)
+    assert replay.error is None
+    assert (replay.status, replay.revision, replay.added, replay.removed) == (AckStatus.APPLIED, 2, 2, 0), (
+        "a replay reports the counts its request recorded"
+    )
+    assert replay.record == applied.record
+    assert update(session, SPEC).status == AckStatus.FAILED, "a new request collects again"
+
+
+def test_observed_scope_forks_from_the_base_branch(repo: Path, tmp_path: Path) -> None:
+    linked = tmp_path / "repo-wt-task"
+    git(repo, "worktree", "add", "-q", "-b", "task", str(linked))
+    session = open_session(linked)
+    registered = register(session, SPEC)
+    assert registered.record.base_ref == "refs/heads/main"
+    write(linked, "src/a/a.py", "a = 2\n")
+    git(linked, "commit", "-q", "-am", "task")
+    write(repo, "src/b/b.py", "b = 2\n")  # upstream work on the base branch
+    git(repo, "commit", "-q", "-am", "upstream")
+    git(linked, "merge", "-q", "--no-edit", "main")
+
+    ack = update(session, SPEC)
+    observed = {path.path for path in ack.record.scopes if path.source is Source.OBSERVED} if ack.record else set()
+    assert observed == {"src/a/a.py"}, "what the task merged in from its base branch is not observed"
+
+    git(repo, "branch", "-m", "main", "trunk")
+    ack = update(session, SPEC)
+    assert ack.status == AckStatus.APPLIED and ack.record is not None
+    assert ("refs/heads/main", "missing-base-ref") in {(item.value, item.reason) for item in ack.record.unresolved}
+    observed = {path.path for path in ack.record.scopes if path.source is Source.OBSERVED}
+    assert {"src/a/a.py", "src/b/b.py"} <= observed, "an unresolvable base ref falls back to base_revision"
 
 
 def test_update_statuses_for_stale_timeout_and_orphaned_records(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:

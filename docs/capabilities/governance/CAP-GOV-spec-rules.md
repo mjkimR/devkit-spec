@@ -190,8 +190,9 @@ In a spec bundle the `status` of `spec.md`, the checklist of `tasks.md` and the 
 - Every `spec.md` under `specs/` is checked, completed ones included. A targeted run checks a bundle when it targets
   its `spec.md`, `tasks.md` or `reconcile.md`; the violation is on `spec.md` (line 1) when that is targeted, else on
   the targeted `reconcile.md` or `tasks.md`.
-- **Fix**: sets `status: completed` by rewriting only the top-level `status:` line of a targeted `spec.md`; a
-  `spec.md` without a `status:` line is fixed by hand.
+- **Fix**: sets `status: completed` by rewriting only the value of the top-level `status:` line of a targeted
+  `spec.md`, keeping a trailing comment (`# draft | planned | ...`); a `spec.md` without a `status:` line is fixed by
+  hand.
 
 ### 3.9 `RULE-spec-progress`
 
@@ -202,7 +203,8 @@ so this hint is a rule of its own (`SPEC-open-feedback-and-progress`).
   task of `tasks.md` is checked. A bundle in `RULE-spec-lifecycle`'s stale state (every task checked, `reconcile.md`
   `resolved`) is left to that rule, so the two fixes never disagree.
 - Targeting and placement are `RULE-spec-lifecycle`'s, with `tasks.md` as the only other file.
-- **Fix**: sets `status: in-progress` by rewriting only the top-level `status:` line of a targeted `spec.md`.
+- **Fix**: sets `status: in-progress` by rewriting only the value of the top-level `status:` line of a targeted
+  `spec.md`, keeping a trailing comment.
 
 ### 3.10 `RULE-reconcile-contract`
 

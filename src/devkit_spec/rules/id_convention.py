@@ -182,7 +182,7 @@ def _feedback(path: str) -> _Target:
 
 def _living_spec(path: str, kind: Kind, docs_root: str, registered: tuple[Namespace, ...]) -> _Target:
     """The target of a Living Spec document under ``docs_root``, checked by the path it mirrors under ``docs/``."""
-    parts = living_path(registered, path).split("/")
+    parts = living_path(path, namespaces=registered).split("/")
     stem = _stem(path)
 
     def target(**fields: str) -> _Target:
@@ -261,7 +261,11 @@ def _targets(ctx: RuleContext) -> list[_Target]:
 def _reference_files(ctx: RuleContext) -> list[str]:
     """The Markdown files whose frontmatter and prose must not use date- or number-based references."""
     registered = namespaces(ctx)
-    files = [path for path in _markdown(ctx, "docs") if not living_path(registered, path).startswith("docs/materials/")]
+    files = [
+        path
+        for path in _markdown(ctx, "docs")
+        if not living_path(path, namespaces=registered).startswith("docs/materials/")
+    ]
     return files + _markdown(ctx, "specs")
 
 

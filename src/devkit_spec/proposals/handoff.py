@@ -17,7 +17,8 @@ path it would create), then:
 5. rewrites links and ID references that pointed into the proposal (``rewrite``);
 6. removes the proposal.
 
-A failure in steps 1 to 4 removes what they wrote and keeps the proposal. A single-file proposal
+A failure of any kind in steps 1 to 4 removes what they wrote, moves what they moved back and keeps the proposal;
+across file systems step 4 copies and removes the sources only after every write succeeded. A single-file proposal
 ``docs/proposals/PROP-<slug>.md`` gets the plain skeleton (its body is not carried) and has no PADRs, materials or
 blueprint.
 """
@@ -78,6 +79,8 @@ from devkit_spec.proposals.scaffold import (
 from devkit_spec.proposals.specs import (
     SPEC_FILE,
     make_dirs,
+    move_path,
+    remove_paths,
     roll_back,
     spec_dir,
     spec_files,
@@ -95,7 +98,7 @@ ACCEPTED = "accepted"
 DIRECTION_STATUSES = ("draft", "reviewing")
 
 _PADR = re.compile(r"\bPADR-[a-z0-9]+(?:-[a-z0-9]+)*")
-_DRAFT_STATUS = re.compile(r"^status:[ \t]*(?:draft|proposed)[ \t]*$", re.MULTILINE)
+_DRAFT_STATUS = re.compile(r"^status:[ \t]*(?:draft|proposed)(?=[ \t]*(?:#.*)?$)", re.MULTILINE)
 _DRAFT_BODY_STATUS = re.compile(r"^- \*\*Status\*\*:[ \t]*(?:Draft|Proposed)[ \t]*$", re.MULTILINE)
 
 
@@ -179,8 +182,9 @@ def handoff_proposal(
     direction explicitly); it is never inferred. Raises, before writing anything: ``ProposalSlugError``,
     ``ProposalNotFoundError``, ``ProposalInvalidError``, ``ProposalNotApprovedError``,
     ``ProposalSlugConflictError``, ``ProposalWorkflowError``, ``ProposalTargetExistsError``,
-    ``ProposalWrongWorktreeError`` (``_check_worktree``); and ``ProposalHandoffError`` when a write fails (what was
-    written is removed).
+    ``ProposalWrongWorktreeError`` (``_check_worktree``). A failure while writing removes what was written, moves
+    the materials and carried files back and keeps the proposal, then raises ``ProposalHandoffError``, or the
+    ``AdvisoryError`` itself when the failure was one (such as a ``FrontmatterError`` binding ``spec.md``).
     """
     root = root.resolve()
     slug = require_slug(slug)
@@ -270,6 +274,7 @@ def handoff_proposal(
 
     written: list[Path] = []
     moved: list[tuple[Path, Path]] = []
+    leftovers: list[Path] = []  # sources copied across file systems, removed once every write succeeded
     promoted: dict[str, str] = {}
     try:
         write_spec_bundle(target_dir, files, binding, written)
@@ -282,17 +287,18 @@ def handoff_proposal(
             promoted[str(decision.padr)] = str(decision.target)
         if materials_target is not None and move_materials:
             make_dirs(materials_target.parent, written)
-            shutil.move(materials_dir, materials_target)
-            moved.append((materials_target, materials_dir))
+            move_path(materials_dir, materials_target, written, moved, leftovers)
         for source, destination in extras:
             make_dirs(destination.parent, written)
-            shutil.move(source, destination)
-            moved.append((destination, source))
-    except OSError as exc:
+            move_path(source, destination, written, moved, leftovers)
+    except Exception as exc:
         roll_back(written, moved)
+        if isinstance(exc, AdvisoryError):
+            raise
         raise ProposalHandoffError(
             f"handoff of PROP-{slug} failed; the files it wrote were removed and the proposal is kept", str(exc)
         ) from exc
+    remove_paths(leftovers)
 
     plan = RelocationPlan(proposal=str(bundle if is_bundle else single))
     if is_bundle:

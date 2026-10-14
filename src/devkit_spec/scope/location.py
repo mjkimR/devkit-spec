@@ -6,7 +6,7 @@ without configuration, and a cache clean never touches them. ``[tool.spec.scope]
 registry between clones or hosts, set the same absolute ``shared_path`` and an explicit ``namespace`` on each.
 
 The token lives in the worktree's own Git directory (``<git-dir>/devkit-spec-scope-token``, mode 0600): one per
-worktree, never in the working tree, never in the registry.
+worktree, created exclusively, never in the working tree, never in the registry.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import os
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -93,10 +94,50 @@ def load_token(path: Path) -> str | None:
     return token or None
 
 
+def _symbolic_head(cwd: Path, deadline: Deadline) -> str:
+    """The branch ref ``HEAD`` points to in the Git directory or work tree at ``cwd``; ``""`` when detached."""
+    try:
+        return git(cwd, "symbolic-ref", "--quiet", "HEAD", deadline=deadline).decode().strip()
+    except GitError as exc:
+        if exc.returncode is None:
+            raise
+        return ""
+
+
+def base_ref(location: Location, deadline: Deadline) -> str:
+    """The branch the base checkout is on (``refs/heads/<name>``), which ``devkit worktree finish`` integrates into.
+
+    ``""`` when the base checkout is detached, or when this workspace is on that same branch (the base checkout
+    itself): there no upstream commit can be told apart from the task's own.
+    """
+    ref = _symbolic_head(location.common_dir, deadline)  # the base checkout's HEAD lives in the common directory
+    return "" if not ref or ref == _symbolic_head(location.root, deadline) else ref
+
+
 def save_token(path: Path, token: str) -> None:
-    """Write the token readable by its owner only."""
+    """Create the token file, readable by its owner only; ``FileExistsError`` when the worktree already holds one.
+
+    The token is written to a temporary file and linked into place, so a reader sees no token or a complete one,
+    and of two registrations racing in one worktree exactly one saves its token.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    fd, name = tempfile.mkstemp(prefix=f".{TOKEN_FILE}-", dir=path.parent)  # created with mode 0600
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(f"{token}\n")
+        try:
+            os.link(name, path)
+        except FileExistsError:
+            raise
+        except OSError:  # a file system without hard links: create the token exclusively instead
+            _create_exclusive(path, token)
+    finally:
+        with contextlib.suppress(OSError):
+            os.unlink(name)
+
+
+def _create_exclusive(path: Path, token: str) -> None:
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as handle:
         os.fchmod(handle.fileno(), 0o600)
         handle.write(f"{token}\n")
