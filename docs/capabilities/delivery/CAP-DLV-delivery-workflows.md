@@ -57,9 +57,11 @@ sequence.
 3. **Shared stages are identical**: a stage id used by several definitions MUST have the same exit checks, gate,
    role, isolation, skills and artifacts in each; `devkit workflow validate` with no arguments reports a difference
    as `SHARED_STAGE_MISMATCH`. Returns are each workflow's own.
-4. **Approval is a decision record, never inferred**: under `ask`, a gate passes only with a decision recorded by
-   `devkit workflow answer --unit <dir> --request gate:<gate> --action accept|decline`, written only after the
-   user's explicit answer. Under `auto` the gate passes by policy (`source=policy`) and the executor MUST report the
+4. **Approval is never inferred**: under `ask`, the `intent` and `direction` gates pass only with a decision
+   recorded by `devkit workflow answer --unit <dir> --request gate:<gate> --action accept|decline`, written only
+   after the user's explicit answer. The `integration` gate passes only with `--given integration`, passed to each
+   `devkit workflow next` after the user's explicit OK and never recorded, or with the PR ready state a runner binds
+   (`ADR-integration-approval-asserted`). Under `auto` the gate passes by policy (`source=policy`) and the executor MUST report the
    delegation as the authority, never as a human approval. Neither grants new commit, merge, publication or deletion
    authority. `devkit workflow return --unit <dir> --to <stage>` voids the approvals of that stage and later ones,
    and the envelopes recorded for them before the return: a post-review defect needs a new review round.
@@ -156,9 +158,10 @@ stage of `s-lane` runs `spec-review`, `spec-sync` and, unless `collect-feedback`
 | G2 direction | `direction`, `direction-handoff` | `direction` |
 | G3 integration | `integration-approval`, `approval-session` | `integration` |
 
-- `ask`: `devkit workflow next` prints `[WAITING: human gate:<gate>]` with a `[REQUEST: id=gate:<gate> ...]`; the
-  answer is `devkit workflow answer --unit <dir> --request gate:<gate> --action accept` (or `--action decline --note
-  "..."`). Where a runner binds `gate:integration` to PR state, the PR ready state answers G3.
+- `ask`: `devkit workflow next` prints `[WAITING: human gate:<gate>]` with a `[REQUEST: id=gate:<gate> ...]`. A G1
+  or G2 answer is `devkit workflow answer --unit <dir> --request gate:<gate> --action accept` (or `--action decline
+  --note "..."`). A G3 OK is `--given integration` on every later `next`, and a G3 objection takes the stage's return
+  path; where a runner binds `gate:integration` to PR state, the PR ready state answers G3.
 - `auto`: the gate passes by policy; `next` prints `[GATE: <gate> policy=auto ... source=policy]`.
 - `off`: the stage is skipped (`[SKIPPED: <id> reason=...]`).
 - `--given <gate>` asserts a gate for one run (a runner's binding).
@@ -241,7 +244,7 @@ contract body as its system prompt.
 | --- | --- |
 | `devkit workflow next --unit <dir> [--given <check>]...` | Current stage, unmet checks, `[NEXT_SKILL]`, `[WAITING]`, `[DELEGATE]`, `[SKIPPED]`. |
 | `devkit workflow show <id>` / `--unit <dir>` | Render a definition. |
-| `devkit workflow answer --unit <dir> --request gate:<gate> --action accept\|decline` | Record a gate decision. |
+| `devkit workflow answer --unit <dir> --request gate:<gate> --action accept\|decline` | Record a G1 or G2 gate decision. |
 | `devkit workflow return --unit <dir> --to <stage>` | Go back; voids later approvals and earlier envelopes of those stages. |
 | `devkit workflow bind --unit <dir> --workflow <id>` | Bind an unbound unit, or rebind after `WORKFLOW_DRIFT`. |
 | `devkit workflow validate` | Validate definitions; `SHARED_STAGE_MISMATCH` across definitions. |

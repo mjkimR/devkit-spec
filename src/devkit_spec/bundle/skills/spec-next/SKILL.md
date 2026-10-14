@@ -72,8 +72,8 @@ Map `[STAGE]` ids onto these rows with the stage table in [workflow signals](ref
 | **Building (Verification Review)** | All tasks in `tasks.md` checked | Inspect git diff, check for stray files, verify boundary isolation | `spec-review` |
 | **Reconcile (Living Spec Sync)** | Review passed, pending docs sync | Reconcile into `docs/capabilities/`, `docs/stories/`, and write `reconcile.md` | `spec-sync` |
 | **Collect feedback (Sweep)** | Reconcile done, no `envelopes/feedback-NN.yaml` with `checks.swept` passing (stage not `[SKIPPED]`) | Sweep the session for unrecorded observations, write the files and the sweep envelope | `spec-feedback` |
-| **Awaiting G3 (Integration Approval)** | Review and reconcile done, final change report not yet approved | Present the final change report and wait for the user's OK (recorded with `devkit workflow answer`) or PR ready state | `spec` |
-| **Integration (Post-Approval)** | G3 held (recorded OK, PR ready state, or `source=policy`), not yet integrated with base or merged | Integrate base, re-verify changed parts, confirm reconcile, run `devkit rules check --ci --base <ref>`, report | `spec-integrate` |
+| **Awaiting G3 (Integration Approval)** | Review and reconcile done, final change report not yet approved | Present the final change report and wait for the user's OK (asserted with `--given integration`, not recorded) or PR ready state | `spec` |
+| **Integration (Post-Approval)** | G3 held (the user's OK, PR ready state, or `source=policy`), not yet integrated with base or merged | Integrate base, re-verify changed parts, confirm reconcile, run `devkit rules check --ci --base <ref>`, report | `spec-integrate` |
 | **Idle / Clean Working Tree** | No active specs, working tree clean | Ready for new feature request, bugfix, or proposal brainstorming | `/spec <intent>` |
 
 ### 3.1 Post-handoff link check

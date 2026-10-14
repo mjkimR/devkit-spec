@@ -2,13 +2,14 @@
 id: ADR-approval-gates-intent-direction-integration
 title: Map G1, G2 and G3 to devkit's intent, direction and integration gates
 summary: The delivery workflows express specrig's human gates G1, G2 and G3 as devkit approval gates named intent, direction and integration, governed by [workflow.approvals]; devkit's default of ask for every gate is kept.
-status: accepted
+status: superseded
 created_at: 2026-10-13
+superseded_by: ADR-integration-approval-asserted
 ---
 
 # [ADR-approval-gates-intent-direction-integration] Map G1, G2 and G3 to devkit's intent, direction and integration gates
 
-- **Status**: Accepted
+- **Status**: Superseded by `ADR-integration-approval-asserted`
 - **Date**: 2026-10-13
 - **Deciders**: @mjkimR
 - **Involved Components/Capabilities**: `CAP-DLV-delivery-workflows`, `CAP-DLV-project-policy`

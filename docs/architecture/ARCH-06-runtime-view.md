@@ -54,8 +54,9 @@ sequenceDiagram
 
 - A missing default workflow leaves `spec.md` unbound with a `SPEC_UNBOUND` notice; an explicit workflow that does not
   resolve fails before anything is written (`SPEC_WORKFLOW_INVALID`).
-- Under `ask`, the agent records the user's explicit answer with `devkit workflow answer --unit <dir> --request
-  gate:<gate> --action accept`; under `auto` the gate passes by policy (`source=policy`).
+- Under `ask`, the agent records the user's explicit G1 or G2 answer with `devkit workflow answer --unit <dir>
+  --request gate:<gate> --action accept` and asserts a G3 OK with `--given integration` on each later `next`, writing
+  nothing (`ADR-integration-approval-asserted`); under `auto` the gate passes by policy (`source=policy`).
 
 ---
 

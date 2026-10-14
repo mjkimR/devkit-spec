@@ -48,12 +48,13 @@ Route 2 and above write `spec.md`, `plan.md` and `tasks.md` before production co
 returns come from the workflow definitions, never an ad-hoc sequence: `devkit workflow next --unit <dir>` diagnoses the
 stage, `devkit workflow show --unit <dir>` shows the definition.
 
-Read `devkit spec policy` before routing, gate and Git decisions. `ask` gates wait for the user's answer, recorded with
-`devkit workflow answer`; `auto` delegates the decision within existing authority and the assumptions are reported.
-Neither grants new commit, merge, publication or deletion authority, and the intent gate always needs the user's
-intent. Report stages the policy switched off as skipped. Before formal worktree work read the `spec` skill's
-`references/worktree.md`; before completion or Git actions its `references/completion.md`. Explicit user
-instructions take precedence.
+Read `devkit spec policy` before routing, gate and Git decisions. `ask` gates wait for the user's answer: `intent` and
+`direction` are recorded with `devkit workflow answer`, the `integration` OK is asserted with `--given integration`
+on the `devkit workflow next` runs after it (`ADR-integration-approval-asserted`); `auto` delegates the decision
+within existing authority and the assumptions are reported. Neither grants new commit, merge, publication or
+deletion authority, and the intent gate always needs the user's intent. Report stages the policy switched off as
+skipped. Before formal worktree work read the `spec` skill's `references/worktree.md`; before completion or Git
+actions its `references/completion.md`. Explicit user instructions take precedence.
 
 ## 4. Verification and Completion
 

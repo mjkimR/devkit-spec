@@ -49,7 +49,7 @@ term's contract, the last column names it. Search synonyms for these terms live 
 | **Workflow** | A devkit workflow definition shipped by the bundle (`s-lane`, `direct-delivery`, `bugfix`, `incubated-delivery`): ordered stages with exit checks, gates and returns. | `CAP-DLV-delivery-workflows` |
 | **Unit / anchor / binding** | devkit's terms: a unit is a work directory a workflow drives; its anchor is the file that binds it (`spec.md` or `proposal.md`); the binding is `workflow` plus `workflow_hash` in the anchor. | `CAP-DLV-delivery-workflows` |
 | **Stage** | One step of a workflow (`intent`, `specify`, `build-verify`, ...); `devkit workflow next` names the current one and its unmet checks. | `CAP-DLV-delivery-workflows` |
-| **Gate** | A stage that waits for a decision: G1 `intent`, G2 `direction`, G3 `integration`; policy `ask`, `auto` or `off` in `[workflow.approvals]`. | `ADR-approval-gates-intent-direction-integration` |
+| **Gate** | A stage that waits for a decision: G1 `intent`, G2 `direction`, G3 `integration`; policy `ask`, `auto` or `off` in `[workflow.approvals]`; G1 and G2 answers are recorded, the G3 OK is asserted with `--given integration`. | `ADR-integration-approval-asserted` |
 | **Exception stage** (E) | The out-of-band stage every workflow has for a retry cap, tool failure or unresolved conflict; no gate. | `CAP-DLV-delivery-workflows` |
 | **Handoff workflow** | The workflow a spec follows after handoff, named in a proposal's `handoff_workflow` (default `direct-delivery`). | `ADR-handoff-workflow-key` |
 | **Envelope** | devkit's YAML record of a stage result (`specs/.../envelopes/<kind>-<NN>.yaml`): `status`, findings, checks, diff scope. Written with `devkit workflow envelope new`. | `CAP-DLV-delivery-workflows` |
