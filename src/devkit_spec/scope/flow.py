@@ -13,13 +13,14 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
-from devkit.advisory import AdvisoryError
+from devkit.advisory import AdvisoryError, Level
 
 from devkit_spec.config import read_spec_config
 from devkit_spec.errors import (
     ScopeAckFailedError,
     ScopeJournalWarning,
     ScopeNotAWorktreeError,
+    ScopeRecordInvalidWarning,
     ScopeRecordMissingError,
     ScopeRegisterFailedWarning,
     ScopeSharedPathError,
@@ -228,7 +229,8 @@ class Own:
 def own(session: Session) -> Own:
     """This worktree's record (found by its token) and the other records of the namespace.
 
-    Raises ``ScopeTokenMissingError`` without a token and ``ScopeRecordMissingError`` when its record is gone.
+    Raises ``ScopeTokenMissingError`` without a token, ``ScopeRecordMissingError`` when its record is gone and
+    ``SPEC_SCOPE_RECORD_INVALID`` at ``ERROR`` when it is not found while some record files cannot be read.
     """
     location = session.location
     token = load_token(location.token_path)
@@ -240,12 +242,24 @@ def own(session: Session) -> Own:
     digest = token_hash(token)
     mine = [record for record in records if record.token_hash == digest]
     if not mine:
+        if problems:
+            raise _unreadable(location, problems)
         raise ScopeRecordMissingError(
             "the record of this worktree's token no longer exists (released or swept)",
             target_files=[str(location.token_path)],
         )
     others = [record for record in records if record.token_hash != digest]
     return Own(token, mine[0], others, problems)
+
+
+def _unreadable(location: Location, problems: Sequence[Problem]) -> AdvisoryError:
+    """This worktree's record is not among the readable ones, and unreadable files may hold it."""
+    directory = location.shared_path / location.namespace
+    return ScopeRecordInvalidWarning(
+        "this worktree's record is not readable: it may be one of the record files that cannot be read",
+        *(f"{problem.file}: {problem.reason}" for problem in problems),
+        target_files=[str(directory / problem.file) for problem in problems],
+    ).with_level(Level.ERROR)
 
 
 # --- update -------------------------------------------------------------------------------------------------------
@@ -364,7 +378,8 @@ def release(session: Session, task_id: str | None = None, *, source: str = "") -
     """Remove this worktree's record with its token and delete the token; repeating is a no-op.
 
     Without ``task_id`` and without a token nothing happens (``registered`` false). With ``task_id`` the token must
-    own that record (``ScopeTokenMismatchError``), and a token is required (``ScopeTokenMissingError``).
+    own that record (``ScopeTokenMismatchError``), and a token is required (``ScopeTokenMissingError``). A record not
+    found while some record files cannot be read is ``SPEC_SCOPE_RECORD_INVALID`` at ``ERROR``; the token is kept.
     """
     location, registry, deadline = session.location, session.registry, session.deadline
     token = load_token(location.token_path)
@@ -374,13 +389,15 @@ def release(session: Session, task_id: str | None = None, *, source: str = "") -
                 "this worktree holds no scope registry token", target_files=[str(location.token_path)]
             )
         return Released("", 0, registered=False, already=False)
-    records, _ = registry.query(location.namespace, deadline)
+    records, problems = registry.query(location.namespace, deadline)
     digest = token_hash(token)
     if task_id:
         target = next((record for record in records if record.task_id == task_id), None)
     else:
         target = next((record for record in records if record.token_hash == digest), None)
     if target is None:
+        if problems:  # the record looked for may be one of the unreadable files: keep the token
+            raise _unreadable(location, problems)
         if not any(record.token_hash == digest for record in records):
             remove_token(location.token_path)  # orphaned: its record was released or swept
         return Released(task_id or "", 0, registered=True, already=True)

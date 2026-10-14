@@ -5,6 +5,7 @@ import threading
 from pathlib import Path
 
 import pytest
+from devkit.advisory import AdvisoryError, Level
 from scope.support import SPEC, git, make_repo, write
 
 from devkit_spec.config import ScopeConfig
@@ -167,6 +168,17 @@ def test_release_of_a_named_task(repo: Path) -> None:
         release(session, "SPEC-x")
     assert release(session, "SPEC-nope").already and session.location.token_path.exists()
     assert release(session, "SPEC-s").task == "SPEC-s"
+
+
+def test_an_unreadable_own_record_keeps_the_token(repo: Path) -> None:
+    session = open_session(repo)
+    register(session, SPEC)
+    (session.location.shared_path / session.location.namespace / "SPEC-s.json").write_text("{not json")
+    for call in (lambda: release(session), lambda: release(session, "SPEC-s"), lambda: own(session)):
+        with pytest.raises(AdvisoryError) as raised:
+            call()
+        assert raised.value.code == "SPEC_SCOPE_RECORD_INVALID" and raised.value.level == Level.ERROR
+    assert session.location.token_path.exists(), "the token of a record that cannot be read is kept"
 
 
 def test_journal_failure_is_one_warning(repo: Path) -> None:
