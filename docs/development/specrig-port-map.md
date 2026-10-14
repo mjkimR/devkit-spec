@@ -15,9 +15,12 @@ change that ports or drops a component updates its row. The contracts themselves
 | `lint` and the Go rule runner | devkit rules | `devkit rules check` (`--staged`, `--ci`). |
 | SDD rules id-convention, spec-format, spec-lifecycle, task-coverage, traceability-link, document-reference | `spec` bundle, `kind = "rule"` | Ported from Go to Python; the document index they share is `devkit_spec.documents` (`ADR-rules-implemented-in-the-package`). |
 | SDD rule workflow-shared-stage | devkit workflow | `devkit workflow validate` reports `SHARED_STAGE_MISMATCH`. |
-| (new in devkit-spec) | `spec` bundle, `kind = "rule"` | `RULE-reconcile-contract`, `RULE-code-entrypoints`, `RULE-document-summary`. |
-| RULE-markdown-link, RULE-file-length | devkit | Built-in rules. |
+| RULE-reconcile-contract (a staged-snapshot gate check), RULE-code-entrypoints | `spec` bundle, `kind = "rule"` | Ported from Go to Python. |
+| (new in devkit-spec) | `spec` bundle, `kind = "rule"` | `RULE-document-summary`. |
+| RULE-markdown-link, RULE-file-length, RULE-secret-leak, RULE-clean-artifacts | devkit | Built-in rules; specrig ran the last two as staged-snapshot gate checks. |
 | RULE-rule-implementation | dropped | It checked the layout of Go rule modules. |
+| RULE-rule-ownership | dropped | It kept `.specrig/governance/rules/conventions/` to the rule folders specrig shipped. devkit has no shared rule folder: each rule ships in its bundle, repository rules in an in-repository bundle. |
+| RULE-cli-contract | devkit | Built-in rule over `devkit ...` citations in Markdown code, checked against the running command line with plugin commands such as `devkit spec`; records of past or planned commands go in its `exclude` setting. |
 | skill-authoring preset, RULE-skill-document-size | devkit `authoring` bundle | |
 | git-commits preset | devkit `git-commits` bundle | |
 | github-milestones preset | `spec` bundle preset (planned) | SDD-specific; not shipped as of this record. |
@@ -35,6 +38,8 @@ change that ports or drops a component updates its row. The contracts themselves
 | `entrypoints derive` | `devkit spec entrypoints derive` | |
 | `list feedback`, feedback capture | `devkit spec list feedback`, the `spec-feedback` skill | Feedback documents are indexed like any document; `list --where` filters by `severity`, `scope` or `kind`, and feedback is ordered by severity (`SPEC-feedback-list-filters`). |
 | `list playbooks`, `playbook new` | devkit `devkit playbook search` | Authoring a playbook needs no command. |
+| `list instructions` | devkit `devkit get-context <bundle>` | Instruction headers per bundle. |
+| `list materials` for Markdown without frontmatter (title from the H1, ID from the slug) | dropped | Materials are free-form; a file without an ID is not a document (`CAP-DOCS-document-model`), so `list` and `search` show only materials that declare one. Reach the others by path and link. |
 | `cache`, `serve`, `sync`, `reading` | dropped | The derived-data cache, the removed web viewer, and two commands specrig never implemented. |
 
 ## 2. Agent Assets
