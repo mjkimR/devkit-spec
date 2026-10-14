@@ -85,24 +85,19 @@ class RelocationPlan:
     def contains(self, path: str) -> bool:
         return path == self.proposal or path.startswith(self.proposal + os.sep)
 
-    def relocation(self) -> LinkRelocation:
+    def relocation(self) -> LinkRelocation[str]:
         """The plan as devkit's ``LinkRelocation``: the proposal is gone, ``dir_target`` is where a link to it
         goes."""
-        files = _paths(self.exact)
+        files = dict(self.exact)
         if self.dir_target:
             files[self.proposal] = self.dir_target
         return LinkRelocation(
             files=files,
-            directories=_paths(self.prefixes),
+            directories=self.prefixes,
             removed=(self.proposal,),
-            file_origins=_paths(self.moved_files),
-            directory_origins=_paths(self.moved),
+            file_origins=self.moved_files,
+            directory_origins=self.moved,
         )
-
-
-def _paths(mapping: dict[str, str]) -> dict[str | os.PathLike[str], str | os.PathLike[str]]:
-    """``mapping`` typed for ``LinkRelocation``, whose ``Mapping`` keys are invariant."""
-    return {old: new for old, new in mapping.items()}
 
 
 @dataclass
