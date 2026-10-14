@@ -133,9 +133,14 @@ wheels = [
 ]
 
 [[package]]
+name = "devkit-advisory"
+version = "0.1.0"
+source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit-advisory#3f9cbd1bca5cf33000a2a887c6dec6b6f0492c92" }
+
+[[package]]
 name = "devkit-agt"
 version = "0.1.0"
-source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit#0c82c55c21f0768941a9d7656f310d7b52c9c69f" }
+source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit#3f9cbd1bca5cf33000a2a887c6dec6b6f0492c92" }
 dependencies = [
     { name = "click" },
     { name = "devkit-advisory" },
@@ -149,11 +154,6 @@ search = [
     { name = "numpy" },
     { name = "tokenizers" },
 ]
-
-[[package]]
-name = "devkit-advisory"
-version = "0.1.0"
-source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit-advisory#0c82c55c21f0768941a9d7656f310d7b52c9c69f" }
 
 [[package]]
 name = "devkit-embed"

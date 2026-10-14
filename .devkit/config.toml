@@ -20,6 +20,11 @@ spec = ["core", "docs-skeleton"]
 [worktree]
 pull_request = false
 
+[rules.settings.RULE-cli-contract]
+# Records of rejected, past or planned commands: decisions weigh alternatives, proposals and specs describe commands
+# not built yet, materials are free-form.
+exclude = ["docs/decisions/**", "docs/proposals/**", "docs/materials/**", "specs/**"]
+
 ## [tool.spec]: the settings of devkit-spec; devkit passes [tool.*] tables through unread.
 # [tool.spec]
 #   worktree = true  # boolean; route 2 and above (formal specs, proposals) run in a task worktree
