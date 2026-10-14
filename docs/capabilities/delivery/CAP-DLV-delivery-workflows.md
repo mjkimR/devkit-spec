@@ -161,7 +161,9 @@ stage of `s-lane` runs `spec-review`, `spec-sync` and, unless `collect-feedback`
 - `ask`: `devkit workflow next` prints `[WAITING: human gate:<gate>]` with a `[REQUEST: id=gate:<gate> ...]`. A G1
   or G2 answer is `devkit workflow answer --unit <dir> --request gate:<gate> --action accept` (or `--action decline
   --note "..."`). A G3 OK is `--given integration` on every later `next`, and a G3 objection takes the stage's return
-  path; where a runner binds `gate:integration` to PR state, the PR ready state answers G3.
+  path; where a runner binds `gate:integration` to PR state, the PR ready state answers G3. Every definition with an
+  integration gate declares `gates: {integration: {answer: given}}`, so `next` ends the G3 `[REQUEST]` with
+  `answer=given` and devkit's `devkit-workflow` skill gives the same instruction.
 - `auto`: the gate passes by policy; `next` prints `[GATE: <gate> policy=auto ... source=policy]`.
 - `off`: the stage is skipped (`[SKIPPED: <id> reason=...]`).
 - `--given <gate>` asserts a gate for one run (a runner's binding).

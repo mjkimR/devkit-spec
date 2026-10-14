@@ -3,6 +3,10 @@ id: s-lane
 title: "S-Lane (Route 1: session-contained direct execution)"
 status: active
 schema_version: 1
+# G3 is asked after the change is final: its approval is passed as `--given integration`, never recorded
+# (ADR-integration-approval-asserted).
+gates:
+  integration: { answer: given }
 # Executor-neutral stage schema: what a stage is, needs, produces and where it returns.
 # Stages shared with other workflows keep the same id and the same exit, gate, role, isolation, skills and
 # artifacts (`devkit workflow validate` reports SHARED_STAGE_MISMATCH); returns are this workflow's own.

@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 WORKFLOWS = ("s-lane", "direct-delivery", "bugfix", "incubated-delivery")
 ROLES = ("challenger", "reconciler", "reviewer", "scout")
@@ -86,3 +87,12 @@ def test_an_incubated_delivery_unit_is_a_proposal_bundle(synced: Path) -> None:
     step = _devkit("workflow", "next", "--unit", str(unit), "-w", str(synced))
     assert step.returncode == 0, step.stderr
     assert "[STAGE: intent-proposal human_gate=intent" in step.stdout
+
+
+@pytest.mark.parametrize("workflow", WORKFLOWS)
+def test_the_integration_gate_is_answered_by_given(workflow: str) -> None:
+    text = (Path(__file__).resolve().parents[1] / f"src/devkit_spec/bundle/workflows/{workflow}.md").read_text("utf-8")
+    data = yaml.safe_load(text.split("---\n", 2)[1])
+    gates = {stage.get("human_gate") for stage in data["stages"]}
+    expected = {"integration": {"answer": "given"}} if "integration" in gates else None
+    assert data.get("gates") == expected
