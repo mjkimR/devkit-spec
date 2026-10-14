@@ -1,0 +1,32 @@
+kind: review
+stage: review-refine
+created_at: '2026-10-13T23:54:34Z'
+status: completed
+summary: 'REVISE: AC-01..AC-07 met and tested, no non-goal or boundary drift; three documentation findings (output-contract wording, CLI docstrings, plan interface).'
+findings:
+- issue: The Living Spec output contract says JSON `namespace` is null, and the text line has no `namespace=` field, in a workspace without registered namespaces. The code reports `global` in that workspace whenever `--namespace global` is passed, because bundle_namespace returns (GLOBAL, GLOBAL) before it reads the registry.
+  evidence: docs/capabilities/delivery/CAP-DLV-spec-bundles.md:101-103, docs/capabilities/delivery/CAP-DLV-proposal-incubation.md:267-270, src/devkit_spec/proposals/scaffold.py:86-87
+  failure_condition: 'Workspace with no [[tool.spec.namespaces]] and `devkit spec new a --namespace global` (or `proposal new`). The text line ends with `namespace=global` and the JSON has `"namespace": "global"` (seen in a probe), but the docs say there is no field and the value is null. AC-04 asks for `namespace=global`, so the code is right and the docs are imprecise.'
+  suggested_action: 'Reword both docs to say the reported value is the written field, else `global` in a workspace that registers namespaces, else null (text: no field). Then an explicit `--namespace global` is always reported.'
+  resolution: open
+- issue: The CLI module docstrings that describe the text output contract were not updated for the new trailing `namespace=` field.
+  evidence: src/devkit_spec/cli/specs.py:3, src/devkit_spec/cli/proposals.py:5
+  failure_condition: 'Any workspace that registers namespaces. `spec new` prints `[SPEC: ... workflow=<id|-> namespace=<name>]` and `proposal new` prints `[PROPOSAL: ... workflow= namespace=]`, but the module docstrings still give the old lines without `namespace=`.'
+  suggested_action: Add `namespace=` to both docstrings, noting it only appears when the workspace registers namespaces or the namespace is given explicitly.
+  resolution: open
+- issue: plan.md section 2 and section 3 describe an interface that was not built. The plan names `default_namespace(root, namespace, cwd) -> str | None` beside `require_namespace`. The code replaced `require_namespace` with `bundle_namespace(...) -> tuple[str | None, str | None]` (written field, reported value), and the plan does not record the change.
+  evidence: specs/2026-10/20261014-namespace-default-and-handoff-branch/plan.md:18, specs/2026-10/20261014-namespace-default-and-handoff-branch/plan.md:32, src/devkit_spec/proposals/scaffold.py:77
+  failure_condition: A reader or a later spec-sync/reconcile step that follows plan.md looks for `default_namespace`/`require_namespace` in scaffold.py and finds neither. `default_namespace` is also an existing, unrelated name in devkit_spec.scope.location.
+  suggested_action: Update plan.md sections 2 and 3 to `bundle_namespace` and its tuple return, and note that `require_namespace` was removed (it was module-internal and not exported).
+  resolution: open
+assumptions:
+- Reviewed the uncommitted working tree of the task worktree; no commit exists before G3 (the user approves commits), so diff_scope.head is not a commit id
+unverified_areas:
+- Git older than 2.31 (--path-format), and Git missing or timing out in _check_worktree
+checks:
+  tests: PASS 526/526
+  lint: PASS ruff, pyright
+  rules: PASS devkit rules check
+diff_scope:
+  base: 87f19d5
+  head: ''

@@ -96,3 +96,74 @@ def test_handoff_refuses_an_unknown_namespace(workspace: Path, write: Write, val
     assert raised.value.target_files == ("docs/proposals/PROP-a/proposal.md",)
     assert "global, api" in str(raised.value.advisory.fix)
     assert proposal.is_file() and not (workspace / "specs").exists()
+
+
+def _new(workspace: Path, *args: str) -> list[str]:
+    result = CliRunner().invoke(devkit_cli, ["spec", *args, "-w", str(workspace)])
+    assert result.exit_code == 0, result.output
+    return result.stdout.splitlines()
+
+
+def test_new_bundles_take_the_namespace_of_the_current_directory(
+    workspace: Path, write: Write, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write(".devkit/config.toml", CONFIG)
+    (workspace / "services/api/src").mkdir(parents=True)
+    monkeypatch.chdir(workspace / "services/api/src")
+    lines = _new(workspace, "new", "--date", TODAY.isoformat(), "rate-limits")
+    assert lines[0].startswith("[SPEC: SPEC-rate-limits path=") and lines[0].endswith(" namespace=api]")
+    assert _meta(spec_dir(workspace, "rate-limits") / "spec.md")["namespace"] == "api"
+    assert (
+        json.loads("\n".join(_new(workspace, "new", "--date", TODAY.isoformat(), "quotas", "--format", "json")))[
+            "namespace"
+        ]
+        == "api"
+    )
+
+    (workspace / "docs/packages/api").mkdir(parents=True)
+    monkeypatch.chdir(workspace / "docs/packages/api")
+    lines = _new(workspace, "proposal", "new", "throttle")
+    assert lines[0].startswith("[PROPOSAL: PROP-throttle ") and lines[0].endswith(" namespace=api]")
+    proposal = workspace / "docs/proposals/PROP-throttle/proposal.md"
+    assert _meta(proposal)["namespace"] == "api"
+    accept(proposal)
+    handoff_proposal(workspace, "throttle", today=TODAY)
+    assert _meta(spec_dir(workspace, "throttle") / "spec.md")["namespace"] == "api"
+
+
+@pytest.mark.parametrize("where", ["root", "outside"])
+def test_outside_every_package_the_bundle_stays_global(
+    workspace: Path, write: Write, monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory, where: str
+) -> None:
+    write(".devkit/config.toml", CONFIG)
+    monkeypatch.chdir(workspace if where == "root" else tmp_path_factory.mktemp("elsewhere"))
+    lines = _new(workspace, "new", "--date", TODAY.isoformat(), "a")
+    assert lines[0].endswith(" workflow=- namespace=global]")
+    assert "namespace" not in _meta(spec_dir(workspace, "a") / "spec.md")
+    created = json.loads("\n".join(_new(workspace, "proposal", "new", "b", "--format", "json")))
+    assert created["namespace"] == "global"
+    assert "namespace" not in _meta(workspace / "docs/proposals/PROP-b/proposal.md")
+
+
+def test_without_registered_namespaces_nothing_is_reported(workspace: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(workspace)
+    assert "namespace=" not in _new(workspace, "new", "--date", TODAY.isoformat(), "a")[0]
+    assert json.loads("\n".join(_new(workspace, "proposal", "new", "b", "--format", "json")))["namespace"] is None
+
+
+def test_an_explicit_namespace_wins_over_the_current_directory(
+    workspace: Path, write: Write, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write(".devkit/config.toml", CONFIG)
+    (workspace / "services/api").mkdir(parents=True)
+    monkeypatch.chdir(workspace / "services/api")
+    assert _new(workspace, "new", "--date", TODAY.isoformat(), "a", "--namespace", "global")[0].endswith(
+        " namespace=global]"
+    )
+    assert _meta(spec_dir(workspace, "a") / "spec.md")["namespace"] == "global"
+    assert _new(workspace, "proposal", "new", "b", "--namespace", "global")[0].endswith(" namespace=global]")
+    assert _meta(workspace / "docs/proposals/PROP-b/proposal.md")["namespace"] == "global"
+    result = CliRunner().invoke(
+        devkit_cli, ["spec", "new", "c", "--namespace", "web", "--date", TODAY.isoformat(), "-w", str(workspace)]
+    )
+    assert result.exit_code == 2 and "ARGUMENT_INVALID" in result.output

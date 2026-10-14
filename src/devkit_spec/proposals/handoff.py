@@ -30,11 +30,11 @@ from pathlib import Path
 from typing import Any
 
 from devkit.advisory import AdvisoryError
-from devkit.core import FrontmatterError
+from devkit.core import FrontmatterError, GitError, run_git
 from devkit.core.frontmatter import parse
 from devkit.workflow import Binding
 
-from devkit_spec.config import GLOBAL
+from devkit_spec.config import GLOBAL, read_spec_config
 from devkit_spec.documents import DocumentIndex, parse_document
 from devkit_spec.errors import (
     ProposalCleanupWarning,
@@ -46,6 +46,7 @@ from devkit_spec.errors import (
     ProposalReferencesRewrittenNotice,
     ProposalTargetExistsError,
     ProposalUnboundNotice,
+    ProposalWrongWorktreeError,
 )
 from devkit_spec.proposals.binding import BUGFIX_WORKFLOW, DEFAULT_WORKFLOW, resolve_binding
 from devkit_spec.proposals.body import CarriedProposal, carry_proposal_body
@@ -175,11 +176,13 @@ def handoff_proposal(
     Approval is ``status: accepted``, or ``draft``/``reviewing`` with ``direction_chosen`` (the user chose the
     direction explicitly); it is never inferred. Raises, before writing anything: ``ProposalSlugError``,
     ``ProposalNotFoundError``, ``ProposalInvalidError``, ``ProposalNotApprovedError``,
-    ``ProposalSlugConflictError``, ``ProposalWorkflowError``, ``ProposalTargetExistsError``; and
-    ``ProposalHandoffError`` when a write fails (what was written is removed).
+    ``ProposalSlugConflictError``, ``ProposalWorkflowError``, ``ProposalTargetExistsError``,
+    ``ProposalWrongWorktreeError`` (``_check_worktree``); and ``ProposalHandoffError`` when a write fails (what was
+    written is removed).
     """
     root = root.resolve()
     slug = require_slug(slug)
+    _check_worktree(root, slug)
     day = today or date.today()
     bundle, single = bundle_dir(root, slug), single_file(root, slug)
     is_bundle = bundle.is_dir()
@@ -313,6 +316,38 @@ def handoff_proposal(
         notices.append(ProposalCleanupWarning(f"{rel} could not be removed: {exc}", target_files=[rel]))
     return _result(
         root, slug, target_dir, binding, unbound, target_docs_text, materials_target, decisions, report, notices
+    )
+
+
+def _check_worktree(root: Path, slug: str) -> None:
+    """Refuse a handoff in a linked worktree on another branch than ``slug`` when ``[tool.spec] worktree`` is on.
+
+    Outside Git and in the base checkout nothing is checked; a detached HEAD counts as another branch. A ``GitError``
+    without an exit status (Git missing, a timeout) propagates.
+    """
+    try:
+        dirs = run_git(root, "rev-parse", "--path-format=absolute", "--git-common-dir", "--git-dir").splitlines()
+    except GitError as exc:
+        if exc.returncode is None:
+            raise
+        return
+    common, git_dir = (Path(line.decode()).resolve() for line in dirs[:2])
+    if common == git_dir or not read_spec_config(root).worktree:
+        return
+    try:
+        branch = run_git(root, "symbolic-ref", "--quiet", "--short", "HEAD").decode().strip()
+    except GitError as exc:
+        if exc.returncode is None:
+            raise
+        branch = ""
+    if branch == slug:
+        return
+    raise ProposalWrongWorktreeError(
+        f"handoff of PROP-{slug} in the worktree of branch {branch or '- (detached HEAD)'}; it runs in the worktree "
+        f"of branch {slug}",
+        target_files=[str(root)],
+        fix=f"Run devkit worktree start {slug} in the base checkout, cd to the path it prints, then rerun "
+        f"devkit spec proposal handoff {slug} there",
     )
 
 

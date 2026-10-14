@@ -585,7 +585,7 @@
     },
     ".agents/skills/spec-specify/SKILL.md": {
       "mode": 420,
-      "sha256": "3dec72e01a8ee3535d0cb213900ce0ce7c0377d05ed4a846e56a8e3a54a8ea3f"
+      "sha256": "98c2cd3c64ffd00f8b2352a35172bc858270d0e7fbbbf0fb5ca056e4aae9ec67"
     },
     ".agents/skills/spec-specify/references/bugfix.md": {
       "mode": 420,
@@ -709,7 +709,7 @@
     },
     ".claude/skills/spec-specify/SKILL.md": {
       "mode": 420,
-      "sha256": "3dec72e01a8ee3535d0cb213900ce0ce7c0377d05ed4a846e56a8e3a54a8ea3f"
+      "sha256": "98c2cd3c64ffd00f8b2352a35172bc858270d0e7fbbbf0fb5ca056e4aae9ec67"
     },
     ".claude/skills/spec-specify/references/bugfix.md": {
       "mode": 420,
@@ -793,7 +793,7 @@
     },
     ".devkit/managed/devkit/instructions/consumption.md": {
       "mode": 420,
-      "sha256": "2afd8e8915a93c68d1407049cc54049248acdea116ee8777db7522d999511dd1"
+      "sha256": "60bb5ea5d64a6cc76114133bdf8144a80c7abf7f99e954e76d8ec090e819f6ad"
     },
     ".devkit/managed/devkit/instructions/devkit-run.md": {
       "mode": 420,
@@ -801,7 +801,7 @@
     },
     ".devkit/managed/devkit/instructions/in-repo-bundle.md": {
       "mode": 420,
-      "sha256": "f697281b1a99ac12144fd01fa85ea9cd50e5d3cf5044ad4890c4060817814a98"
+      "sha256": "503688267d190ce23021df0648c40ef2baef7474c4de2c85b4c7addf91232861"
     },
     ".devkit/managed/devkit/instructions/resource-kinds.md": {
       "mode": 420,
@@ -825,7 +825,7 @@
     },
     ".devkit/managed/spec/instructions/living-spec-writing.md": {
       "mode": 420,
-      "sha256": "9dce63b83c926984c7b2d86cc7256bbe8575b7d5b5d897bef857e0932209cb8b"
+      "sha256": "1190450fb9f58535cff671e512ca3435b257f68699ff51b5a0c100a1b245ebbf"
     },
     ".devkit/managed/spec/playbooks/brownfield-adoption/SKILL.md": {
       "mode": 420,
@@ -1021,7 +1021,7 @@
     },
     ".devkit/managed/spec/skills/spec-specify/SKILL.md": {
       "mode": 420,
-      "sha256": "3dec72e01a8ee3535d0cb213900ce0ce7c0377d05ed4a846e56a8e3a54a8ea3f"
+      "sha256": "98c2cd3c64ffd00f8b2352a35172bc858270d0e7fbbbf0fb5ca056e4aae9ec67"
     },
     ".devkit/managed/spec/skills/spec-specify/references/bugfix.md": {
       "mode": 420,
@@ -1109,13 +1109,13 @@
     {
       "bundle": "advisory",
       "bundle_version": "0.1.0",
-      "package": "devkit",
+      "package": "devkit-agt",
       "package_version": "0.1.0"
     },
     {
       "bundle": "devkit",
       "bundle_version": "0.1.0",
-      "package": "devkit",
+      "package": "devkit-agt",
       "package_version": "0.1.0"
     },
     {
@@ -1243,7 +1243,7 @@
     }
   },
   "tool": {
-    "package": "devkit",
+    "package": "devkit-agt",
     "version": "0.1.0"
   }
 }

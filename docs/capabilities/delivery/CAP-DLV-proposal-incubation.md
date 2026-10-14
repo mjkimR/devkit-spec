@@ -69,6 +69,10 @@ removes it.
    `docs/decisions/` and deleting the bundle directory; no `archive/` directory is kept.
 10. **Discovery is dynamic**: active proposals are listed with `devkit spec list proposal`, never through catalog
     tables maintained in README files.
+11. **Hand off in the slug's own worktree**: with `[tool.spec] worktree = true`, a handoff in a linked worktree whose
+    branch is not the slug (a detached HEAD included) MUST be refused before anything is read or written
+    (`SPEC_PROPOSAL_WRONG_WORKTREE`), so the spec bundle never lands on another task's branch. The base checkout,
+    `worktree = false` and a workspace outside Git are not checked.
 
 ## 4. Interfaces & Data Contracts
 
@@ -236,7 +240,7 @@ uv run devkit spec proposal prune [<slug>]                           # base chec
 | `--target-area/-a` | `new` | Capability area the proposal targets (default `capabilities/<area>/`); also the owned boundary. |
 | `--milestone/-m` | `new` | Milestone, phase or release; carried to `spec.md`. |
 | `--handoff-workflow` | `new` | Write `handoff_workflow: <id>` (default at handoff: `direct-delivery`). |
-| `--namespace` | `new` | Write `namespace: <name>`: `global` or registered in `[[tool.spec.namespaces]]`, else `ARGUMENT_INVALID` with the valid names in `[FIX]`. Omitted: no field, the bundle is global. |
+| `--namespace` | `new` | Write `namespace: <name>`: `global` or registered in `[[tool.spec.namespaces]]`, else `ARGUMENT_INVALID` with the valid names in `[FIX]`. Omitted: the namespace the current directory lies in (`CAP-DOCS-namespaces`), else no field and the bundle is global. |
 | `--summary` | `new`, `padr` | Write `summary: <text>`. Empty, or with a letter outside the Latin script: `ARGUMENT_INVALID` (`[TARGET] --summary`), nothing written. A promoted ADR keeps its PADR's summary. |
 | `--with-target-docs` | `new` | Also write `target-docs.md`. |
 | `--direction-chosen` | `handoff` | Hand off a `draft` or `reviewing` proposal whose direction the user chose explicitly. |
@@ -260,9 +264,11 @@ uv run devkit spec proposal prune [<slug>]                           # base chec
 [OK: nothing to prune]
 ```
 
-- `new`: one `[PROPOSAL: ...]` line (`target_docs=-` without `--with-target-docs`, `workflow=-` when unbound), then
-  `[NEXT_CMD: ...]` when `proposal.md` is bound to `incubated-delivery`. JSON: `id`, `dir`, `path`, `target_docs`,
-  `workflow`, `next_command`, `notices`.
+- `new`: one `[PROPOSAL: ...]` line (`target_docs=-` without `--with-target-docs`, `workflow=-` when unbound), ending
+  with `namespace=<name>` when the bundle reports a namespace: the field written, else `global` in a workspace that
+  registers namespaces (none for a global bundle in a workspace without them); then `[NEXT_CMD: ...]` when
+  `proposal.md` is bound to `incubated-delivery`. JSON: `id`, `dir`, `path`, `target_docs`, `workflow`, `namespace`
+  (`null` when none is reported), `next_command`, `notices`.
 - `padr`: one `[PADR: ...]` line. JSON: `id`, `path`, `proposal`.
 - `handoff`: `[HANDOFF: ...]` (`workflow=-`: unbound), `[TARGET_DOCS: ...]` and `[MATERIALS: ...]` when the bundle had
   them, one `[PROMOTED_ADR: ...]` per PADR, one `[REWRITTEN: <path>:<line> kind=link|id from= to=]` per rewrite, one
@@ -285,7 +291,8 @@ result.dir, result.workflow, result.decisions, result.rewritten, result.unresolv
 prune_proposals(root, "fast-engine")  # list of removed dirs
 ```
 
-`create_proposal` also takes `target_area`, `milestone`, `handoff_workflow`, `namespace` and `summary`;
+`create_proposal` also takes `target_area`, `milestone`, `handoff_workflow`, `namespace`, `summary` and `cwd` (the
+directory whose namespace applies when `namespace` is omitted);
 `carry_proposal_body` and `ensure_ac_ids` implement 4.6, `RelocationPlan`, `Rewritten` and `Unresolved` 4.7.
 
 ### 4.12 Codes
@@ -300,6 +307,7 @@ prune_proposals(root, "fast-engine")  # list of removed dirs
 | `SPEC_PROPOSAL_NOT_FOUND` | `ERROR` (`INPUT_ERROR`) | `ProposalNotFoundError` | No bundle or single-file proposal has the slug (`padr`: no bundle). |
 | `SPEC_PROPOSAL_INVALID` | `ERROR` (`MAINTENANCE`) | `ProposalInvalidError` | The proposal, its blueprint or a PADR cannot be read or its frontmatter does not parse; or, at handoff, `namespace` is not a string naming `global` or a registered namespace, or `summary` is not a string. |
 | `SPEC_PROPOSAL_NOT_APPROVED` | `ERROR` (`INTERACTION`) | `ProposalNotApprovedError` | Status is not `accepted` (or `draft`/`reviewing` with `--direction-chosen`). |
+| `SPEC_PROPOSAL_WRONG_WORKTREE` | `ERROR` (`INPUT_ERROR`) | `ProposalWrongWorktreeError` | `handoff` in a linked worktree on another branch than the slug under `[tool.spec] worktree = true` (rule 11); `[FIX]` starts the slug's worktree and reruns the handoff there. |
 | `SPEC_PROPOSAL_WORKFLOW_INVALID` | `ERROR` (`MAINTENANCE`) | `ProposalWorkflowError` | `handoff_workflow` is not a string, or names a definition that does not resolve or validate; `[DETAIL]` carries devkit's code. |
 | `SPEC_PROPOSAL_TARGET_EXISTS` | `ERROR` (`BLOCKED`) | `ProposalTargetExistsError` | The spec bundle, an ADR file or the materials directory exists, two PADRs map to one ADR, or another document declares a promoted ADR's ID. |
 | `SPEC_PROPOSAL_HANDOFF_FAILED` | `ERROR` (`MAINTENANCE`) | `ProposalHandoffError` | A write failed; what was written is removed, the materials moved back, the proposal kept. |
@@ -308,5 +316,5 @@ prune_proposals(root, "fast-engine")  # list of removed dirs
 | `SPEC_PROPOSAL_REFS_REWRITTEN` | `NOTICE` | `ProposalReferencesRewrittenNotice` | ID references now name the spec or the ADRs; reread each `[REWRITTEN ... kind=id]` sentence. |
 | `SPEC_PROPOSAL_UNBOUND` | `NOTICE` | `ProposalUnboundNotice` | `new`: `incubated-delivery` is not available, `proposal.md` is unbound. `handoff`: no `handoff_workflow` and `direct-delivery` is not available, `spec.md` is unbound. The `[FIX]` is `devkit workflow bind --unit <dir> --workflow <id>`. |
 | `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | devkit's `ArgumentError` | `new`: `--namespace` is neither `global` nor registered. `new`, `padr`: `--summary` is empty or not English. |
-| `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecConfigError` | A namespace other than `global` must be validated (`--namespace`, or a proposal's `namespace` at handoff) and `[tool.spec]` is malformed. |
+| `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecConfigError` | `[tool.spec]` is malformed and it must be read: `new` without `--namespace global`, a proposal's `namespace` other than `global` at handoff, or a handoff in a linked worktree. |
 | `SPEC_SCOPE_REGISTER_FAILED` | `WARNING` | `ScopeRegisterFailedWarning` | A handoff in a task worktree could not register its bundle (`CAP-COLL-work-scope-registry`). |

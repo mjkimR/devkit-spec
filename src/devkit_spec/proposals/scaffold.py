@@ -34,7 +34,7 @@ from devkit_spec.errors import (
     ProposalUnboundNotice,
     ProposalWorkflowError,
 )
-from devkit_spec.namespaces import require
+from devkit_spec.namespaces import detect, require
 from devkit_spec.proposals.binding import PROPOSAL_WORKFLOW, resolve_binding
 from devkit_spec.rules.document_summary import foreign_letters
 
@@ -74,15 +74,23 @@ def known_namespaces(root: Path) -> list[str]:
     return [GLOBAL, *(namespace.name for namespace in read_spec_config(root).namespaces)]
 
 
-def require_namespace(root: Path, namespace: str | None) -> str | None:
-    """``namespace`` when it is ``global`` or registered in the project at ``root``; ``None`` when omitted.
+def bundle_namespace(root: Path, namespace: str | None, cwd: Path | None) -> tuple[str | None, str | None]:
+    """The ``namespace`` field a new bundle gets (``None``: no field) and the namespace it reports.
 
-    Raises ``ArgumentError`` (``--namespace``) for any other name, and ``SpecConfigError`` for a malformed
-    ``[tool.spec]`` table when the name is not ``global``.
+    An explicit ``namespace`` must be ``global`` or registered in the project at ``root``. Without one, the bundle
+    takes the namespace ``cwd`` lies in (``devkit_spec.namespaces.detect``), none outside every package or without
+    ``cwd``. The reported namespace is the field, else ``global`` in a project that registers namespaces, else
+    ``None``. Raises ``ArgumentError`` (``--namespace``) for an unregistered name, and ``SpecConfigError`` for a
+    malformed ``[tool.spec]`` table unless the name is ``global``.
     """
-    if namespace is None or namespace == GLOBAL:
-        return namespace
-    return require(read_spec_config(root).namespaces, namespace)
+    if namespace == GLOBAL:
+        return GLOBAL, GLOBAL
+    namespaces = read_spec_config(root).namespaces
+    if namespace is not None:
+        written: str | None = require(namespaces, namespace)
+    else:
+        written = detect(namespaces, root, cwd) if cwd is not None else None
+    return written, written or (GLOBAL if namespaces else None)
 
 
 def require_summary(summary: str | None) -> str | None:
@@ -135,6 +143,7 @@ class CreatedProposal:
     path: str
     target_docs: str | None
     workflow: str | None = None
+    namespace: str | None = None
     notices: list[AdvisoryError] = field(default_factory=list)
 
     @property
@@ -148,6 +157,7 @@ class CreatedProposal:
             "path": self.path,
             "target_docs": self.target_docs,
             "workflow": self.workflow,
+            "namespace": self.namespace,
             "next_command": self.next_command,
             "notices": [notice.to_dict() for notice in self.notices],
         }
@@ -165,11 +175,13 @@ def create_proposal(
     summary: str | None = None,
     with_target_docs: bool = False,
     today: date | None = None,
+    cwd: Path | None = None,
 ) -> CreatedProposal:
     """Scaffold ``docs/proposals/PROP-<slug>/`` under the workspace ``root`` and bind ``proposal.md``.
 
-    ``handoff_workflow``, ``namespace`` and ``summary`` are written only when given (without ``summary``, a commented
-    placeholder line); handoff resolves the workflow and carries the namespace and summary. ``proposal.md`` is bound to ``incubated-delivery`` when it resolves and validates, else left unbound
+    ``handoff_workflow`` and ``summary`` are written only when given (without ``summary``, a commented placeholder
+    line); ``namespace`` when given, else the namespace ``cwd`` lies in (``bundle_namespace``, reported on the result).
+    Handoff resolves the workflow and carries the namespace and summary. ``proposal.md`` is bound to ``incubated-delivery`` when it resolves and validates, else left unbound
     with a ``SPEC_PROPOSAL_UNBOUND`` notice. Raises ``ProposalSlugError`` for a slug without letters or digits,
     ``ArgumentError`` for a ``namespace`` that is neither ``global`` nor registered or a ``summary`` that is empty or
     not English, ``ProposalExistsError`` when the
@@ -177,7 +189,7 @@ def create_proposal(
     """
     root = root.resolve()
     slug = require_slug(slug)
-    namespace = require_namespace(root, namespace)
+    namespace, reported = bundle_namespace(root, namespace, cwd)
     summary = require_summary(summary)
     title = (title or "").strip() or slug
     area = (target_area or "").strip() or DEFAULT_TARGET_AREA
@@ -219,6 +231,7 @@ def create_proposal(
         path=proposal.relative_to(root).as_posix(),
         target_docs=target_docs.relative_to(root).as_posix() if target_docs else None,
         workflow=binding.workflow if binding else None,
+        namespace=reported,
     )
     if unbound is not None:
         result.notices.append(

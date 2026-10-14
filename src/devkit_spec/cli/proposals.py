@@ -2,7 +2,8 @@
 
 Text output (paths are relative to the workspace root):
 
-- ``new``: ``[PROPOSAL: <id> path= dir= target_docs= workflow=]`` and, when ``proposal.md`` is bound to a workflow,
+- ``new``: ``[PROPOSAL: <id> path= dir= target_docs= workflow=]``, with a trailing ``namespace=`` when the bundle
+  reports one (``CreatedProposal.namespace``), and, when ``proposal.md`` is bound to a workflow,
   ``[NEXT_CMD: devkit workflow next --unit <dir>]``.
 - ``padr``: ``[PADR: <id> path= proposal=]``.
 - ``prune``: ``[PRUNED: <dir>]`` per empty proposal directory removed, else ``[OK: nothing to prune]``.
@@ -23,6 +24,8 @@ stderr.
 """
 
 from __future__ import annotations
+
+from pathlib import Path
 
 import click
 from devkit.core.cli import (
@@ -62,7 +65,8 @@ def proposal_group() -> None:
 @click.option(
     "--namespace",
     default=None,
-    help="Document namespace of the bundle: global or a registered package; carried to spec.md [default: none, global]",
+    help="Document namespace of the bundle: global or a registered package; carried to spec.md "
+    "[default: the current directory's]",
 )
 @click.option(
     "--summary",
@@ -96,6 +100,7 @@ def new_cmd(
         namespace=namespace,
         summary=summary,
         with_target_docs=with_target_docs,
+        cwd=Path.cwd(),
     )
     if is_json(output_format):
         echo_json(created.to_dict())
@@ -108,6 +113,7 @@ def new_cmd(
                 dir=created.dir,
                 target_docs=created.target_docs,
                 workflow=created.workflow,
+                **({"namespace": created.namespace} if created.namespace else {}),
             )
         )
         if created.next_command:

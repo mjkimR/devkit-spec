@@ -1,0 +1,10 @@
+request: gate:intent
+kind: approve
+action: accept
+workflow: direct-delivery
+stage: intent
+note: 'User: ''1,2,3 작업해줘'' on the port-gap audit; item 1 (ID-less materials) withdrawn
+  after discussion: record as dropped, no code. Scope: handoff branch guard and namespace
+  default.'
+by: user
+at: '2026-10-13T23:44:57Z'

@@ -1,0 +1,10 @@
+request: gate:direction
+kind: approve
+action: accept
+workflow: direct-delivery
+stage: direction
+note: 'User chose: handoff guard = branch check only (no proposal-content comparison);
+  namespace = infer from the current directory for both proposal new and spec new,
+  plus restore the package glossary reading guidance.'
+by: user
+at: '2026-10-13T23:44:57Z'

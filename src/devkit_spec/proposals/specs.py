@@ -30,8 +30,8 @@ from devkit_spec.proposals.binding import BUGFIX_WORKFLOW, DEFAULT_WORKFLOW, res
 from devkit_spec.proposals.body import CarriedProposal, ensure_ac_ids
 from devkit_spec.proposals.scaffold import (
     bundle_dir,
+    bundle_namespace,
     clean_slug,
-    require_namespace,
     require_summary,
     single_file,
     yaml_scalar,
@@ -223,6 +223,7 @@ class CreatedSpec:
     id: str
     dir: str
     workflow: str | None
+    namespace: str | None = None
     notices: list[AdvisoryError] = field(default_factory=list)
 
     @property
@@ -234,6 +235,7 @@ class CreatedSpec:
             "id": self.id,
             "dir": self.dir,
             "workflow": self.workflow,
+            "namespace": self.namespace,
             "next_command": self.next_command,
             "notices": [notice.to_dict() for notice in self.notices],
         }
@@ -248,12 +250,14 @@ def create_spec(
     namespace: str | None = None,
     summary: str | None = None,
     day: date | None = None,
+    cwd: Path | None = None,
 ) -> CreatedSpec:
     """Create ``specs/<YYYY-MM>/<YYYYMMDD>-<slug>/`` under the workspace ``root`` and bind ``spec.md``.
 
     ``workflow`` defaults to ``direct-delivery`` (unbound, with a ``SPEC_UNBOUND`` notice, when the project does not
     have it). A ``bugfix`` bundle gets only ``spec.md`` (``kind: bugfix``); its workflow writes the plan and tasks.
-    ``namespace`` and ``summary`` are written to ``spec.md`` only when given. Raises before writing:
+    ``summary`` is written to ``spec.md`` only when given; ``namespace`` when given, else the namespace ``cwd`` lies
+    in (``bundle_namespace``, reported on the result). Raises before writing:
     ``SpecSlugError``, ``ArgumentError`` (a ``namespace`` that is neither ``global`` nor registered, a ``summary``
     that is empty or not English), ``SpecExistsError``
     (``SPEC-<slug>`` or ``PROP-<slug>`` is declared, a proposal of the slug exists, or the directory exists),
@@ -265,7 +269,7 @@ def create_spec(
     slug = clean_slug(slug.strip().removeprefix("SPEC-"))
     if not slug:
         raise SpecSlugError(f"slug {raw!r} has no letter or digit", target_files=[raw])
-    namespace = require_namespace(root, namespace)
+    namespace, reported = bundle_namespace(root, namespace, cwd)
     summary = require_summary(summary)
     day = day or date.today()
     directory = spec_dir(root, slug, day)
@@ -302,7 +306,9 @@ def create_spec(
         roll_back(written)
         raise SpecWriteError(f"creating SPEC-{slug} failed; the files it wrote were removed", str(exc)) from exc
     rel = directory.relative_to(root).as_posix()
-    created = CreatedSpec(id=f"SPEC-{slug}", dir=rel, workflow=binding.workflow if binding else None)
+    created = CreatedSpec(
+        id=f"SPEC-{slug}", dir=rel, workflow=binding.workflow if binding else None, namespace=reported
+    )
     if unbound is not None:
         created.notices.append(
             SpecUnboundNotice(

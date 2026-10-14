@@ -1,0 +1,16 @@
+kind: final-report
+stage: final-change-report
+created_at: '2026-10-13T23:55:36Z'
+status: completed
+summary: CWD namespace default for spec new and proposal new (reported as namespace=), package glossary and namespace guidance in the bundle, and SPEC_PROPOSAL_WRONG_WORKTREE for a handoff in another task's worktree; three capabilities reconciled.
+findings: []
+assumptions:
+- 'Nothing is committed: the user''s standing rule requires explicit approval for commits, so diff_scope.head is the working tree'
+- The worktree's devkit sync refreshed .devkit/installation.json (package devkit -> devkit-agt) and projected skill copies; these are part of the change
+checks:
+  tests: PASS 526/526 just ci
+  build: PASS uv build not required; pyright 0 errors
+  lint: PASS ruff, devkit rules check errors=0
+diff_scope:
+  base: 87f19d5
+  head: ''

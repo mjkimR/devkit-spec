@@ -62,9 +62,10 @@ creates one without a proposal, writing the document IDs the spec rules expect (
    `plan-tasks`, and skeletons would have to match the characterized criteria at the `characterize` stage's
    `lint-clean` exit (`RULE-task-coverage` skips a spec without `tasks.md`). Rationale:
    `ADR-bugfix-bundles-start-with-spec-only`.
-7. **Optional fields only when given**: `namespace` and `summary` are written to `spec.md` only when the options are
-   given; without `namespace` the bundle is global. Without `--summary` the agent adds the field when removing the
-   marker.
+7. **Optional fields**: `summary` is written to `spec.md` only when `--summary` is given; without it the agent adds
+   the field when removing the marker. `namespace` is written when `--namespace` is given, else when the current
+   directory lies in a registered namespace (`CAP-DOCS-namespaces` section 3.3, rule 3, without the every-namespace
+   fallback); otherwise no field is written and the bundle is global.
 8. **Roll back on failure**: a file system error removes what was written (`SPEC_WRITE_FAILED`).
 
 ## 4. Interfaces & Data Contracts
@@ -81,7 +82,7 @@ devkit spec new <slug> [--title/-t TEXT] [--summary TEXT] [--workflow <id>] [--n
 | `--title/-t` | Spec title (default: the slug). |
 | `--summary` | Write `summary: <text>` into `spec.md`: one or two English sentences saying what the spec defines. Empty, or containing a letter outside the Latin script: `ARGUMENT_INVALID` (`[TARGET] --summary`), nothing written. |
 | `--workflow` | Workflow `spec.md` is bound to (default `direct-delivery`; `bugfix` adds `kind: bugfix` and writes `spec.md` only). |
-| `--namespace` | Write `namespace: <name>`: `global` or a namespace registered in `[[tool.spec.namespaces]]`, else `ARGUMENT_INVALID` with the valid names in `[FIX]`. |
+| `--namespace` | Write `namespace: <name>`: `global` or a namespace registered in `[[tool.spec.namespaces]]`, else `ARGUMENT_INVALID` with the valid names in `[FIX]`. Omitted: the namespace of the current directory, if any (rule 7). |
 | `--date` | Bundle date (default: today): the directory name and `created`. |
 
 ```bash
@@ -97,7 +98,10 @@ Text output, then `[NEXT_CMD: ...]` only when `spec.md` is bound:
 [NEXT_CMD: devkit workflow next --unit specs/2026-10/20261013-login-flow]
 ```
 
-`workflow=-` means unbound. JSON: `id`, `dir`, `workflow`, `next_command`, `notices`.
+`workflow=-` means unbound. The `[SPEC: ...]` line ends with `namespace=<name>` when the bundle reports a namespace:
+the field written, else `global` in a workspace that registers namespaces; a global bundle in a workspace without
+registered namespaces reports none (no field). JSON: `id`, `dir`, `workflow`, `namespace` (the same value, `null` when
+none is reported), `next_command`, `notices`.
 
 ### 4.2 Bundle Layout
 
@@ -135,8 +139,9 @@ Only `spec.md` has a status. Without a proposal, the problem statement is a plac
 ```python
 from devkit_spec.proposals import SKELETON_MARKER, CreatedSpec, create_spec, mark_skeleton, spec_files
 
-create_spec(root, "login-flow", workflow="bugfix")  # CreatedSpec: id, dir, workflow, next_command, notices
+create_spec(root, "login-flow", workflow="bugfix")  # CreatedSpec: id, dir, workflow, namespace, next_command, notices
 create_spec(root, "rate-limits", namespace="api", summary="Defines request rate limits.", day=date(2026, 10, 13))
+create_spec(root, "quotas", cwd=Path.cwd())  # the namespace of cwd when --namespace is omitted
 ```
 
 `resolve_binding` (`devkit_spec.proposals.binding`) resolves and validates a workflow with devkit's `Workspace`
@@ -154,4 +159,4 @@ before anything is written; `DEFAULT_WORKFLOW` is `direct-delivery`, `BUGFIX_WOR
 | `SPEC_WRITE_FAILED` | `ERROR` (`MAINTENANCE`) | `SpecWriteError` | A write failed; what was written is removed. |
 | `SPEC_UNBOUND` | `NOTICE` | `SpecUnboundNotice` | No `--workflow` and `direct-delivery` is not available: `spec.md` is unbound. |
 | `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | devkit's `ArgumentError` | `--namespace` is neither `global` nor registered, or `--summary` is empty or not English. |
-| `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecConfigError` | A namespace other than `global` must be validated and `[tool.spec]` is malformed (`CAP-DLV-project-policy`). |
+| `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecConfigError` | `[tool.spec]` is malformed and the namespace is not `--namespace global` (it is validated or detected; `CAP-DLV-project-policy`). |

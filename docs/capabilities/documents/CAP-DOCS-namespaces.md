@@ -93,7 +93,7 @@ path = "services/api"   # the package's source directory
 | --- | --- | --- |
 | `--namespace NAME` | `devkit spec list`, `devkit spec search` | `NAME` plus global documents; `global` for the global documents only. |
 | `--all-namespaces` | `devkit spec list`, `devkit spec search` | Every namespace. |
-| `--namespace NAME` | `devkit spec new`, `devkit spec proposal new` | Writes the bundle's `namespace` field (`CAP-DLV-spec-bundles`, `CAP-DLV-proposal-incubation`). |
+| `--namespace NAME` | `devkit spec new`, `devkit spec proposal new` | Writes the bundle's `namespace` field (`CAP-DLV-spec-bundles`, `CAP-DLV-proposal-incubation`). Omitted, the field is the namespace the current directory selects (section 3.3, rule 3), and none outside every package. |
 
 ### 4.3 Output
 

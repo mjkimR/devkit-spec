@@ -29,3 +29,7 @@ description: Read before authoring, editing or reviewing docs/ or specs/ documen
 - Refer to ID-bearing internal documents with full IDs in prose and exact IDs in relationship fields; omit Markdown paths. IDs are path-derived slugs, never dates or sequence numbers (`RULE-id-convention`).
 - Keep external URLs, images, code paths and documents without IDs as ordinary links. Code examples, non-ID inline code and H1 self IDs are not reference edges.
 - Use `devkit spec resolve <ID> [<ID>...]` to find repository-relative paths and `devkit spec refs <ID> --direction out|in` for reference discovery; `RULE-document-reference` checks every reference.
+
+## Glossary
+
+- Terms are defined in `docs/glossary.md`. In a monorepo, a package's documents (`docs/packages/<name>/`) may keep `docs/packages/<name>/glossary.md`: read it together with the root glossary. A package redefinition applies to that package's documents only.

@@ -35,6 +35,7 @@ def test_creates_a_bound_bundle(workspace: Path) -> None:
         "id": "SPEC-login-flow",
         "dir": f"specs/{MONTH}/{STAMP}-login-flow",
         "workflow": "direct-delivery",
+        "namespace": None,
         "next_command": f"devkit workflow next --unit specs/{MONTH}/{STAMP}-login-flow",
         "notices": [],
     }

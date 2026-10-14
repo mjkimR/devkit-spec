@@ -1,12 +1,14 @@
 """``devkit spec new``: create a spec bundle without a proposal.
 
-Text output: ``[SPEC: SPEC-<slug> path=<bundle dir> workflow=<id|->]`` and, when ``spec.md`` is bound to a workflow,
+Text output: ``[SPEC: SPEC-<slug> path=<bundle dir> workflow=<id|->]``, with a trailing ``namespace=<name>`` when the
+bundle reports one (``CreatedSpec.namespace``), and, when ``spec.md`` is bound to a workflow,
 ``[NEXT_CMD: devkit workflow next --unit <dir>]``. An unbound spec is a ``SPEC_UNBOUND`` notice on stderr.
 """
 
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 
 import click
 from devkit.core.cli import (
@@ -35,7 +37,7 @@ from devkit_spec.proposals import create_spec
 @click.option(
     "--namespace",
     default=None,
-    help="Document namespace of the bundle: global or a registered package [default: none, global]",
+    help="Document namespace of the bundle: global or a registered package [default: the current directory's]",
 )
 @click.option(
     "--summary",
@@ -71,11 +73,13 @@ def spec_new_cmd(
         namespace=namespace,
         summary=summary,
         day=day.date() if day else None,
+        cwd=Path.cwd(),
     )
     if is_json(output_format):
         echo_json(created.to_dict())
     else:
-        click.echo(sentinel("SPEC", created.id, path=created.dir, workflow=created.workflow))
+        fields = {"namespace": created.namespace} if created.namespace else {}
+        click.echo(sentinel("SPEC", created.id, path=created.dir, workflow=created.workflow, **fields))
         if created.next_command:
             click.echo(f"[NEXT_CMD: {created.next_command}]")
     echo_notices(created.notices)
