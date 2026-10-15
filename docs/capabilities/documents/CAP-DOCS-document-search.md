@@ -59,7 +59,10 @@ expansion. Going from a known ID to its path stays `devkit spec resolve` (`CAP-D
    tail of the dense ranking in `dense` and `hybrid` modes.
 7. **Limit**: `--limit/-n` (default `10`, `0` for all) caps the hits, pinned ones included. A negative limit MUST fail
    with `ARGUMENT_INVALID`.
-8. **Query language**: English queries work best, since the summary is the main dense signal.
+8. **Query**: English queries work best, since the summary is the main dense signal. A query that is empty or only
+   whitespace once its words are joined MUST fail with `ARGUMENT_INVALID` (`[TARGET]` `QUERY`) and print no
+   `[SEARCH: ...]` line, so a malformed query is never mistaken for a search with no hit
+   (`SPEC-search-blank-query`).
 
 ## 4. Interfaces & Data Contracts
 
@@ -70,8 +73,8 @@ devkit spec search QUERY... [--kind KIND]... [--history] [--namespace NAME | --a
     [--mode auto|lexical|dense|hybrid] [--limit/-n N] [--min-similarity F] [-w ROOT] [--format text|json]
 ```
 
-The words of `QUERY...` are joined with single spaces. `KIND` is one of the document kinds of
-`CAP-DOCS-document-model`.
+The words of `QUERY...` are joined with single spaces, and the joined query must not be blank. `KIND` is one of the
+document kinds of `CAP-DOCS-document-model`.
 
 ```bash
 devkit spec search "link integrity between documents"
@@ -115,9 +118,10 @@ terms:
 | `SPEC_GLOSSARY_INVALID` | `ERROR` (`INPUT_ERROR`) | `GlossaryInvalidError` | `docs/glossary.yaml` cannot be read or is not `terms: [{primary, synonyms}]`. |
 
 devkit's `SEARCH_EXTRA_MISSING`, `SEARCH_MODEL_NOT_FOUND` and `SEARCH_MODEL_INVALID` pass through for explicit dense
-or hybrid searches; `ARGUMENT_INVALID` for a negative `--limit` or an invalid namespace selection;
-`SPEC_CONFIG_INVALID` for a malformed `[tool.spec]` table. Unreadable documents are `SPEC_DOCUMENT_INVALID`
-warnings. Exit codes: `0` success (also with no hit), `2` an error, warnings `1` only under `--strict`.
+or hybrid searches; `ARGUMENT_INVALID` for a blank query, a negative `--limit` or an invalid namespace
+selection; `SPEC_CONFIG_INVALID` for a malformed `[tool.spec]` table. Unreadable documents are
+`SPEC_DOCUMENT_INVALID` warnings. Exit codes: `0` success (also with no hit for a non-blank query), `2` an error,
+warnings `1` only under `--strict`.
 
 ### 4.6 Library
 
