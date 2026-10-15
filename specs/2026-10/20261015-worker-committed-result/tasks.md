@@ -6,7 +6,7 @@ plan: PLAN-worker-committed-result
 
 # Task Breakdown: `SPEC-worker-committed-result` Workers deliver committed, self-contained results
 
-- [ ] **Task 1**: Record the decision
+- [x] **Task 1**: Record the decision
   - **_Boundary**: `docs/decisions/2026-10/20261015-worker-delivers-committed-result.md`
   - _Requirements: AC-06_
 - [ ] **Task 2**: Worker contract: committed, self-contained result, with role contract tests
