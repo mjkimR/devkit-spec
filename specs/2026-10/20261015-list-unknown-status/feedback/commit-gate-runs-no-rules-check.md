@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-15
 ---
 
@@ -49,3 +49,5 @@ c0f9289 docs(specs): reconcile list-unknown-status into the Living Spec      (co
 [GATE: message-nonempty stage=commit-msg order=900 enabled=true source=builtin]
 [CONFIG: sources=none]
 ```
+
+- **Disposition**: `SPEC-commit-gate-rules-default` with devkit `707aa54` and `bc14046`: devkit's built-in `rules-check` gate runs the rules on every commit by default, and this repository pins that devkit.

@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: noise
 recurring: false
-status: open
+status: forwarded
 created_at: 2026-10-15
 ---
 
@@ -49,3 +49,5 @@ $ git log --oneline -1   -> 23a9b82 docs: rely on devkit's default rules-check c
 $ git diff --stat e09d961 23a9b82   -> (empty)
 e09d961 author date Thu Oct 15 11:06:48 2026 +0900; 23a9b82 author date Thu Oct 15 18:06:22 2026 +0900
 ```
+
+- **Disposition**: cgate (owner's change, 2026-10-15): the post-commit hook now prints `[cgate] Commit rewritten: <old> -> <new> (use <new>)`.
