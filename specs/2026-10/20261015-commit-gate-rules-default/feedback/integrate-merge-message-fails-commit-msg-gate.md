@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-15
 ---
 
@@ -46,3 +46,5 @@ $ git merge --no-edit -m "Merge branch 'main' into list-unknown-status ..." main
 Expected format: <type>(<scope>): <subject> (e.g., 'feat: add user login', 'fix(auth): handle timeout')
 Rewrite your commit message following Conventional Commits format.
 ```
+
+- **Disposition**: `src/devkit_spec/bundle/skills/spec-integrate/SKILL.md` (S-Lane): Step 1 merges with `-m "<subject the commit-msg gate accepts>"`.
