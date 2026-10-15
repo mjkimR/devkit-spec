@@ -80,6 +80,12 @@ def search_cmd(
             f"--limit {limit}: must not be negative", target_files=["--limit"], fix="Pass --limit 0 or more"
         )
     query = " ".join(words)
+    if not query.strip():
+        raise ArgumentError(
+            "QUERY: must not be empty or only whitespace",
+            target_files=["QUERY"],
+            fix="Pass at least one non-blank word as QUERY",
+        )
     index = DocumentIndex.load(resolve_root(workspace_root))
     scope = NamespaceScope.of(index, namespace, all_namespaces)
     result = search_documents(
