@@ -1,0 +1,30 @@
+kind: reverify
+stage: review-refine
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T00:51:11.623571Z'
+status: completed
+review: review-01.yaml
+summary: 'Findings 1-3 resolved: conservative return rule stated in rule 12 and the docstring, cancelled-only case tested, spec status in-progress'
+findings:
+- issue: _user_direction treats any later non-cancel return record as voiding the user's direction accept, stricter than devkit's evaluation (an accepted return to that stage or earlier)
+  evidence: src/devkit_spec/proposals/handoff.py:569
+  failure_condition: A proposal whose accepted direction is followed by a return to handoff (or a declined return) carries no spec gates, so the agent asks again; nothing is inferred
+  suggested_action: State the conservative rule in rule 12, or align it with devkit's voiding
+  resolution: resolved
+- issue: The no-carry tests have no case whose only direction record is a cancel
+  evidence: tests/proposals/test_proposal_handoff_records.py:128
+  failure_condition: A later change reading the latest record instead of the effective one would carry a gate from a lone cancel without a failing test
+  suggested_action: Add a cancelled-only parametrize case
+  resolution: resolved
+- issue: RULE-spec-progress warns that spec.md is planned while every task is checked
+  evidence: specs/2026-10/20261015-handoff-unit-records/spec.md:5
+  failure_condition: devkit rules check --ci --base cc6d9c0 prints a warning at this head
+  suggested_action: Set the status with devkit rules fix or during spec-sync
+  resolution: resolved
+checks:
+  tests: 'PASS pytest tests/proposals: 154 passed'
+  lint: 'PASS devkit rules check: 0 errors, 0 warnings'
+diff_scope:
+  base: 871987cf8c760c035c6dc8de19c8434921afc1c4
+  head: ed56d662ac57b91be9212f95d16843c552da98e6

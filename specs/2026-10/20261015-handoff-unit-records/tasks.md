@@ -14,6 +14,7 @@ plan: PLAN-handoff-unit-records
   - **Verification**: `just test`
 - [x] **Task 2**: Living Spec, workflow gate rules and skill references.
   - **_Boundary**: docs/capabilities/delivery/CAP-DLV-proposal-incubation.md,
+    docs/capabilities/delivery/CAP-DLV-delivery-workflows.md,
     docs/architecture/ARCH-06-runtime-view.md, src/devkit_spec/bundle/workflows/,
     src/devkit_spec/bundle/skills/spec/references/worktree.md,
     src/devkit_spec/bundle/skills/spec-next/references/post-handoff.md

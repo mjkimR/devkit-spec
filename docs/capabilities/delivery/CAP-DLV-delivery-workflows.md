@@ -68,7 +68,8 @@ sequence.
    authority. `devkit workflow return --unit <dir> --to <stage>` voids the approvals of that stage and later ones,
    and the envelopes recorded for them before the return: a post-review defect needs a new review round.
 5. **G1 always needs the user's intent**: goal, scope and verification are confirmed by the user; the intent gate
-   opens once the anchor exists.
+   opens once the anchor exists. A spec handed off from a proposal whose direction the user accepted gets its G1
+   recorded from that answer (`CAP-DLV-proposal-incubation` rule 12).
 6. **G2 is conditional**: it fires for uncertain choices or changes to an existing agreement, never for
    implementation or integration inside an approved scope. Under `direction = "auto"` it passes by policy, and the
    executor MUST still put a direction outside the requested scope to the user.
@@ -96,7 +97,8 @@ sequence.
 13. **Incubation ends at handoff** (`CAP-DLV-proposal-incubation`): `incubated-delivery` declares no `next`
     candidates, because devkit's `devkit workflow handoff` rebinds a unit in place and refuses a candidate with
     another anchor (`HANDOFF_LAYOUT_MISMATCH`). Once the direction gate holds, `next` reports the unit complete
-    (`[STAGE: - complete=true]`, no `[HANDOFF]` line) and the executor runs `devkit spec proposal handoff <slug>`.
+    (`[STAGE: - complete=true]`, no `[HANDOFF]` line) and the executor runs `devkit spec proposal handoff <slug>`,
+    which records the spec's open G1 and G2 from the user's recorded direction answer and asks nothing again.
 14. **Roles are optional and read-only in Git**: every role MAY be replaced by the Developer running the procedure in
     the main session. A role never stages or commits (`x-git-actions: [read]`).
 
