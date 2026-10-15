@@ -1,0 +1,17 @@
+kind: reconciler
+stage: living-spec-draft
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T01:23:46.096557Z'
+status: completed
+summary: 'Isolated reconciler drafted 1 target (CAP-DOCS-document-search: blank-query rule, command note, error paragraph); host reviewed and confirmed it, resolved reconcile.md and completed the spec.'
+findings: []
+assumptions:
+- Reconciler spawned as the projected native Claude Code reconciler subagent (no shell; host ran rules and scope update)
+- 'Entrypoint candidate tests/test_search.py not applied: capabilities in this repository declare source entrypoints only'
+checks:
+  boundary: PASS draft touched only the docs target and reconcile.md; HEAD unchanged
+  rules_staged: PASS devkit rules check --staged
+diff_scope:
+  base: '7356203'
+  head: 0e7fc329c3579f75681a0e338458560da79fde6c
