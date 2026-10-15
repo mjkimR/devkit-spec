@@ -11,6 +11,9 @@ import yaml
 BUNDLE = Path(__file__).resolve().parents[1] / "src/devkit_spec/bundle"
 ROLES = ("challenger", "reconciler", "reviewer", "scout", "worker")
 DELEGATE = BUNDLE / "skills/spec-delegate/SKILL.md"
+WORKER_RESULTS = BUNDLE / "skills/spec-delegate/references/worker.md"
+ORCHESTRATE = BUNDLE / "skills/spec-orchestrate/SKILL.md"
+TASKS = BUNDLE / "skills/spec-tasks/SKILL.md"
 
 
 def _contract(role: str) -> tuple[dict[str, Any], str]:
@@ -91,3 +94,34 @@ def test_spec_delegate_passes_only_the_payload_to_a_projected_role() -> None:
     payload = (DELEGATE.parent / "references/payload.md").read_text(encoding="utf-8")
     for role in ROLES:
         assert f"| `{role}` |" in payload, role
+
+
+def test_tasks_name_the_docs_a_worker_must_write() -> None:
+    # AC-02: the documentation a check requires is in the worker task's boundary.
+    text = " ".join(TASKS.read_text(encoding="utf-8").split())
+    assert "a task a `worker` builds names the `docs/` paths its checks require" in text
+
+
+def test_the_host_validates_the_committed_range_and_blocks_a_failure() -> None:
+    # AC-04.
+    delegate = DELEGATE.read_text(encoding="utf-8")
+    assert "except a `worker`, which commits on its unit branch ([worker](references/worker.md))" in delegate
+    text = " ".join(WORKER_RESULTS.read_text(encoding="utf-8").split())
+    assert "From the last accepted head to the returned head" in text
+    assert "merge-base --is-ancestor <accepted> <returned>" in text
+    assert "diff --name-only <accepted> <returned>` is in the write scope" in text
+    assert "changes the `status:` line only" in text
+    assert "`git -C <worktree> status --short` is empty" in text
+    assert "--status failed" in text and "never reset or amend" in text
+    assert "a pull request stays open and blocked" in text
+    assert "A blocked unit goes to no review and no integration" in text
+    assert "validate the cumulative range again from the same last accepted head" in text
+
+
+def test_orchestration_follows_the_committed_result_contract() -> None:
+    # AC-05.
+    text = " ".join(ORCHESTRATE.read_text(encoding="utf-8").split())
+    assert "The worker commits its complete build on the unit branch through the commit gate" in text
+    assert "the committed range from the last accepted head" in text
+    assert "A failing range is blocked, never discarded" in text
+    assert "a blocked unit goes no further" in text

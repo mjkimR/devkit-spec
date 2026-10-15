@@ -12,7 +12,7 @@ plan: PLAN-worker-committed-result
 - [x] **Task 2**: Worker contract: committed, self-contained result, with role contract tests
   - **_Boundary**: `src/devkit_spec/bundle/subagents/worker.md`, `tests/test_role_contracts.py`
   - _Requirements: AC-01, AC-02, AC-03_
-- [ ] **Task 3**: Host side: range validation and block in `spec-delegate`, the loop in `spec-orchestrate`, worker
+- [x] **Task 3**: Host side: range validation and block in `spec-delegate`, the loop in `spec-orchestrate`, worker
   boundaries in `spec-tasks`, with tests
   - **_Boundary**: `src/devkit_spec/bundle/skills/spec-delegate/SKILL.md`,
     `src/devkit_spec/bundle/skills/spec-delegate/references/payload.md`,

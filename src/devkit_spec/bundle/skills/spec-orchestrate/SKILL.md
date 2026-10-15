@@ -1,6 +1,6 @@
 ---
 name: spec-orchestrate
-description: User-invoked orchestration mode. The host stops implementing and coordinates independent spec units, each in its own devkit worktree, delegating each unit's build to a worker subagent and validating, committing and integrating the results in order. A plain instruction returns the session to direct mode.
+description: User-invoked orchestration mode. The host stops implementing and coordinates independent spec units, each in its own devkit worktree, delegating each unit's build to a worker subagent that commits a complete result, then validating and integrating the results in order. A plain instruction returns the session to direct mode.
 ---
 
 # spec-orchestrate: Orchestration Mode
@@ -28,17 +28,17 @@ The switch changes no gate, policy or authority. `GATE_POLICY` and `GIT_POLICY` 
 
 1. **Start** (host, in the base): `devkit worktree start <slug>` and the printed `cd` target, then `devkit spec new <slug>` (or the proposal handoff) and `devkit spec scope register --spec <dir>` inside it, as the `spec` skill's `references/worktree.md` §1 describes. Keep the worktree's absolute path for every later command.
 2. **Plan** (host): G1, G2, `spec-specify`, `spec-plan` and `spec-tasks` in the unit's worktree. Gates follow `GATE_POLICY`; under `ask` the user answers each unit's gates.
-3. **Build** (worker): `spec-delegate` with role `worker`. The payload names the worktree's absolute path, the write scope (the tasks' `_Boundary:` paths and `tasks.md`), the tasks and the checks to run. Workers of independent units may run at the same time through the host's subagent mechanism; never two workers, or a worker and you, in one worktree. Where the worker's host status is `unsupported`, build the unit yourself in its worktree.
-4. **Validate and commit** (host): `spec-delegate` Steps 4 to 6 in the worktree. A rejected result is reverted and re-delegated with its cause, or built by you. A `needs_input` worker gets an answer inside the approved scope, or the question goes to the user through the `direction` gate.
+3. **Build** (worker): `spec-delegate` with role `worker`. The payload names the worktree's absolute path, the write scope (the tasks' `_Boundary:` paths, `tasks.md` and the spec's `status`), the tasks and the checks to run. The worker commits its complete build on the unit branch through the commit gate and returns its head (`ADR-worker-delivers-committed-result`); it never leaves the finishing to you. Workers of independent units may run at the same time through the host's subagent mechanism; never two workers, or a worker and you, in one worktree. Where the worker's host status is `unsupported`, build the unit yourself in its worktree.
+4. **Validate** (host): `spec-delegate` Steps 4 to 6 on the committed range from the last accepted head. A failing range is blocked, never discarded: a `failed` worker envelope, the commits kept (a pull request stays open and blocked), fixed with further commits by the worker or by you; a blocked unit goes no further. A `needs_input` worker gets an answer inside the approved scope, or the question goes to the user through the `direction` gate.
 5. **Review and sync** (host, or the `reviewer` and `reconciler` roles): `spec-review`, `spec-sync`, the feedback sweep and the final change report, as in direct mode.
 6. **Integrate** (host): G3 per unit, then `spec-integrate` and `devkit worktree finish` from the base, one unit at a time in the order the overlaps require. A unit integrated after another one first integrates the base (`spec-integrate` Step 1).
 
 ## 4. Keeping track
 
 - Keep one line per unit in the conversation: slug, worktree, stage (`devkit workflow next --unit <dir>`), worker state.
-- After context loss, `devkit worktree status`, `devkit spec scope query` and `devkit workflow next --unit <dir>` per bundle rebuild the picture; an envelope of kind `worker` marks a validated build.
+- After context loss, `devkit worktree status`, `devkit spec scope query` and `devkit workflow next --unit <dir>` per bundle rebuild the picture; the latest envelope of kind `worker` marks the build accepted (`completed`) or blocked (`failed`).
 - Report each unit's completion, commit and integration as separate facts, as in direct mode.
 
 ## 5. Returning to direct mode
 
-On the user's instruction, stop starting workers. Let running workers finish and validate their results, or stop them and revert their unvalidated changes; never leave a worktree with an unvalidated worker diff. Units still in flight continue in direct mode, one at a time, from the stage `devkit workflow next` reports.
+On the user's instruction, stop starting workers. Let running workers finish and validate their committed results, or stop them and take their uncommitted work over; a blocked unit stays blocked until a later range passes. Units still in flight continue in direct mode, one at a time, from the stage `devkit workflow next` reports.

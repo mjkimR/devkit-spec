@@ -22,7 +22,7 @@ Use this skill when the main Developer session hands exploration, criticism, an 
 2. **No whole-tree injection (`MUST NOT`)**: pass `relevant_files`, not the repository.
 3. **Boundaries are per task (`MUST`)**: inject the repository's actual declared paths into `allowed_boundaries`; contract paths are examples.
 4. **Guarantee comes from the host and the diff (`MUST`)**: prompt limits are guidance. If the host status is `emulated` or `unverified`, say so in the call and rely on the post-run diff comparison.
-5. **Support roles never touch index or HEAD (`MUST NOT`)**.
+5. **Support roles never touch index or HEAD (`MUST NOT`)**, except a `worker`, which commits on its unit branch ([worker](references/worker.md)).
 6. **Zero findings is a valid result (`MUST`)**: never ask a role to produce a minimum number of objections.
 
 ---
@@ -57,14 +57,14 @@ git diff --name-only --cached   # staged (should be unchanged by the role)
 ```
 - Scout, Challenger, Reviewer: expected diff is empty (Scout may add only to the agreed `materials/` path).
 - Reconciler: every changed path must be inside the injected docs scope and this spec's `reconcile.md`. One line in a declared source or test path rejects the whole draft.
-- Worker: the same commands as `git -C <worktree> ...`; its HEAD equals the recorded head, and `git -C <base> status --short` and HEAD match what you recorded before spawning. One path outside the write scope rejects the whole result.
-- A path outside `allowed_boundaries` or a change to the index or HEAD is a violation: report the paths, revert the out-of-scope change, and do not reuse earlier check results.
+- Worker: validate the committed range instead ([worker](references/worker.md)). One path outside the write scope rejects the whole result.
+- A path outside `allowed_boundaries` or a change to the index or HEAD (a worker's own commits aside) is a violation: report the paths, revert the out-of-scope change, and do not reuse earlier check results.
 
 ### Step 6: Fold the result back
 - **Envelope file** (Route 2 and above): record the role's return as `<unit>/envelopes/<kind>-<NN>.yaml` with kind `scout`, `challenger`, `review`, `reconciler` or `worker`. You write it, never the role, and never by hand-editing YAML: `devkit workflow envelope new --unit <dir> --kind <kind> --stage <stage> ... --findings-file -` (findings YAML on stdin, as found), then `devkit workflow envelope check --unit <dir>`. A `review` records findings as found (all open); a `reverify` (`--from latest --resolve N --waive N=<rationale>`) closes that round. The authoring flags are in section 6 of the `spec` skill's `references/envelope.md`. The conversation keeps only the summary and the file path. Route 1 needs no envelope files. For a proposal spike the unit is the proposal bundle: `--unit docs/proposals/PROP-<slug> --stage spike`.
 - Scout/Challenger: write the comparison table and recommendation into the proposal bundle (`materials/` or `proposal.md`); keep `unverified_areas` visible for the `direction` gate (G2).
 - Reviewer: fix findings, then re-verify only the changed part (tests for touched packages, `devkit rules check --staged`).
-- Worker: in the worktree run the unit's checks, stage only write-scope paths, run `devkit rules check --staged`, `git -C <worktree> commit`, then `devkit spec scope update --spec <dir>`.
+- Worker: accept the range or block it ([worker](references/worker.md)); a blocked unit stops until a later range passes.
 - Reconciler: review the draft as any docs change, stage only agreed paths, run `devkit rules check --staged` (not a working-tree check), send returned contract mismatches to a code fix, never a waiver, and keep confirmation (`reconcile.md` `status: resolved`) for the Developer per the `spec-sync` skill.
 - Commits are the Developer's (`git commit`; the commit gate runs the checks), staging only this task's agreed paths.
 
@@ -75,5 +75,5 @@ git diff --name-only --cached   # staged (should be unchanged by the role)
 - [ ] Contract frontmatter read; host projection status stated when not native.
 - [ ] Payload had all five fields and was all a projected role received; head SHA recorded.
 - [ ] Returned fields validated; stale or failed results not used as evidence.
-- [ ] Actual diff compared with `allowed_boundaries`; index and HEAD unchanged by the role.
+- [ ] Actual diff compared with `allowed_boundaries`; index and HEAD unchanged by the role (a worker: its committed range).
 - [ ] Result folded back into the current stage's artifact; envelope file written for Route 2 and above.
