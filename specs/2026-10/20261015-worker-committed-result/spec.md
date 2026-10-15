@@ -2,7 +2,7 @@
 id: SPEC-worker-committed-result
 title: Workers deliver committed, self-contained results
 summary: "Changes the worker role contract so a worker commits its unit's build on the unit branch, complete and passing the commit gate, and the host validates the committed range instead of an unstaged diff, so local and pull-request-based orchestration share one contract."
-status: in-progress
+status: completed
 created: 2026-10-15
 related_capabilities:
   - CAP-DLV-delivery-workflows

@@ -34,7 +34,9 @@ delegation work on every supported host without weakening the post-run diff chec
 
 - **Q1**: Per host, what documented mechanism grants a subagent (or the session) read, write and command access to an
   extra directory (Claude Code permission settings for additional directories, Codex writable roots or added
-  directories, Antigravity workspace settings), and can `devkit sync` project it without per-user setup?
+  directories, Antigravity workspace settings), and can `devkit sync` project it without per-user setup? Workers commit
+  their build (`ADR-worker-delivers-committed-result`), so the access includes the Git common directory of a linked
+  worktree, not only the worktree directory.
 - **Q2**: Does a worktree inside the repository (for example under an ignored `.devkit/` path) avoid the sandbox
   limits, and what breaks: project discovery climbing to the base, `rg` and tool scans, scope registry attribution,
   `devkit worktree` path conventions and cleanup?

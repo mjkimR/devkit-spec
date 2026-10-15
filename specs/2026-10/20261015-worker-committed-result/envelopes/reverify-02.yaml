@@ -1,0 +1,55 @@
+kind: reverify
+stage: review-refine
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T02:43:17.613856Z'
+status: completed
+review: review-01.yaml
+summary: 'Second reverify of 2b60aa8..699f277: N1 and N2 resolved, no new findings. After context loss, envelope authorship rests on the host''s judgment (good-faith model, non-goal 3).'
+findings:
+- issue: '[high] After a block, the host''s own envelope file makes every later validation fail'
+  evidence: src/devkit_spec/bundle/skills/spec-delegate/references/worker.md:19, :25-32; src/devkit_spec/bundle/subagents/worker.md:49
+  failure_condition: An uncommitted failed envelope fails the clean-worktree check; a committed one falls inside the revalidated range outside the worker's write scope, so no later range passes. Accept has the same issue for later spawns.
+  suggested_action: Exclude host-only paths (<unit>/envelopes/) from the write-scope comparison, commit envelopes, and define the last accepted head after host commits; pin with a test.
+  resolution: resolved
+- issue: '[medium] ''Before spawning'' is ambiguous about the base when a worker is spawned again on a blocked unit'
+  evidence: src/devkit_spec/bundle/skills/spec-delegate/references/worker.md:9-10; references/payload.md:3
+  failure_condition: Recording the current HEAD of a blocked unit as base skips the rejected commits and lets an out-of-scope commit pass.
+  suggested_action: State that a blocked unit keeps its last accepted head; never pass a blocked unit's current HEAD as diff_scope.base.
+  resolution: resolved
+- issue: '[medium] The Accept command hardcodes --stage build-verify, which bugfix units do not have'
+  evidence: src/devkit_spec/bundle/skills/spec-delegate/references/worker.md:25; workflows/bugfix.md:78
+  failure_condition: A bugfix unit's worker envelope is recorded under a stage its workflow does not define.
+  suggested_action: Use the current build stage from devkit workflow next.
+  resolution: resolved
+- issue: '[low] Generic spec-delegate lines still assume host-only commits and a discarding revert'
+  evidence: src/devkit_spec/bundle/skills/spec-delegate/SKILL.md:50, :61, :69
+  failure_condition: A host reading SKILL.md alone can discard or distrust a valid worker range.
+  suggested_action: Add worker carve-outs for commits, out-of-scope handling and a moved head.
+  resolution: resolved
+- issue: '[low] needs_input/failed handling assumes no commits exist, which is not true after a block'
+  evidence: references/worker.md:33-34; subagents/worker.md:54; spec-orchestrate/SKILL.md:39
+  failure_condition: After context loss a later return could hide the blocked state; 'nothing incomplete was committed' misreads a blocked branch.
+  suggested_action: State that a unit stays blocked while its latest validation failed, and that only validations are recorded as worker envelopes.
+  resolution: resolved
+- issue: '[low] The AC-04 test does not pin the unchanged-base check'
+  evidence: tests/test_role_contracts.py:105-118
+  failure_condition: Removing the base-checkout check keeps CI green.
+  suggested_action: Assert the base-checkout line.
+  resolution: resolved
+- issue: '[low] N1: Step 6 still records every worker return as an envelope, which conflicts with the blocked-state rule'
+  evidence: src/devkit_spec/bundle/skills/spec-delegate/SKILL.md:64; references/worker.md:45-46
+  failure_condition: A host following Step 6 records a needs_input worker envelope after a block; after context loss the unit reads as unblocked.
+  suggested_action: Add a worker exception to Step 6 (validations only) and pin it in the AC-04 test.
+  resolution: resolved
+- issue: '[low] N2: excluding <unit>/envelopes/ from the comparison also exempts envelope files a worker writes'
+  evidence: references/worker.md:20-25; subagents/worker.md:49
+  failure_condition: A worker-committed completed envelope passes the path check and clears a block without a passing validation.
+  suggested_action: Exempt only the host's own records, or state the residual risk.
+  resolution: resolved
+checks:
+  tests: PASS reviewer reran tests/test_role_contracts.py (19 passed); host just ci 735 passed
+  rules_ci: PASS devkit rules check --ci --base main
+diff_scope:
+  base: 2b60aa8
+  head: 699f277cf36df28e4ac532c3870510d40ee5fbe6

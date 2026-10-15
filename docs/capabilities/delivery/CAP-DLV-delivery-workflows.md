@@ -99,8 +99,10 @@ sequence.
     another anchor (`HANDOFF_LAYOUT_MISMATCH`). Once the direction gate holds, `next` reports the unit complete
     (`[STAGE: - complete=true]`, no `[HANDOFF]` line) and the executor runs `devkit spec proposal handoff <slug>`,
     which records the spec's open G1 and G2 from the user's recorded direction answer and asks nothing again.
-14. **Roles are optional and read-only in Git**: every role MAY be replaced by the Developer running the procedure in
-    the main session. A role never stages or commits (`x-git-actions: [read]`).
+14. **Roles are optional; only the worker writes to Git**: every role MAY be replaced by the Developer running the
+    procedure in the main session. A role never stages or commits (`x-git-actions: [read]`), except the `worker`
+    (`[read, commit]`), which commits its complete build on its unit branch and never pushes, merges, rebases, resets
+    or amends (`ADR-worker-delivers-committed-result`).
 
 ## 4. Interfaces & Data Contracts
 
@@ -209,7 +211,8 @@ Envelopes are devkit envelope files under the bundle's `envelopes/`, written wit
 | `green` | `envelopes/green-NN.yaml` | `resolved`, `preserved` |
 | `feedback` | `envelopes/feedback-NN.yaml` | `swept` |
 | `final-report` | `envelopes/final-report-NN.yaml` | `tests`, `build`, `lint` |
-| `challenger`, `reconciler`, `scout`, `worker` | role returns | none required by a stage |
+| `challenger`, `reconciler`, `scout` | role returns | none required by a stage |
+| `worker` | the host's validation of a worker's committed range (`completed` accepts, `failed` blocks) | none required by a stage |
 
 A role returns `status` (`completed`, `needs_input`, `failed`), `summary`, `findings` (`issue`, `evidence`,
 `failure_condition`, `suggested_action`), `assumptions`, `unverified_areas`, `checks` and `diff_scope`; the Developer
@@ -222,7 +225,7 @@ One Markdown contract per role in devkit's
 `role`, `title`, `description`, an optional `skill` and a `hosts` block for `claude-code`, `codex` and `antigravity`. Extension
 keys devkit does not interpret: `x-execution` (`isolated`), `x-invocation` (`optional`), `x-model-profile`
 (`light-medium`, `general-high`, `high-reasoning`; never a host model name) and `x-git-actions` (`[read]` for every
-role).
+role but the `worker`, `[read, commit]`).
 
 | Role | Skill | Model profile | Writes | Envelope kind |
 | --- | --- | --- | --- | --- |
@@ -230,7 +233,7 @@ role).
 | `reconciler` | `spec-sync` | `light-medium` | docs drafts and the bundle's `reconcile.md` | `reconciler` |
 | `reviewer` | `spec-review` | `general-high` | nothing | `review`, `reverify` |
 | `scout` | none: the procedure is in the contract | `light-medium` | nothing, or the proposal's `materials/` on request | `scout` |
-| `worker` | none: the procedure is in the contract | `general-high` | the injected write scope inside its unit's worktree | `worker` |
+| `worker` | none: the procedure is in the contract | `general-high` | the injected write scope inside its unit's worktree, committed on the unit branch | `worker` (validations) |
 
 The contract body is the role's prompt and holds only what the role needs: purpose, input fields, return fields,
 write boundaries, failure handling and, for a role whose procedure no main session runs (`challenger`, `scout`), the
@@ -243,8 +246,13 @@ managed path and the sections the role follows (the reconciler only the impact a
 
 `worker` exists for orchestration mode only (`spec-orchestrate`, user-invoked): it builds one unit's tasks in that
 unit's devkit worktree, using absolute paths and `git -C <worktree>` because no host gives a subagent its own working
-directory, and leaves the result unstaged. The host compares the diff in the worktree and the base checkout against
-what it recorded before spawning, runs the checks, stages and commits. Its host statuses are Claude Code `native`,
+directory, and commits a complete result through the commit gate: tasks checked, the spec's `status` set by
+`devkit rules fix`, the `docs/` paths its tasks' `_Boundary:` name, its checks passing; it commits nothing
+incomplete. The host validates the cumulative committed range from the unit's last accepted head (write scope,
+`spec.md` changed in `status` only, a clean worktree, an unchanged base checkout, passing checks) and records the
+validation as a `worker` envelope. A failed validation blocks the unit from review and integration without discarding
+anything: the commits stay (a pull request stays open and blocked) and later commits fix them
+(`ADR-worker-delivers-committed-result`). Its host statuses are Claude Code `native`,
 Codex `unsupported` (the host builds the unit itself) and Antigravity `unverified`
 (`SPEC-orchestration-mode`).
 
