@@ -20,8 +20,8 @@ Four bundle assets select feedback by severity: the `spec-feedback` sweep (criti
 `envelope.md` (one line per open critical item) and the `feedback-hygiene` playbook (scope or severity the user names,
 ordered by severity). `devkit spec list feedback` filters only by the generic fields of `CAP-DOCS-document-lookup`
 and prints none of the feedback fields, so each asset tells the agent to list open feedback and then open every file
-to read its `severity`, `scope` and `target`. specrig had dedicated `--scope`, `--severity` and `--kind` flags and a
-severity order; the port left them out as a non-goal of `CAP-DOCS-document-lookup`.
+to read its `severity`, `scope` and `target`. Earlier prototypes had dedicated `--scope`, `--severity` and `--kind` flags and a
+severity order; earlier simplifications left them out as a non-goal of `CAP-DOCS-document-lookup`.
 
 `devkit spec list` takes the document kind as its positional `KIND`, so a feedback `--kind` flag would collide with
 it. A generic frontmatter filter avoids the collision and serves any field (G2 direction, decision 02).
@@ -33,7 +33,7 @@ it. A generic frontmatter filter avoids the collision and serves any field (G2 d
 
 ## 3. Non-Goals
 
-1. **Scope Excluded**: specrig's feedback defaults: listing only `status: open` feedback unless asked, and hiding
+1. **Scope Excluded**: legacy feedback defaults: listing only `status: open` feedback unless asked, and hiding
    `workaround` and `noise` items without `--all`.
    - **Rationale**: `list` serves every kind in one command, so a feedback-only default would make `list feedback`
      and `list feedback spec` select differently; items hidden without a trace in the output would drop out of the

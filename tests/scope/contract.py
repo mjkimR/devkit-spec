@@ -1,4 +1,4 @@
-"""The registry adapter contract, runnable against any ``Registry`` (specrig's ``contracttest``).
+"""The registry adapter contract, runnable against any ``Registry``.
 
 Each scenario takes a fresh, empty registry whose ``hostname`` is ``host-a``.
 """

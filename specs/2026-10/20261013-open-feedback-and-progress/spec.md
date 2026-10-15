@@ -19,7 +19,7 @@ workflow_hash: sha256:6fe2644b9464ea860e6d6928748778b4ffd7a255e92ddea5fe10eba591
 The `collect-feedback` stage records feedback in a spec bundle after `living-spec-draft` has set the spec
 `completed`, and `CAP-DOCS-document-model` makes every file of a completed bundle historical. Open feedback therefore
 drops out of `devkit spec list feedback` and `search` unless `--history` is passed, and the rules stop checking it.
-specrig listed every `specs/**/feedback/*.md` whatever the bundle's status; a feedback file has its own lifecycle
+Previously, every `specs/**/feedback/*.md` was listed whatever the bundle's status; a feedback file has its own lifecycle
 (`open` until a hygiene session promotes, dismisses or forwards it), so it is not work history.
 
 A spec's `status` also stays `planned` through build, review and reconcile: nothing sets `in-progress`, although the

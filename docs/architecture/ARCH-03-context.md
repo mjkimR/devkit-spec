@@ -1,7 +1,7 @@
 ---
 id: ARCH-03-context
 title: System Scope & Context
-summary: System context of devkit-spec, covering its boundary with the devkit foundation, the AI coding agents and hosts that use it, consumer projects, Git and GitHub, and specrig as the retired predecessor.
+summary: System context of devkit-spec, covering its boundary with the devkit foundation, the AI coding agents and hosts that use it, consumer projects, and Git and GitHub.
 status: active
 created_at: 2026-10-13
 ---
@@ -27,7 +27,6 @@ flowchart TD
     System -->|"git subprocess"| Git["Git<br>[External System]"]
     Devkit -->|"snapshots, worktrees, hooks"| Git
     Git -->|"push, pull requests"| GitHub["GitHub<br>[External System]"]
-    Specrig["specrig<br>[Retired system: Go CLI]"] -.->|"behaviour ported"| System
 ```
 
 ---
@@ -35,7 +34,7 @@ flowchart TD
 ## 2. Boundary with devkit
 
 devkit is the SDD-agnostic foundation; devkit-spec owns everything spec-driven. The split is a hard boundary
-(`ADR-rebuild-specrig-on-devkit`):
+(`ADR-rebuild-spec-on-devkit`):
 
 | devkit owns (used through its public surface) | devkit-spec owns |
 | :--- | :--- |
@@ -63,4 +62,3 @@ never imports devkit's private helpers or copies them.
 | **Git** | Subprocess (`devkit.core.run_git`) | Porcelain output | Snapshots (devkit), observed scope paths, the Git common and per-worktree directories, base revisions and base branches | Git failures surface as devkit's `GIT_FAILED`; scope commands bound every Git call by a deadline (`SPEC_SCOPE_TIMEOUT`) |
 | **GitHub** | Git over HTTPS or SSH; pull requests | - | Hosting; pull request integration under `[worktree] pull_request = "required"`, or when a task needs it under `"auto"` | Integration without pull requests: `devkit worktree finish --merge` |
 | **Embedding model** (`devkit-embed`, through `devkit-spec[search]`) | Python import through devkit | float16 static embeddings | Dense and hybrid search | `--mode auto` ranks lexically when the extra is absent |
-| **specrig** (private `mjkimR/specrig`) | None at runtime | - | The Go predecessor whose behaviour was ported; a reference for semantics only | Not a runtime dependency ([specrig port map](../development/specrig-port-map.md)) |

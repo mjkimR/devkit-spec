@@ -23,8 +23,7 @@ supersedes: ADR-scope-maintenance-through-skills
 `ADR-scope-maintenance-through-skills` left every registry step to the skills because `devkit worktree finish` could
 not call devkit-spec, and rejected extension points in devkit as an extension mechanism for one plugin. In use, the two cleanup
 steps after a finish (`devkit spec scope sweep --apply`, `devkit spec proposal prune <slug>`) are exactly the steps an
-agent forgets once the merge is done, and a forgotten sweep leaves a stale record every other worktree sees. specrig
-ran both inside its own finish.
+agent forgets once the merge is done, and a forgotten sweep leaves a stale record every other worktree sees.
 
 devkit has since gained a general extension point for this: `devkit.post_finish` entry points, called after a
 successful `devkit worktree finish`, under the rules of its `devkit.post_sync` extensions (an extension never fails the command).

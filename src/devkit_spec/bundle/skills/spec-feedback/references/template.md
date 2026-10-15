@@ -25,9 +25,9 @@ created_at: <YYYY-MM-DD>
 One incident per file. Use the configured detail level; brief/standard should take about 1 minute.
 If kind is friction / question, fill out Section 1 and remove Section 2.
 If kind is suggestion / change-request, fill out Section 2 and remove Section 1.
-Evidence must include only direct observations: instructions, doc excerpts, command outputs, file states. Do not quote user utterances.
+Evidence must include only direct observations: instructions, doc excerpts, summarized command outputs, file states. Do not dump raw command outputs verbatim; summarize or excerpt key lines and mask local paths/PII. Do not quote user utterances.
 Judgments must reflect the agent's own assessment.
-Do not include secrets, tokens, or PII.
+Do not include secrets, tokens, or PII (including local paths/usernames).
 If category is other, specify the nature in the first line below.
 -->
 
@@ -50,7 +50,7 @@ If category is other, specify the nature in the first line below.
 ## Evidence
 
 ```text
-<Directly observed instruction/doc excerpts, command output, or file state. Do not include user utterances.>
+<Directly observed instruction/doc excerpts, summarized command output, or file state. Do not dump raw output verbatim; excerpt relevant lines and mask local paths (<repo>, <worktree>). Do not include user utterances.>
 ```
 ````
 

@@ -20,7 +20,7 @@ workflow_hash: sha256:6fe2644b9464ea860e6d6928748778b4ffd7a255e92ddea5fe10eba591
 (`CAP-COLL-work-scope-registry`) reads the same parse. Only the label line is read: a boundary wrapped over several
 lines, as Markdown renders it as one value, silently loses the paths on its continuation lines. In
 `SPEC-feedback-list-filters` three of a task's four paths dropped out of `devkit spec entrypoints derive` and the
-registry without a notice. specrig had the same gap. The direction gate chose to join continuation lines (G2).
+registry without a notice. Earlier parsers had the same gap. The direction gate chose to join continuation lines (G2).
 
 ## 2. User Stories
 

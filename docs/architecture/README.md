@@ -10,7 +10,7 @@ document; refer to it by its ID (`devkit spec resolve <ID>` gives the path).
 | 01 | Introduction and Goals | `ARCH-01-introduction-and-goals` | Mission, goals, non-goals, quality goals, stakeholders |
 | 02 | Architecture Constraints | (none) | Constraints live in `ARCH-08-cross-cutting` and the decisions |
 | 03 | System Scope and Context | `ARCH-03-context` | C4 L1, the boundary with devkit, external systems |
-| 04 | Solution Strategy | (none) | `ADR-rebuild-specrig-on-devkit` and `ADR-mount-under-the-devkit-command-line` hold it |
+| 04 | Solution Strategy | (none) | `ADR-rebuild-spec-on-devkit` and `ADR-mount-under-the-devkit-command-line` hold it |
 | 05 | Building Block View | `ARCH-05-1-containers`, `ARCH-05-2-components` | C4 L2: the wheel's bundle, command group and library; C4 L3: the package modules |
 | 06 | Runtime View | `ARCH-06-runtime-view` | Spec bundle start, proposal handoff, commit gate, worktree lifecycle |
 | 07 | Deployment View | `ARCH-07-deployment` | Installation, files on disk, development environment, CI |
@@ -19,8 +19,6 @@ document; refer to it by its ID (`devkit spec resolve <ID>` gives the path).
 | 10 | Quality Requirements | (none) | Quality goals in `ARCH-01-introduction-and-goals`; contracts in the capabilities |
 | 11 | Risks and Technical Debts | (none) | |
 | 12 | Glossary | [glossary.md](../glossary.md) | |
-
-The specrig-to-devkit component map is the [specrig port map](../development/specrig-port-map.md).
 
 ## 2. Conventions
 

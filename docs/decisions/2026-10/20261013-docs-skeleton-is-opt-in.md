@@ -17,7 +17,7 @@ created_at: 2026-10-13
 
 ## 1. Context & Problem Statement
 
-specrig wrote a `docs/` skeleton (`template/docs`, plus `glossary.yaml`) when a project was initialized. In devkit, a
+Previously, a `docs/` skeleton (`template/docs`, plus `glossary.yaml`) was written automatically when a project was initialized. In devkit, a
 `kind = "document"` asset with `seeded = true` is written once where the target file is absent and is project-owned
 afterwards. The `spec` bundle declares `auto_select`, so its default preset deploys on the next `devkit sync` after
 installation. A skeleton in that preset would drop READMEs, arc42 chapter templates and a glossary into every project

@@ -19,14 +19,14 @@ workflow_hash: sha256:6fe2644b9464ea860e6d6928748778b4ffd7a255e92ddea5fe10eba591
 
 ## 1. Problem Statement & Motivation
 
-An audit of the specrig port found two behaviors lost without a record.
+An audit of feature behavior found two behaviors missing without a record.
 
-- **Namespace of new bundles.** specrig's `proposal new` recorded the namespace of the package the current directory
+- **Namespace of new bundles.** Earlier implementations recorded the namespace of the package the current directory
   lies in. `devkit spec new` and `devkit spec proposal new` write a `namespace` only when `--namespace` is given, and
   no bundle skill passes it, so in a monorepo every new bundle silently becomes global while `list` and `search`
-  already select by the current directory (`CAP-DOCS-namespaces`). specrig's skills also told the agent to read a
+  already select by the current directory (`CAP-DOCS-namespaces`). Earlier guidance also told the agent to read a
   package's `glossary.md` together with the root glossary; no bundle asset keeps that rule.
-- **Handoff in the wrong worktree.** specrig refused a handoff in a linked worktree whose branch was not the slug.
+- **Handoff in the wrong worktree.** Earlier implementation refused a handoff in a linked worktree whose branch was not the slug.
   With `[tool.spec] worktree = true` the `spec` skill hands off inside the slug's worktree, and nothing stops a
   handoff in another task's worktree, which puts the new spec bundle on that task's branch.
 
@@ -43,8 +43,8 @@ handoff by branch only.
 
 ## 3. Non-Goals
 
-1. **Scope Excluded**: comparing the proposal in the base checkout with the worktree's copy (specrig's
-   `PROPOSAL_UNCOMMITTED`). The `spec` skill's worktree reference already requires committing the proposal before
+1. **Scope Excluded**: comparing the proposal in the base checkout with the worktree's copy (uncommitted
+   proposal check). The `spec` skill's worktree reference already requires committing the proposal before
    `devkit worktree start`.
    - **When to Reconsider**: when a handoff of a stale proposal is observed.
 2. **Scope Excluded**: indexing Markdown under `docs/materials/` that declares no ID. Materials stay free-form and

@@ -5,21 +5,17 @@ status: draft
 created_at: 2026-10-08
 ---
 
-> **Purpose**: measurement record from specrig, the predecessor of devkit-spec, kept as the evidence behind section 4
-> of `PROP-periodic-drift-reconciliation`. It compares the documents predicted by looking up completed specs' code
-> changes through the current `entrypoints` with the documents their `reconcile.md` actually updated, to measure the
-> precision, recall and false-positive causes of a stale-document candidate check. The reproduction script
-> (`retrospective.py`) and its full output (`retrospective-output.md`) stay in the specrig repository
-> (`mjkimR/specrig`, commit `2c838bb`, `docs/materials/2026-10/20261008-drift-candidate-retrospective/`); the script
-> drives the specrig CLI and must be adapted to `devkit spec list` and `devkit spec entrypoints derive` before it runs
-> on another repository. Document IDs below are specrig's and do not exist in devkit-spec.
+> **Purpose**: measurement record kept as the evidence behind section 4 of `PROP-periodic-drift-reconciliation`.
+> It compares the documents predicted by looking up completed specs' code changes through the current `entrypoints`
+> with the documents their `reconcile.md` actually updated, to measure the precision, recall and false-positive
+> causes of a stale-document candidate check. Document IDs below are from the benchmark repository and do not exist in devkit-spec.
 
 # [MAT-drift-candidate-retrospective] Retrospective measurement of entrypoint-based stale-document candidates
 
 ## Method
 
-- Input: the 47 completed specs at specrig commit `74826664`, 30 capabilities and stories (27 declaring
-  `entrypoints`, 91 declarations), and the derivation evidence of `specrig entrypoints derive --all`.
+- Input: the 47 completed specs at baseline commit `74826664`, 30 capabilities and stories (27 declaring
+  `entrypoints`, 91 declarations), and the derivation evidence of `entrypoints derive --all`.
 - Evaluation unit: commits that touched completed bundles, grouped by the set of bundles each changed. Commits changing
   one bundle form single units (33 evaluated); commits changing two or three form joint units (12 evaluated). Commits
   changing four or more are maintenance such as bulk identifier changes and were excluded. 11 of the 47 completed
@@ -63,7 +59,7 @@ differ by at most 0.07 per variant.
 
 Of the top 10 entrypoints by LOO false positives, 4 are directories and 6 files. File-level false positives come from
 shared files that many features change (`cli/internal/scaffold/proposal.go`, `proposal_handoff.go`,
-`template/agents/skills/sr-sync/SKILL.md`, `.specrig/governance/rules/imports_gen.go`). The same files produce hits
+`template/agents/skills/spec-sync/SKILL.md`, `governance/rules/imports_gen.go`). The same files produce hits
 about as often (for example `proposal.go`: 5 false positives and 5 hits for CAP-LIFE-proposal-incubation-and-handoff).
 False positives therefore come less from wrong declarations than from the fact that a path cannot tell whether a change
 to a shared file changes what its owning document says. Only 4 of the top 10 false-positive code paths meet the hub

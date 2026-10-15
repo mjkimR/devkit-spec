@@ -37,7 +37,7 @@ def write(root: Path, path: str, text: str) -> Path:
 
 
 def make_repo(root: Path) -> Path:
-    """A committed Git repository with Living Spec documents, two proposals and a spec bundle (specrig's fixture)."""
+    """A committed Git repository with Living Spec documents, two proposals and a spec bundle."""
     root = root.resolve()
     root.mkdir(parents=True, exist_ok=True)
     git(root, "init", "-q", "-b", "main")

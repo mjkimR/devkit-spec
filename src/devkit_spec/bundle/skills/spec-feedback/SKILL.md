@@ -63,11 +63,11 @@ Do not record: ordinary task defects (fix them), rejected non-goals, or ideas wi
 3. **Write one file from the [feedback template](references/template.md).** Fill the frontmatter completely; set `id: FB-<name>` (no date) and the H1 `# [FB-<name>] <title>` (`devkit rules fix <file>` aligns both with the path). Keep the body to the section for your `kind` plus **Evidence** (quoted instruction text or a command-output excerpt). Use the configured detail level; brief and standard records should take about one minute. Detailed records prioritize useful evidence over that budget.
    - `target` is the most important field: the asset path or command a maintainer should open.
    - `origin: user` when the user raised the point; otherwise `agent`. A user-raised item is a flag, not a transcript: do not quote the user's words anywhere in the file.
-   - **Evidence is what you observed yourself**: instruction or document text, command output, file state. The user's remark is not evidence. If the only support is "the user said so", the item is a `question`, not a `change-request`.
+   - **Evidence is what you observed yourself**: instruction or document text, command output, file state. Do not paste raw command output verbatim; summarize or excerpt the relevant lines, and redact local absolute paths or identifiers with placeholders (e.g. `<repo>`, `<worktree>`). The user's remark is not evidence. If the only support is "the user said so", the item is a `question`, not a `change-request`.
    - **The assessment is yours.** Write why you agree or disagree on the merits. "The user asked for it, so accepted" is deference, not a judgment, and it hides the reasoning a hygiene session needs.
    - `severity: critical` only when the next task in this repository will certainly block at the same point. Simple inconvenience is `blocked` or below.
    - `recurring: true` when you have seen this before in this repository.
-   - Never paste secrets, tokens or personal data. This file is committed and shared in the PR.
+   - Never paste secrets, tokens or personal data (including local usernames and machine absolute paths). This file is committed and shared in the PR.
 4. **Return to the task.** Do not mention the file as a completion item; `devkit spec list feedback` discovers it. Do not change `status` yourself.
 
 ---

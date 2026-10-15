@@ -28,7 +28,7 @@ expansion. Going from a known ID to its path stays `devkit spec resolve` (`CAP-D
 - **Out-of-Scope** (Non-Goals):
   - The ranking algorithms themselves (tokenizer, BM25, embedding model, fusion): devkit's `devkit.search`.
   - Embedding titles, areas or bodies. Scope Excluded: only the ID and the `summary` go to the dense ranking.
-    Rationale: on specrig's documents (Korean titles and bodies, English paraphrase queries) hybrid MRR was 0.54 with
+    Rationale: on benchmark documents (Korean titles and bodies, English paraphrase queries) hybrid MRR was 0.54 with
     ID, title and area embedded, 0.70 with the ID alone and 0.81 with ID and summary; embedding whole bodies ranked
     below the ID alone. When to Reconsider: a multilingual embedding model in devkit's search extra.
   - A persistent search index. Scope Excluded: candidates are read from the document index on every call.

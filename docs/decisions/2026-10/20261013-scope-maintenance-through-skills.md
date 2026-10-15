@@ -17,7 +17,7 @@ created_at: 2026-10-13
 
 ## 1. Context & Problem Statement
 
-In specrig, the registry was kept current by its own commands: `workflow next --scope-ack` updated a task's scope,
+In a monolithic architecture, the registry was kept current by tightly coupled commands: `workflow next --scope-ack` updated a task's scope,
 `worktree finish` released the record after its merge check and swept after removing the worktree, and proposal
 cleanup ran on finish. In devkit, `devkit workflow next` and `devkit worktree finish` know nothing about devkit-spec
 and offer no extension point to call it. The registry still has to follow each task from registration to cleanup.

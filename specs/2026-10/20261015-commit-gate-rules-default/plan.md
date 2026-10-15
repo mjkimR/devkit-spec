@@ -22,7 +22,7 @@ environment to have devkit-spec installed.
   - `src/devkit_spec/bundle/playbooks/brownfield-adoption/SKILL.md` (Step 4): the hooks run `rules-check` by default;
     choices for existing findings; `gate status` check.
   - `src/devkit_spec/bundle/seed/docs/development/ci-cd.md`: the local commit gate is `rules-check`.
-  - `docs/development/workflow.md` (section 5), `docs/development/specrig-port-map.md` (`commit` row): this
+  - `docs/development/workflow.md` (section 5): this
     repository relies on the default gate.
   - Living Spec (`spec-sync`): `docs/glossary.md` (Commit gate), `ARCH-03-context` (devkit owns the gate and its
     `rules-check`), `ARCH-06-runtime-view` (scenario 3 sequence).

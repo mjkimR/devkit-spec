@@ -28,7 +28,7 @@ a project that installs it develops through one model:
 devkit-spec is one Python package with two halves: the `spec` bundle of agent assets, deployed by `devkit sync`, and
 the `devkit spec` command group, mounted into devkit's command line (`ARCH-05-1-containers`). Everything that is not
 specific to spec-driven development (distribution, rule, workflow and gate engines, ranking, task worktrees, the Agent
-Advisory Protocol) is devkit's (`ADR-rebuild-specrig-on-devkit`).
+Advisory Protocol) is devkit's (`ADR-rebuild-spec-on-devkit`).
 
 ### 1.1 Problem and Hypothesis
 
@@ -59,7 +59,7 @@ Advisory Protocol) is devkit's (`ADR-rebuild-specrig-on-devkit`).
 
 | Non-Goal Item | Scope Excluded | Rationale |
 | :--- | :--- | :--- |
-| Generic engines | Asset distribution, rule evaluation, workflow state, commit hooks, ranking, worktree management | devkit owns them; devkit-spec uses its public surface (`ADR-rebuild-specrig-on-devkit`). |
+| Generic engines | Asset distribution, rule evaluation, workflow state, commit hooks, ranking, worktree management | devkit owns them; devkit-spec uses its public surface (`ADR-rebuild-spec-on-devkit`). |
 | A second executable | A `devkit-spec` console script or a platform binary | `ADR-mount-under-the-devkit-command-line`. |
 | Exclusive ownership of work | Claims, write blocking, heartbeats, automatic expiry of scope records | The registry detects overlaps; it never grants or blocks a write (`CAP-COLL-work-scope-registry`). |
 | Windows and network file systems | Running on Windows; a scope registry on NFS or SMB | The registry relies on `flock` and atomic rename. |
@@ -75,7 +75,7 @@ Advisory Protocol) is devkit's (`ADR-rebuild-specrig-on-devkit`).
 | 1 | **Agent-first output** | Every command prints one-line sentinels or one JSON object on stdout, advisories with stable `SPEC_` codes on stderr, exit codes `0`/`1`/`2`. An agent branches on codes, never on message text (`ARCH-08-cross-cutting`). |
 | 2 | **Determinism** | The document index is rebuilt from the files on every load; rules evaluate exactly the staged or CI snapshot; the same tree gives the same verdict locally, in the commit gate and in CI. |
 | 3 | **Safety of writes** | `spec new` and `proposal handoff` validate before the first write and roll back on failure; `entrypoints derive --apply` changes only the `entrypoints` block; scope records are published atomically; nothing deletes more than it owns (`proposal prune` removes only empty directories). |
-| 4 | **No binary** | One pure Python wheel (`py3-none-any`): no platform builds, no Go toolchain in consumer projects, no macOS CI minutes (`ADR-rebuild-specrig-on-devkit`). |
+| 4 | **No binary** | One pure Python wheel (`py3-none-any`): no platform builds, no Go toolchain in consumer projects, no macOS CI minutes (`ADR-rebuild-spec-on-devkit`). |
 | 5 | **One executable** | Agents, hooks and CI reach every command through the project environment's `devkit` (`uv run devkit spec ...`), with devkit's lazy loading, output contract and error boundary (`ADR-mount-under-the-devkit-command-line`). |
 
 ---

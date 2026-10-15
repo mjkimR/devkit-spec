@@ -345,7 +345,7 @@ class EventKind(StrEnum):
     UPDATE = "update"
     RELEASE = "release"
     SWEEP = "sweep"
-    GUARD = "guard"  # reserved: specrig journaled worktree guard refusals; devkit's worktree commands do not
+    GUARD = "guard"  # reserved for worktree guard refusal events
 
 
 @dataclass(frozen=True)

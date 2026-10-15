@@ -16,5 +16,5 @@ plan: PLAN-commit-gate-rules-default
   - _Requirements: AC-03, AC-04_
   - **Verification**: `just ci`
 - [x] **Task 3**: Rewrite this repository's development docs that describe its commit gate
-  - **_Boundary**: `docs/development/workflow.md`, `docs/development/specrig-port-map.md`
+  - **_Boundary**: `docs/development/workflow.md`
   - _Requirements: AC-03_

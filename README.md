@@ -10,11 +10,10 @@ package ships both halves:
 
 devkit provides everything that is not specific to spec-driven development: asset distribution, the rule, workflow
 and gate engines, document search, task worktrees and the Agent Advisory Protocol. devkit-spec adds the document model
-(Living Spec, feature specs, IDs, references) and the procedures on top. It is the successor of specrig, whose Go
-CLI it replaces; [specrig port map](docs/development/specrig-port-map.md) maps each specrig component to its
-new home. The project's own Living Spec starts at [docs/README.md](docs/README.md).
+(Living Spec, feature specs, IDs, references) and the procedures on top.
+The project's own Living Spec starts at [docs/README.md](docs/README.md).
 
-Status: the specrig port is functionally complete: the document model with namespaces (`devkit spec
+Status: the document model with namespaces (`devkit spec
 resolve|refs|list|search`), ten spec rules, the four delivery workflows with their role contracts, proposals and spec
 bundles (`devkit spec proposal new|padr|handoff`, `devkit spec new`), code entrypoints (`devkit spec entrypoints`),
 the scope registry (`devkit spec scope`), `devkit spec policy`, the constitution, instructions, templates, 12 `spec*`

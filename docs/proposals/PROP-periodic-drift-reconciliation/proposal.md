@@ -72,11 +72,11 @@ The sweep refactors documents interactively, through a dedicated skill or playbo
 
 ## 4. Rejected Candidate: Entrypoint-Based Stale-Document Hints
 
-- **Source**: specrig's code-entrypoints work, ported as `CAP-TRACE-code-entrypoints` (entrypoint metadata and
+- **Source**: code-entrypoints work, implemented as `CAP-TRACE-code-entrypoints` (entrypoint metadata and
   reverse lookup by path).
 - **Examined**: join a change's Git paths with entrypoints and show the documents whose code changed but which were
   not updated, as non-blocking candidates and as input to the periodic check.
-- **Conclusion: rejected.** `MAT-drift-candidate-retrospective` looked up the code paths of 47 completed specrig specs
+- **Conclusion: rejected.** `MAT-drift-candidate-retrospective` looked up the code paths of 47 completed specs
   (45 evaluation units) against the entrypoints of the time and compared them with the reconcile targets. Excluding
   self-derived declarations (leave-one-out), precision is 0.48 and recall 0.54. No noise filter (hub paths excluded,
   file granularity only, at least two code paths per document) raises precision above 0.5 while keeping recall at

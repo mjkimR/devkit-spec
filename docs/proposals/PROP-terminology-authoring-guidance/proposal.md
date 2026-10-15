@@ -28,8 +28,8 @@ workflow_hash: sha256:c6cf386f9eb37b061d626d4bc701dd4e01f43674666d160179f69da5c3
 
 ### 1.1 Problem
 
-The starting point is a draft of terminology rules used in another project (origin: user), first incubated in specrig
-and carried over here because its findings hold for the `spec` bundle as ported. The current state of the bundle:
+The starting point is a draft of terminology rules used in another project (origin: user), first incubated earlier
+and carried over here because its findings hold for the `spec` bundle. The current state of the bundle:
 
 - **Nothing reads the glossary while writing.** The only bundle mention of the glossary in an authoring path is the
   `## Glossary` section of the `living-spec-writing` instruction, which says where terms are defined and nothing about
@@ -43,7 +43,7 @@ and carried over here because its findings hold for the `spec` bundle as ported.
   Relevant Area | Remarks`: no owner, no adjacent concepts to keep apart, no rejected synonyms, no code identifiers.
 - devkit-spec's own `docs/glossary.md` already moved part of the way: its tables are `Term | Definition | Defined in`,
   where "Defined in" names the owning document ID, and it settles that `docs/` as a whole is the Living Spec (the
-  scope conflict specrig's glossary had).
+  scope conflict earlier glossaries had).
 
 ### 1.2 Hypothesis
 

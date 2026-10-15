@@ -94,7 +94,7 @@ Handed off from the handoff-unit-records proposal; its spike findings are kept i
   current segment, and an envelope without a workflow scope counts in every workflow, so a spike's envelope could
   satisfy a check of the spec.
 - In `SPEC-orchestration-mode` the spec's G1 and G2 were recorded `--by user` right after the handoff from the
-  proposal's answers; specrig never asked again either. The user's acceptance of the proposal's direction covers the
+  proposal's answers; earlier workflows never asked again either. The user's acceptance of the proposal's direction covers the
   spec's goal, scope and verification. Carrying an existing explicit answer is not inference; deriving one from
   `status: accepted` would be.
 - Moving devkit's `decisions/` is not needed: it would touch every unit and existing record for one consumer's naming

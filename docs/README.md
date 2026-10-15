@@ -14,7 +14,6 @@ documents. Every ID-bearing document is referred to by its full ID; `devkit spec
 | How do commands, the commit gate and worktrees interact at run time? | `ARCH-06-runtime-view` |
 | Output contract, codes, configuration, rule targeting | `ARCH-08-cross-cutting` |
 | Why is it built this way? | the decisions: `devkit spec list decision` |
-| Where did each specrig component go? | [specrig port map](development/specrig-port-map.md) |
 | What does a term mean? | [glossary.md](glossary.md) |
 | How do I build, test and change devkit-spec? | [development/](development/setup.md) |
 

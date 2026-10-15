@@ -27,4 +27,4 @@ targets:
 - The bundle's `living-spec-writing` instruction and `spec-specify` skill carry the package glossary and namespace
   guidance (AC-07); they are bundle assets, not Living Spec documents.
 - No deferred work is retained. The proposal-content comparison (non-goal 1) and ID-less materials (non-goal 2) stay
-  out of scope; the specrig port map records the latter as dropped.
+  out of scope.

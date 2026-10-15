@@ -45,7 +45,8 @@ created_at: 2026-10-15
 
 ```text
 [WORKTREE_FINISHED: commit-gate-rules-default ... merged=yes push=pushed removed=yes branch_deleted=yes]
-[HOOK: pre-commit state=managed python=/Users/mj/workspace/workbench/repos/devkit-spec-wt-commit-gate-rules-default/.venv/bin/python3 python_ok=false scripts=10-cgate,20-devkit]
+[HOOK: pre-commit state=managed python=<task-worktree>/.venv/bin/python3 python_ok=false scripts=10-cgate,20-devkit]
 $ uv run devkit gate install   (base)
-[HOOK: pre-commit state=managed python=/Users/mj/workspace/workbench/repos/devkit-spec/.venv/bin/python3 python_ok=true scripts=10-cgate,20-devkit]
+[HOOK: pre-commit state=managed python=<base>/.venv/bin/python3 python_ok=true scripts=10-cgate,20-devkit]
 ```
+

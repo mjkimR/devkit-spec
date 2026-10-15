@@ -20,8 +20,8 @@ created_at: 2026-10-07
 ## 1. Context & Problem Statement
 
 Spec-driven delivery separates feature specs (`specs/`) from the Living Spec (`docs/`) and reconciles the Living Spec
-when a change completes (`spec-sync`, `reconcile.md`). The decision was taken in specrig, the predecessor of
-devkit-spec, and carries over unchanged (`ADR-rebuild-specrig-on-devkit`).
+when a change completes (`spec-sync`, `reconcile.md`). The decision was established early in the methodology
+and carries over unchanged (`ADR-rebuild-spec-on-devkit`).
 
 Dogfooding and larger features showed its limits:
 

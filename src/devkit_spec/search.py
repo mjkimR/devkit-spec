@@ -6,7 +6,7 @@ The policy on top of the generic ranking:
   optionally narrowed to some kinds.
 - **Fields**: a document's ID and its English ``summary`` are its metadata, ranked lexically and densely (the ID
   alone when it has no summary); the title, the area and the body after the frontmatter are ranked lexically only,
-  in whatever language they are written. Measured on specrig's documents (Korean titles and bodies, English paraphrase
+  in whatever language they are written. Measured on benchmark documents (Korean titles and bodies, English paraphrase
   queries), hybrid MRR rose from 0.54 (ID, title and area embedded) to 0.70 (ID alone) and 0.81 (ID and summary);
   embedding whole bodies did worse than the ID alone.
 - **Pinning**: a query equal to a document's ID, workspace-relative path or file name (case-insensitive) puts that

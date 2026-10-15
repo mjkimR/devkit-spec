@@ -53,7 +53,7 @@ the Markdown scanner, namespaces and the entrypoint path contract. Where should 
 ### Option 3: Built-in rules in devkit
 - **Overview**: ship the rules with devkit's own rules.
 - **Pros**: no bundle rule files.
-- **Cons**: puts the document model into devkit (`ADR-rebuild-specrig-on-devkit` keeps devkit SDD-agnostic).
+- **Cons**: puts the document model into devkit (`ADR-rebuild-spec-on-devkit` keeps devkit SDD-agnostic).
 
 ---
 

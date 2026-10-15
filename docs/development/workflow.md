@@ -26,8 +26,6 @@ the same constitution, skills, workflows and rules it ships.
   subclass with its guide `guide.md` beside it (`ADR-rules-implemented-in-the-package`).
 - No external consumers exist yet: breaking changes to the bundle, the commands and the APIs are made in place,
   without migrations or deprecation shims.
-- Port specrig behaviour by semantics, not code structure, and drop what devkit already covers
-  ([specrig port map](specrig-port-map.md)).
 
 ## 3. Documentation
 

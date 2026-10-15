@@ -22,7 +22,7 @@ created_at: 2026-10-13
   `devkit spec list feedback --status open` omits feedback the `collect-feedback` stage records, which always runs
   after `living-spec-draft` completed the spec. Every caller must remember `--history`; `spec-next` and
   `envelope.md` did not until `SPEC-feedback-list-filters` added it.
-- **Proposed Procedure**: treat feedback as never historical (specrig scanned every bundle's feedback), so open
+- **Proposed Procedure**: treat feedback as never historical, so open
   feedback is listed until a hygiene session changes its status.
 - **Expected Benefit**: the G3 critical check and `/spec-next` see feedback recorded in the current task without a
   flag that is easy to forget.
@@ -39,4 +39,4 @@ $ devkit spec list feedback --status open --history -n 0
 ... [PAGE: total=9 offset=0 limit=0 count=9 next=-]
 ```
 
-- **Disposition**: `SPEC-open-feedback-and-progress`: feedback of completed bundles stays current (specrig parity); the assets no longer pass `--history`
+- **Disposition**: `SPEC-open-feedback-and-progress`: feedback of completed bundles stays current; the assets no longer pass `--history`

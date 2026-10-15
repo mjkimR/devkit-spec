@@ -54,7 +54,7 @@ RECONCILE = "\n".join(
 
 
 def fixture(write: Write) -> None:
-    """specrig's derivation fixture: two bearing documents, one decision, a waived target and mixed boundaries."""
+    """Derivation fixture: two bearing documents, one decision, a waived target and mixed boundaries."""
     write(CAP, CAP_TEXT)
     write(STORY, STORY_TEXT)
     write("docs/decisions/ADR-x.md", "---\nid: ADR-x\n---\n")

@@ -19,12 +19,12 @@ supersedes: ADR-approval-gates-intent-direction-integration
 
 ## 1. Context & Problem Statement
 
-`ADR-approval-gates-intent-direction-integration` mapped specrig's human gates G1, G2 and G3 to devkit's approval
+`ADR-approval-gates-intent-direction-integration` mapped human gates G1, G2 and G3 to devkit's approval
 gates `intent`, `direction` and `integration` and recorded every answer with `devkit workflow answer`, a decision
-record under the unit's `decisions/`. It rejected specrig's declared human checks partly because `--given` would
+record under the unit's `decisions/`. It rejected declared human checks partly because `--given` would
 assert approvals.
 
-specrig had already removed its G3 file for a reason that ADR did not weigh: G3 is asked after the final change
+Earlier workflows had already removed the dedicated G3 record file for a reason that ADR did not weigh: G3 is asked after the final change
 report, so its record is written after the change is committed. In a session it costs one more file and one more
 commit after the user's OK; on a PR it records the PR ready state a second time. G1 and G2 have neither cost: their
 records are written while the bundle is being drafted and are committed with it. In use the cost returned: the
@@ -74,7 +74,7 @@ devkit supports both forms: a gate is satisfied by an accepted decision record o
 We decided to adopt **Option 1**, keeping devkit's default `ask` for every gate.
 
 **Rationale**: G3 is the only gate whose record lands after the change is final, so it is the only gate whose record
-costs a commit; the session OK and the PR ready state already state it once. A project that wants specrig's
+costs a commit; the session OK and the PR ready state already state it once. A project that wants automatic
 direction behaviour still sets `direction = "auto"` in `[workflow.approvals]`.
 
 ---
@@ -84,7 +84,7 @@ direction behaviour still sets `direction = "auto"` in `[workflow.approvals]`.
 - **Positive**: integrating after an OK in a session needs no further commit; `devkit worktree finish` runs on the
   approved head.
 - **Negative / Risks**: `--given integration` is an assertion an agent could make without an OK; the rule that an
-  approval is never inferred now carries that gate alone, as it did in specrig. The integration report names the
+  approval is never inferred now carries that gate alone. The integration report names the
   user's OK as the authority.
 - **Follow-ups**: a G3 objection takes the stage's return path (`devkit workflow return --to review-refine|direction
   --note "..."`) instead of a recorded decline; a decision record a host UI writes still satisfies the gate; under
