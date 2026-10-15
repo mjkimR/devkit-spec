@@ -1,0 +1,7 @@
+request: gate:intent
+kind: approve
+action: accept
+workflow: direct-delivery
+stage: intent
+by: user
+at: '2026-10-15T02:04:18.955697Z'
