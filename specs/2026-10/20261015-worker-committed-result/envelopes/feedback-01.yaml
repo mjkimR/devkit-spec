@@ -1,0 +1,10 @@
+kind: feedback
+stage: collect-feedback
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T02:45:01.428390Z'
+status: completed
+summary: 'Session sweep (capture=observed, coverage=repo-and-upstream): FB-adr-before-build-misses-the-reconcile-commit recorded; no duplicates. Hygiene: FB-worker-checkbox-leaves-spec-status-to-host, FB-worker-scope-excludes-code-documentation and FB-worker-manual-check-writes-outside-worktree promoted to this spec.'
+findings: []
+checks:
+  swept: PASS recorded=1 duplicates=0

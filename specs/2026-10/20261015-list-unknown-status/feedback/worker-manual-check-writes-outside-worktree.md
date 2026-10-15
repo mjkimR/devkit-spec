@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: noise
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-15
 ---
 
@@ -44,3 +44,5 @@ created_at: 2026-10-15
 worker.md: 1. Work only in the worktree. ... Never touch the caller's checkout.
 worker return, unverified_areas: "A scratch workspace I used for a manual output check is still at <session scratch>/ws (outside the worktree; my attempt to remove it was not allowed)."
 ```
+
+- **Disposition**: `SPEC-worker-committed-result`: the worker contract keeps throwaway fixtures in pytest's `tmp_path` or an ignored path inside the worktree.

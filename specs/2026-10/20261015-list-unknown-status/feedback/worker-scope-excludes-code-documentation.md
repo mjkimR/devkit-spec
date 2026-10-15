@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-15
 ---
 
@@ -48,3 +48,5 @@ worker.md: Denied: anything outside the worktree, the unit's `spec.md`, `plan.md
 tests/test_documented_codes.py: """Every advisory code devkit-spec defines is documented under ``docs/``"""
 worker run: test_every_code_is_documented: AssertionError: assert ['SPEC_LIST_STATUS_UNKNOWN'] == []; 1 failed, 720 passed
 ```
+
+- **Disposition**: `SPEC-worker-committed-result`: a worker writes the `docs/` paths its task's `_Boundary:` names, and `spec-tasks` puts the documentation a check requires there, so the worker's commit passes its checks (`ADR-worker-delivers-committed-result`).
