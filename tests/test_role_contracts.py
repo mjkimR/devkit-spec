@@ -123,7 +123,9 @@ def test_the_host_validates_the_committed_range_and_blocks_a_failure() -> None:
     assert "':(exclude)<unit>/envelopes'" in text
     assert "Never pass a blocked unit's current HEAD as the base" in text
     assert "`build-verify`, or `fix-verify` in `bugfix`" in text and "--stage build-verify" not in text
-    assert "A unit is blocked while its latest `worker` envelope is `failed`, whatever a worker returns afterwards" in text
+    assert (
+        "A unit is blocked while its latest `worker` envelope is `failed`, whatever a worker returns afterwards" in text
+    )
 
 
 def test_orchestration_follows_the_committed_result_contract() -> None:
