@@ -70,9 +70,9 @@ endorse them. Reconcile behavior, capability and constraint changes into the aff
 further changes.
 
 Formal specs keep a resolved `reconcile.md` and stay in place when completed; S-Lane needs no planning or reconcile
-file but reports its document-impact reasoning. `devkit rules check` runs the spec rules; commits run them through the
-commit gate (`devkit rules check --staged`), and CI runs `devkit rules check --ci --base <ref>`. Completion, commit,
-integration and ending the session are separate events.
+file but reports its document-impact reasoning. `devkit rules check` runs the spec rules; commits run them through
+devkit's `rules-check` commit gate (on by default; `devkit rules check --staged` reproduces it), and CI runs
+`devkit rules check --ci --base <ref>`. Completion, commit, integration and ending the session are separate events.
 
 ## 5. Templates and Policy Files
 

@@ -66,5 +66,6 @@ would (arguments after `--` go to pytest).
 
 - Never commit `.env` files, secrets or personal data.
 - Messages follow Conventional Commits in the imperative mood (`feat: ...`, `fix: ...`, `refactor: ...`, `docs: ...`).
-- This repository configures no `verify-commands` for devkit's commit gate; `just ci` before committing is the local
-  equivalent, and `just rules-check --staged` checks exactly what is staged.
+- devkit's commit gate runs the spec rules on what is staged (its built-in `rules-check` gate, on by default;
+  `just rules-check --staged` reproduces it). This repository configures no `verify-commands`: run `just ci` before
+  committing for lint, type checks and tests.

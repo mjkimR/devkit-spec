@@ -95,14 +95,9 @@ so moves and content edits stay reviewable apart.
 - **Policy**: show `uv run devkit spec policy`. Every approval gate (`intent`, `direction`, `integration`) defaults
   to `ask`. Record only the user's choices: `[workflow.approvals]`, `[workflow.stages]`, `[worktree]` and
   `[tool.spec] worktree` in `.devkit/config.toml`.
-- **Commit gate** (if the user wants one): run `uv run devkit gate install` and set in `.devkit/config.toml`:
-
-  ```toml
-  [gates.settings.verify-commands]
-  commands = ["uv run devkit rules check --staged"]
-  ```
-
-  `uv run devkit gate status` must exit `0`.
+- **Commit gate**: sync installs the hooks; the `rules-check` gate (on by default) refuses a commit touching a file
+  with an error finding. The user chooses: fix, park or lower the rule in `[rules]`, or `enabled = false` in
+  `[gates.settings.rules-check]` for now. `uv run devkit gate status` must exit `0`.
 
 ## Step 5: Classify
 

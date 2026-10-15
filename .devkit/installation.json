@@ -904,7 +904,7 @@
     },
     ".devkit/managed/spec/AGENTS.md": {
       "mode": 420,
-      "sha256": "6b9435834afbf73c766b383915420b6c2e0fdc6d6a4890eb29693da6c9c22ccd"
+      "sha256": "1a5f0db324e76cc347a8f64d8761ae25ff65235dd4c9efd08e0c81ce4d9e2e30"
     },
     ".devkit/managed/spec/bundle.toml": {
       "mode": 420,
@@ -924,7 +924,7 @@
     },
     ".devkit/managed/spec/playbooks/brownfield-adoption/SKILL.md": {
       "mode": 420,
-      "sha256": "e79f5856430ea78f3c12a798d0127945480d5f5ff9b015531ec96d45f657d031"
+      "sha256": "618d854a6753de5a02b631206fdeed893f5ff1386b04673602703bc1c5beeb63"
     },
     ".devkit/managed/spec/playbooks/feedback-hygiene/SKILL.md": {
       "mode": 420,

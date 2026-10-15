@@ -24,7 +24,7 @@ change that ports or drops a component updates its row. The contracts themselves
 | skill-authoring preset, RULE-skill-document-size | devkit `authoring` bundle | |
 | git-commits preset | devkit `git-commits` bundle | |
 | github-milestones preset | `spec` bundle preset (planned) | SDD-specific; not shipped as of this record. |
-| `commit` | devkit gate | `verify-commands` running `devkit rules check --staged`. |
+| `commit` | devkit gate | The built-in `rules-check` gate, which evaluates the staged tree as `devkit rules check --staged` does. |
 | `workflow` (`next`, `show`, `bind`, `validate`, `checks`, `envelope`) | devkit workflow | |
 | Workflows s-lane, direct-delivery, bugfix, incubated-delivery | `spec` bundle, `kind = "workflow"` | specrig-specific checks become devkit check primitives or declared checks (`CAP-DLV-delivery-workflows`). |
 | `worktree start`, `finish`, `status` | devkit worktree | |
