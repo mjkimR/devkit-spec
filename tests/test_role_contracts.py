@@ -49,17 +49,36 @@ def test_only_scout_gains_a_shell() -> None:
     assert "run_command" not in challenger["antigravity"]["tools"]
 
 
-def test_the_worker_writes_in_its_worktree_and_never_commits() -> None:
+def test_the_worker_commits_a_complete_result_in_its_worktree() -> None:
+    # AC-01 (ADR-worker-delivers-committed-result).
     metadata, body = _contract("worker")
-    assert metadata["x-git-actions"] == ["read"]
+    assert metadata["x-git-actions"] == ["read", "commit"]
     hosts = metadata["hosts"]
     assert hosts["claude-code"]["status"] == "native"
     assert {"Write", "Edit", "Bash"} <= set(hosts["claude-code"]["tools"])
     assert hosts["codex"]["status"] == "unsupported"
     assert hosts["antigravity"]["status"] == "unverified"
     assert "git -C <worktree>" in body and "absolute" in body
-    assert "Do not stage or commit (`MUST NOT`)" in body
+    assert "with write-scope paths only, then `git -C <worktree> commit` on the unit branch" in body
+    assert "never bypassed (`--no-verify`). Leave the worktree clean." in body
+    assert "Do not push, merge, rebase, reset, amend, stash or check out (`MUST NOT`)" in body
+    assert "`head` set to your last commit" in body
     assert "One path outside the write scope rejects the whole result" in body
+    assert "Commit nothing incomplete" in body
+
+
+def test_the_worker_result_is_self_contained() -> None:
+    # AC-02: spec status through the rule's fix, docs only where a boundary names them, throwaway data in the worktree.
+    body = _contract("worker")[1]
+    assert "run `devkit rules fix <unit>/spec.md`" in body
+    assert "A `docs/` path only when a task's `_Boundary:` names it" in body
+    assert "pytest's `tmp_path` or an ignored path inside the worktree" in body
+
+
+@pytest.mark.parametrize("role", [r for r in ROLES if r != "worker"])
+def test_every_other_role_stays_read_only(role: str) -> None:
+    # AC-03.
+    assert _contract(role)[0]["x-git-actions"] == ["read"]
 
 
 def test_spec_delegate_passes_only_the_payload_to_a_projected_role() -> None:
