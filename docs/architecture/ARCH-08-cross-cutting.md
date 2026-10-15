@@ -52,6 +52,7 @@ Libraries never print: modules below `cli` return results and notices or raise `
 | Code family | Owner |
 | :--- | :--- |
 | `SPEC_DOCUMENT_INVALID`, `SPEC_ID_UNRESOLVED`, `SPEC_ID_DUPLICATE` | `CAP-DOCS-document-model`, `CAP-DOCS-document-lookup` |
+| `SPEC_LIST_STATUS_UNKNOWN` | `CAP-DOCS-document-lookup` |
 | `SPEC_GLOSSARY_INVALID` | `CAP-DOCS-document-search` |
 | `SPEC_CONFIG_INVALID` | `CAP-DLV-project-policy` |
 | `SPEC_PROPOSAL_*` | `CAP-DLV-proposal-incubation` |

@@ -1,7 +1,7 @@
 ---
 id: CAP-DOCS-document-lookup
 title: Document Lookup
-summary: "Defines the devkit spec resolve, refs and list commands that map IDs to paths, follow incoming and outgoing references, and browse documents by kind, status, area, text, any frontmatter field, history, namespace or owned code path, with feedback ordered by severity, paging and JSON output."
+summary: "Defines the devkit spec resolve, refs and list commands that map IDs to paths, follow incoming and outgoing references, and browse documents by kind, status, area, text, any frontmatter field, history, namespace or owned code path, with feedback ordered by severity, a notice for a status filter no document of those kinds carries, paging and JSON output."
 area: documents
 status: active
 stories:
@@ -44,8 +44,9 @@ resolve` maps IDs to paths, `devkit spec refs` follows the references of one doc
 1. **Workspace**: every command takes `-w/--workspace-root` (default: the devkit project containing the current
    directory), `--format text|json` and devkit's output options (`-q`, `-v`, `--strict`), as every `devkit spec`
    command does (`CAP-HARN-command-mount`). Paths in the output MUST be workspace-relative.
-2. **Invalid files**: files the index left out are `SPEC_DOCUMENT_INVALID` warnings on stderr (under `notices` in
-   JSON); they MUST NOT change the exit code except under `--strict`.
+2. **Warnings and notices**: files the index left out are `SPEC_DOCUMENT_INVALID` warnings, and an unknown
+   `list --status` value is a `SPEC_LIST_STATUS_UNKNOWN` notice (3.4); both go to stderr (under `notices` in JSON).
+   They MUST NOT change the exit code, except a warning under `--strict`.
 3. **Namespaces ignored for identity**: `resolve` and `refs` MUST resolve IDs repository-wide whatever namespace is
    selected; only `list` (and `search`) narrows by namespace.
 
@@ -69,7 +70,12 @@ resolve` maps IDs to paths, `devkit spec refs` follows the references of one doc
 1. **Kinds**: `KIND...` restricts to `capability`, `story`, `architecture`, `decision`, `proposal`,
    `proposal-decision`, `spec`, `plan`, `tasks`, `reconcile`, `feedback`, `material` (default: all).
 2. **Filters** (all combine with AND):
-   - `--status/-s a,b`: comma-separated statuses, compared case-insensitively.
+   - `--status/-s a,b`: comma-separated statuses, compared case-insensitively. Status vocabularies come from the
+     templates, which a project may override, so a value is never rejected: one that no indexed document of the
+     selected kinds (every kind without `KIND`) carries, historical or in another namespace included, adds one
+     `SPEC_LIST_STATUS_UNKNOWN` notice naming those values, with the statuses that do occur in its `[FIX]`
+     (`SPEC-list-unknown-status`). The filter still applies as given, so a valid status no document carries yet
+     gives an empty page plus the notice.
    - `--area/-a TEXT`: case-insensitive substring of the frontmatter `area`.
    - `--query TEXT`: case-insensitive substring of the ID or the title.
    - `--where FIELD=VALUE[,VALUE...]` (repeatable): documents whose frontmatter `FIELD` holds one of the values. The
@@ -142,7 +148,8 @@ string when the value holds spaces, quotes or brackets.
 
 ### 4.4 Exit Codes
 
-`0` success; `2` an unresolved or duplicated ID, or an argument error. Warnings exit `0` (`1` under `--strict`).
+`0` success; `2` an unresolved or duplicated ID, or an argument error. Warnings exit `0` (`1` under `--strict`);
+notices always exit `0`.
 
 ### 4.5 Error Codes
 
@@ -154,4 +161,4 @@ string when the value holds spaces, quotes or brackets.
 | `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit.core.ArgumentError` | A negative `--limit` or `--offset`; a `--where` item without `=`, field or value; an unknown `--namespace`, or `--namespace` combined with `--all-namespaces`. |
 | `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit_spec.errors.SpecConfigError` | `list`: a malformed `[tool.spec]` table, namespaces included (`CAP-DLV-project-policy`). |
 | `SPEC_ENTRYPOINTS_PATH_INVALID` | `ERROR` (`INPUT_ERROR`) | `devkit_spec.errors.EntrypointsPathError` | `list --file`: the path breaks the entrypoint path contract (`CAP-TRACE-code-entrypoints`). |
-| `SPEC_LIST_STATUS_UNKNOWN` | `NOTICE` | `devkit_spec.errors.ListStatusUnknownNotice` | `list --status`: a value no indexed document of the selected kinds carries, whatever its history or namespace; `[FIX]` lists the statuses that do occur. The filter still applies and the exit code is unchanged. |
+| `SPEC_LIST_STATUS_UNKNOWN` | `NOTICE` | `devkit_spec.errors.ListStatusUnknownNotice` | `list --status`: a value no indexed document of the selected kinds (every kind without `KIND`) carries, whatever its history or namespace; `[FIX]` lists the statuses that do occur. The filter still applies and the exit code is unchanged. |
