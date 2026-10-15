@@ -55,7 +55,7 @@ sequenceDiagram
 - A missing default workflow leaves `spec.md` unbound with a `SPEC_UNBOUND` notice; an explicit workflow that does not
   resolve fails before anything is written (`SPEC_WORKFLOW_INVALID`).
 - Under `ask`, the agent records the user's explicit G1 or G2 answer with `devkit workflow answer --unit <dir>
-  --request gate:<gate> --action accept` and asserts a G3 OK with `--given integration` on each later `next`, writing
+  --request gate:<gate> --action accept --by user` and asserts a G3 OK with `--given integration` on each later `next`, writing
   nothing (`ADR-integration-approval-asserted`); under `auto` the gate passes by policy (`source=policy`).
 
 ---
@@ -82,7 +82,7 @@ sequenceDiagram
     Agent->>WF: workflow next --unit docs/proposals/PROP-<slug>
     WF-->>Agent: [WAITING: human gate:direction]
     User-->>Agent: chooses the direction
-    Agent->>WF: workflow answer --request gate:direction --action accept
+    Agent->>WF: workflow answer --request gate:direction --action accept --by user
     Agent->>Spec: proposal handoff <slug> [--direction-chosen]
     Spec->>Spec: validate slug, approval, namespace, summary, binding, every target path
     Spec->>FS: write specs/<YYYY-MM>/<YYYYMMDD>-<slug>/, bind handoff_workflow

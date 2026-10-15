@@ -49,9 +49,11 @@ returns come from the workflow definitions, never an ad-hoc sequence: `devkit wo
 stage, `devkit workflow show --unit <dir>` shows the definition.
 
 Read `devkit spec policy` before routing, gate and Git decisions. `ask` gates wait for the user's answer: `intent` and
-`direction` are recorded with `devkit workflow answer`, the `integration` OK is asserted with `--given integration`
-on the `devkit workflow next` runs after it (`ADR-integration-approval-asserted`); `auto` delegates the decision
-within existing authority and the assumptions are reported. Neither grants new commit, merge, publication or
+`direction` are recorded with `devkit workflow answer --by user`, the `integration` OK is asserted with `--given
+integration` on the `devkit workflow next` runs after it (`ADR-integration-approval-asserted`); `auto` delegates the
+decision within existing authority and the assumptions are reported. Records name the authority (`user` or `policy`)
+and never carry the conversation: no quotes, paraphrase or dates of it in decision notes, envelopes, assumptions or
+feedback; a decline note states the reason as a decision. Neither grants new commit, merge, publication or
 deletion authority, and the intent gate always needs the user's intent. Report stages the policy switched off as
 skipped. Before formal worktree work read the `spec` skill's `references/worktree.md`; before completion or Git
 actions its `references/completion.md`. Explicit user instructions take precedence.

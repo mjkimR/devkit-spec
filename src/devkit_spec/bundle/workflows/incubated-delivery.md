@@ -87,7 +87,7 @@ The frontmatter is the only stage definition. Read it with `devkit workflow show
 ## Gate rules
 
 - G1 and G2 are the only decisions before handoff; everything after handoff belongs to the bound workflow and its gates (G1 there is the intent of the spec bundle, normally confirmed by the accepted proposal).
-- G2 is the direction choice. The chosen direction is written into the proposal (`status: accepted` on acceptance). Under `direction = "ask"` the gate passes with the recorded decision `devkit workflow answer --unit <dir> --request gate:direction --action accept`, written only after the user's choice. Under `direction = "auto"` it passes by policy; the executor still puts a direction outside the requested scope to the user before handoff.
+- G2 is the direction choice. The chosen direction is written into the proposal (`status: accepted` on acceptance). Under `direction = "ask"` the gate passes with the recorded decision `devkit workflow answer --unit <dir> --request gate:direction --action accept --by user`, written only after the user's choice. Under `direction = "auto"` it passes by policy; the executor still puts a direction outside the requested scope to the user before handoff.
 - Routes 3 and 4 share this definition. The agreement mode (local session or team PR) is the executor's binding, not a stage.
 - Scout and Challenger are optional support roles; zero findings is a valid spike result.
 

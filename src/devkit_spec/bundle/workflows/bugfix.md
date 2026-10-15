@@ -197,7 +197,7 @@ The frontmatter is the only stage definition. Read it with `devkit workflow show
 
 ## Gate rules
 
-- **G1 records intent.** The gate opens once `spec.md` exists; under `ask` record the user's confirmation with `devkit workflow answer --unit <dir> --request gate:intent --action accept`.
+- **G1 records intent.** The gate opens once `spec.md` exists; under `ask` record the user's confirmation with `devkit workflow answer --unit <dir> --request gate:intent --action accept --by user`.
 - **G2 is conditional.** It fires for uncertain choices or changes to an existing agreement (including an expected behavior that is not agreed), never for implementation or integration inside an approved scope. Its exit is the mechanical proxy `anchor-exists`; with `direction = "auto"` it passes by policy unless a stage returns to it with a choice outside the requested scope, which the executor then puts to the user.
 - **G3 is per integration unit** (one PR). Under `ask` it waits for the user's explicit OK, asserted with `--given integration` on every `next` after it and never recorded (`ADR-integration-approval-asserted`), or, where a runner binds it, the PR ready state; under `auto` it passes by policy once the final change report holds, within existing authority. Docs reflection and code conflict resolution within the approved intent are part of integration and need no re-approval.
 - **Integration is a stage, not a persona.** Its code authority is limited to conflict resolution and the verification that needs; its docs authority is the reflection the approved change requires. Adopting a new policy is a separate decision.
