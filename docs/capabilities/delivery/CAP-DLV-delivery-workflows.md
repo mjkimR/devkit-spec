@@ -43,8 +43,8 @@ sequence.
   - **Scope Excluded**: a runner. Dispatching stages, the integration queue, the shared-docs write lock, retry caps,
     executing merges and declaring `lint-ci-clean` and `merged` belong to an external runner, or to the executor
     declaring them with `--given` when none exists.
-  - **Scope Excluded**: a development commit mode. Commits are plain `git commit` through devkit's commit gate under
-    existing commit authority.
+  - **Scope Excluded**: a development commit mode and commit permission. Commits are plain `git commit` through
+    devkit's commit gate; whether to commit is decided outside the workflow.
 
 ## 3. Business Rules & Policies
 

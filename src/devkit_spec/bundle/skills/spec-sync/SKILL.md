@@ -97,7 +97,7 @@ targets:
 
 ### Step 4: Archive or Mark Completed Feature Spec
 - Set `reconcile.md` `status: resolved` once every target is reflected or waived, then set `status: completed` in the frontmatter of `spec.md` (`devkit rules fix <dir>/spec.md` does it once every task is checked and the reconcile record is resolved). The `living-spec-draft` stage exits on `frontmatter(reconcile.md status resolved)` and `anchor-status-completed`; task progress is computed from the checkboxes and never written.
-- Commit documentation updates together with or immediately following the feature code, under existing commit authority (`git commit`; devkit's commit gate runs the staged checks).
+- Documentation updates go in the same commit as the feature code or the one right after it (`git commit`; devkit's commit gate runs the staged checks).
 
 ---
 

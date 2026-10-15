@@ -62,7 +62,7 @@ Use this skill when all implementation tasks in `tasks.md` are marked complete (
 
 ### Optional feedback breakpoint
 
-After `review-refine` passes and before `living-spec-draft`, an executor may pause for user feedback or proceed automatically. An external runner owns that option and its wait/resume state; it adds no stage, check or approval file. Intermediate commits are independent of waiting and follow existing commit authority. Feedback that changes implementation returns to build/reverify for the affected part; a direction change returns to the `direction` gate. This breakpoint does not replace the `integration` gate (G3), and Living Spec reflection still completes before G3.
+After `review-refine` passes and before `living-spec-draft`, an executor may pause for user feedback or proceed automatically. An external runner owns that option and its wait/resume state; it adds no stage, check or approval file. Intermediate commits are independent of waiting. Feedback that changes implementation returns to build/reverify for the affected part; a direction change returns to the `direction` gate. This breakpoint does not replace the `integration` gate (G3), and Living Spec reflection still completes before G3.
 
 ## 3. Review Report
 

@@ -109,12 +109,12 @@ The frontmatter is the only stage definition.
 - **G1 intent**: expected behavior, scope and verification are agreed in the session.
 - **Execute and verify**: the change is made and tests, build and `devkit rules check --staged` pass.
 - **Report**: one session report covers the self-review against the agreed scope, the Living Spec impact (docs updated in the same change, or the no-impact reason) and, unless the project switched off `collect-feedback` in `[workflow.stages]`, observations not yet recorded as feedback (`spec-feedback`, month directory, no envelope).
-- **Commit**: plain `git commit` after G3 and under existing commit authority; devkit's commit gate runs the staged checks, and repository CI runs the cumulative check (`lint-ci-clean`, locally `devkit rules check --ci --base <ref>`). If integrating the base needed conflict resolution, re-run the checks for what it changed.
+- **Commit**: plain `git commit` after G3; devkit's commit gate runs the staged checks, and repository CI runs the cumulative check (`lint-ci-clean`, locally `devkit rules check --ci --base <ref>`). If integrating the base needed conflict resolution, re-run the checks for what it changed.
 
 ## Gate rules
 
 - No G2: an open design choice means the work is not S-Lane. Return to G1 and reroute.
-- G3 is the user's OK in session under `integration = "ask"`, or reported policy delegation under `auto` after verification and the Living Spec impact statement; commit authority is still required. Without a unit there is no decision record: nothing under `specs/` is written for it.
+- G3 is the user's OK in session under `integration = "ask"`, or reported policy delegation under `auto` after verification and the Living Spec impact statement. Without a unit there is no decision record: nothing under `specs/` is written for it.
 - `merge` and `exception` are the shared stages of the delivery workflows. S-Lane has no `reconcile.md`, so it uses `commit-session` instead of `integrate` and does not run `spec-integrate`.
 
 ## Project policy execution

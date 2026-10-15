@@ -183,7 +183,7 @@ Distinguish the three failure kinds in E: retry cap exceeded, execution or tool 
 
 ## Optional review feedback breakpoint
 
-The boundary after `review-refine` passes and before `living-spec-draft` can be a feedback breakpoint. A runner chooses whether to wait for user feedback or proceed and owns wait and resume state. Intermediate commits are independent of waiting and follow existing commit authority. If feedback changes the implementation, reverify the affected part through the existing return paths; direction changes return to `direction`. This adds no stage, check or approval file. Complete the Living Spec reflection and the resolved and completed states before G3.
+The boundary after `review-refine` passes and before `living-spec-draft` can be a feedback breakpoint. A runner chooses whether to wait for user feedback or proceed and owns wait and resume state. Intermediate commits are independent of waiting. If feedback changes the implementation, reverify the affected part through the existing return paths; direction changes return to `direction`. This adds no stage, check or approval file. Complete the Living Spec reflection and the resolved and completed states before G3.
 
 ## Runner notes
 

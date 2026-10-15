@@ -10,7 +10,7 @@ Spec-driven development on devkit: the `spec` bundle and the `devkit spec` comma
 - Commands are mounted under `devkit` through the `devkit.commands` entry point ([Command Plugins](https://github.com/mjkimR/devkit/blob/main/docs/architecture/command-plugins.md)); bundle assets are declared in `src/devkit_spec/bundle/bundle.toml`.
 - specrig (the Go predecessor, private repository `mjkimR/specrig`) is the reference for behavior being ported; [specrig port map](docs/development/specrig-port-map.md) records where each of its components went. Port semantics, not code structure, and drop what devkit already covers.
 - Write all documentation, guide material and bundle assets in English.
-- Do not commit `.env`, log secrets/PII, or commit/push without explicit instructions.
+- Do not commit `.env` or log secrets/PII.
 
 ## Agent-First Design
 

@@ -66,7 +66,7 @@ git diff --name-only --cached   # staged (should be unchanged by the role)
 - Reviewer: fix findings, then re-verify only the changed part (tests for touched packages, `devkit rules check --staged`).
 - Worker: in the worktree run the unit's checks, stage only write-scope paths, run `devkit rules check --staged`, `git -C <worktree> commit`, then `devkit spec scope update --spec <dir>`.
 - Reconciler: review the draft as any docs change, stage only agreed paths, run `devkit rules check --staged` (not a working-tree check), send returned contract mismatches to a code fix, never a waiver, and keep confirmation (`reconcile.md` `status: resolved`) for the Developer per the `spec-sync` skill.
-- Commits, when authorized, are the Developer's (`git commit`; the commit gate runs the checks), staging only this task's agreed paths.
+- Commits are the Developer's (`git commit`; the commit gate runs the checks), staging only this task's agreed paths.
 
 ---
 

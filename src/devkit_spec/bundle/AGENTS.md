@@ -53,7 +53,7 @@ Read `devkit spec policy` before routing, gate and Git decisions. `ask` gates wa
 integration` on the `devkit workflow next` runs after it (`ADR-integration-approval-asserted`); `auto` delegates the
 decision within existing authority and the assumptions are reported. Records name the authority (`user` or `policy`)
 and never carry the conversation: no quotes, paraphrase or dates of it in decision notes, envelopes, assumptions or
-feedback; a decline note states the reason as a decision. Neither grants new commit, merge, publication or
+feedback; a decline note states the reason as a decision. Neither grants new merge, publication or
 deletion authority, and the intent gate always needs the user's intent. Report stages the policy switched off as
 skipped. Before formal worktree work read the `spec` skill's `references/worktree.md`; before completion or Git
 actions its `references/completion.md`. Explicit user instructions take precedence.

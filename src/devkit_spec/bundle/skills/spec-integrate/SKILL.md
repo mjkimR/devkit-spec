@@ -21,7 +21,7 @@ Use this skill once G3 (`integration` gate) authorization exists: the user's exp
 | :--- | :--- | :--- |
 | Code | Conflict resolution needed to integrate the approved change with the base, and the fixes and verification that resolution requires | New features, refactors, lowering AC, documenting a defect instead of fixing it |
 | Docs | Capability, story, architecture and ADR reflection the approved change requires; `reconcile.md` record | Adopting a new policy (separate decision), editing other features' specs |
-| Git | Stage agreed paths; `git commit` when authorized (the commit gate runs the staged checks) | Bypass flags (`--no-verify`), `git add .`, force operations |
+| Git | Stage agreed paths; `git commit` (the commit gate runs the staged checks) | Bypass flags (`--no-verify`), `git add .`, force operations |
 
 Trust the prior review: do not restart code review. Re-verify only what conflict resolution and docs reflection changed.
 
