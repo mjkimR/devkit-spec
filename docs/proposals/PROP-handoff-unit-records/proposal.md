@@ -79,7 +79,7 @@ Options:
 - **Gates (Q3)**: **A1** the handoff records the spec's gates from the proposal's answer (recommended); A2 ask the
   user again after every handoff; A3 a skill rule that has the agent record them after the handoff, without code.
 
-Recommended design (R1 + A1):
+Chosen direction (G2): R1 + A1.
 
 - `devkit spec proposal handoff` drops every decision record and envelope devkit's loaders return for the proposal
   unit (malformed ones included) instead of carrying them; PADRs and other extras are carried as today. The result
