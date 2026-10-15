@@ -17,12 +17,14 @@ Pass it as `diff_scope` base, and record the base checkout's `git -C <base> stat
 
 ## Validate the cumulative range
 
-From the last accepted head to the returned head (`diff_scope.head`); `<unit>/envelopes/` holds only your records and
-is left out of the path comparison:
+From the last accepted head to the returned head (`diff_scope.head`):
 
 - `git -C <worktree> merge-base --is-ancestor <accepted> <returned>` succeeds and the worktree's HEAD is `<returned>`.
-- Every path of `git -C <worktree> diff --name-only <accepted> <returned> -- . ':(exclude)<unit>/envelopes'` is in the
-  write scope.
+- Every path of `git -C <worktree> diff --name-only <accepted> <returned>` is in the write scope, except the validation
+  envelopes you wrote under `<unit>/envelopes/` since `<accepted>`, each unchanged since your commit of it
+  (`git -C <worktree> diff <your commit> <returned> -- <envelope>` is empty). Any other envelope path is out of scope:
+  a worker never writes one. After context loss, take as yours only the envelope commits `git log` shows touching
+  nothing else and whose records you can account for; otherwise block.
 - `git -C <worktree> diff <accepted> <returned> -- <unit>/spec.md` changes the `status:` line only.
 - `git -C <worktree> status --short` is empty; the base checkout's status and HEAD are as recorded.
 - The unit's checks pass on `<returned>`: the worker's results, confirmed by the pull request's CI or by rerunning them

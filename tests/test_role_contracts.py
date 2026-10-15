@@ -106,10 +106,11 @@ def test_the_host_validates_the_committed_range_and_blocks_a_failure() -> None:
     # AC-04.
     delegate = DELEGATE.read_text(encoding="utf-8")
     assert "except a `worker`, which commits on its unit branch ([worker](references/worker.md))" in delegate
+    assert "`reconciler` or `worker` (validations only)" in delegate
     text = " ".join(WORKER_RESULTS.read_text(encoding="utf-8").split())
     assert "From the last accepted head to the returned head" in text
     assert "merge-base --is-ancestor <accepted> <returned>" in text
-    assert "diff --name-only <accepted> <returned> -- . ':(exclude)<unit>/envelopes'` is in the write scope" in text
+    assert "diff --name-only <accepted> <returned>` is in the write scope" in text
     assert "changes the `status:` line only" in text
     assert "`git -C <worktree> status --short` is empty" in text
     assert "--status failed" in text and "never reset or amend" in text
@@ -119,8 +120,8 @@ def test_the_host_validates_the_committed_range_and_blocks_a_failure() -> None:
     assert "the base checkout's status and HEAD are as recorded" in text
     # Review of SPEC-worker-committed-result: host records never fail the range, a blocked unit keeps its base,
     # the stage follows the workflow, and only validations decide the block.
-    assert "`<unit>/envelopes/` holds only your records and is left out of the path comparison" in text
-    assert "':(exclude)<unit>/envelopes'" in text
+    assert "except the validation envelopes you wrote under `<unit>/envelopes/` since `<accepted>`" in text
+    assert "Any other envelope path is out of scope: a worker never writes one" in text
     assert "Never pass a blocked unit's current HEAD as the base" in text
     assert "`build-verify`, or `fix-verify` in `bugfix`" in text and "--stage build-verify" not in text
     assert (
