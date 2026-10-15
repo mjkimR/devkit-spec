@@ -1,0 +1,20 @@
+kind: final-report
+stage: final-change-report
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T00:52:40.844118Z'
+status: completed
+summary: Handoff drops the proposal unit's decision records and envelopes and records the spec's open G1 and G2 from the user's recorded direction answer (SPEC_PROPOSAL_GATE_NOT_CARRIED on failure); Living Spec, workflow gate rules and handoff references updated
+findings: []
+assumptions:
+- 'G1 and G2 of this spec are user answers (by: user) carried from the proposal''s accepted direction, recorded by hand since the handoff predates this change'
+- 'Outside the task boundaries: proposals/__init__.py export, tests/proposals/support.py fixture, .devkit/installation.json sync receipt, the orchestration-mode feedback disposition, and removal of the two gate records the defect left under docs/materials/2026-10/20261015-orchestration-mode/'
+- 'pull_request=auto chose a local merge: no platform review or CI is required and the base accepts direct pushes'
+- The conservative return rule (any later non-cancel return blocks carrying) is stricter than devkit's voiding by design (review finding 1)
+checks:
+  tests: 'PASS just ci: 715 passed'
+  build: 'PASS devkit sync; end-to-end handoffs in a scratch clone: direct-delivery carried G1 and G2, a policy direction carried nothing, bugfix carried G1 only'
+  lint: PASS ruff, pyright, devkit rules check --ci --base main (0 violations)
+diff_scope:
+  base: 0b5f85551719e377917f3aff1bb33bc94aee090a
+  head: 0bd53aeba4aa721e9ce13dd07882cbcecf03a8fa
