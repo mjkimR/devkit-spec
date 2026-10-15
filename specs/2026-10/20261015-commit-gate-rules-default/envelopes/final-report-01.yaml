@@ -1,0 +1,20 @@
+kind: final-report
+stage: final-change-report
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T02:09:05.251454Z'
+status: completed
+summary: devkit pinned at bc14046 (built-in rules-check commit gate, on by default; clean staged snapshots evaluated in place). Constitution, brownfield playbook, seed CI/CD page, development docs, glossary, ARCH-03 and ARCH-06 now describe the default gate instead of a verify-commands entry.
+findings: []
+assumptions:
+- G1 and G2 recorded as the user's answers to the agreed follow-up scope
+- Review substituted in the main session (Route 2, no elevated risk); Living Spec drafted by the Developer, no reconciler
+- cgate's post-commit hook rewrites commits (dates) and drops Co-Authored-By trailers; recorded heads come from git rev-parse HEAD
+- 'pull_request=auto: a local merge is proposed (no PR)'
+checks:
+  tests: 'PASS just ci: 726 passed'
+  build: PASS devkit gate status lists rules-check enabled; a probe commit with a 320-character summary was refused with GATE_RULES_FAILED; this branch's commits passed the gate
+  lint: PASS ruff, pyright, devkit rules check --ci --base main (0 violations)
+diff_scope:
+  base: main
+  head: 409f28cd45b44b40429034a717c70f5c436a74d5
