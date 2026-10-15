@@ -48,16 +48,45 @@ uncertainty than the policy change.
 
 - **Q1**: Which host capabilities (subagent tools, working directory per subagent) let a worker operate in another
   worktree, and how is that stated per host in the contract?
+  - **Finding**: no host gives a subagent its own working directory. On Claude Code the worker shares the session's
+    directory, so the payload carries the worktree's absolute path and the contract requires absolute paths and
+    `git -C <worktree>` for every read, write and command; the host must already allow that path (a sibling
+    `<base>-wt-<slug>` can sit outside the session's allowed directories). Codex `workspace-write` confines writes to
+    the project root, which excludes a sibling worktree, so the worker is `unsupported` there and the main session
+    substitutes. Antigravity is `unverified` (inference: no documented working-directory control). The guarantee is
+    the post-run diff in the worker's worktree, as for the reconciler.
 - **Q2**: What does the host verify before committing a worker's result: the diff against the write scope, the
   task's checks, and the scope registry overlaps?
+  - **Finding**: in the worker's worktree, `git -C <worktree> status --short` and `diff --name-only` (unstaged and
+    cached) stay inside the injected write scope with the index and HEAD unchanged; the host then runs the task's
+    checks there, stages only the agreed paths, runs `devkit rules check --staged`, commits with `git -C <worktree>
+    commit`, and runs `devkit spec scope update --spec <dir>`; `devkit spec scope query` overlaps decide the
+    integration order. A path outside the scope is reverted and the whole result is re-delegated or substituted.
 - **Q3**: How does the mode skill stay within the skill byte budget while pointing to the procedures it reuses?
+  - **Finding**: the mode skill holds the switch, the per-unit loop and the return to direct mode (about 4 KB) and
+    links the existing procedures instead of repeating them. `spec` (7632 of 7680 bytes) and `spec-delegate` (7418 of
+    7680) have no room: the router gets no new row (the constitution names the mode skill), and `spec-delegate` moves
+    its per-role payload table to a reference before adding the worker row.
 
 ## 3. Proposed Design & Impact
 
-- Bundle: `skills/spec-orchestrate/`, `subagents/worker.md`, `bundle.toml` assets and the core preset.
-- `spec-delegate`: worker role, payload and Step 5 diff location; the `spec` router names the mode.
-- Living Spec: `CAP-DLV-delivery-workflows` (role rules and table), `CAP-HARN-agent-guidance` (skill list).
-- Tests: role contract and workflow projection tests for the new role; bundle budget tests.
+- **Division of work**: the host keeps every gate and planning step of each unit (G1, G2, `spec.md`, `plan.md`,
+  `tasks.md`, review, Living Spec sync, G3 and integration); a worker implements only the `build-verify` tasks of
+  one unit inside its worktree. Planning needs the user's gates, so it stays with the host.
+- **Mode skill** `skills/spec-orchestrate/SKILL.md` (`invocation = "user"`): when to propose the switch, the loop
+  per unit (start the worktree and bundle, plan, delegate the build, validate and commit, review and sync, integrate
+  in overlap order), and the return to direct mode by a plain instruction.
+- **Worker contract** `subagents/worker.md`: write scope injected per task (the unit's `_Boundary:` paths inside the
+  worktree), `x-git-actions: [read]`, absolute paths and `git -C`; Claude Code `native` with Read, Grep, Glob, Write,
+  Edit and Bash; Codex `unsupported`; Antigravity `unverified`.
+- **`spec-delegate`**: the worker in the role list and payload (worktree path, write scope, task list, checks to
+  run), Step 5 compares the diff in the worker's worktree, and Step 1 allows the worker in orchestration mode on any
+  route; the per-role payload table moves to `references/payload.md` for room.
+- **Constitution** (`bundle/AGENTS.md` §3): one sentence naming the user-invoked mode skill.
+- Bundle: `bundle.toml` assets and the core preset. Implementation stages keep `role: developer`.
+- Living Spec: `CAP-DLV-delivery-workflows` (role rules and table, rule 14 unchanged), `CAP-HARN-agent-guidance`
+  (skill list), `ARCH-05-1-containers` (skill and role counts).
+- Tests: `tests/test_role_contracts.py` and `tests/test_workflows.py` role tuples, bundle budget and link tests.
 
 ## 4. Lifecycle & Retirement Criteria
 

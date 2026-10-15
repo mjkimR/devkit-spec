@@ -10,7 +10,7 @@ agent: claude-code
 origin: user
 severity: critical
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-15
 ---
 
@@ -66,3 +66,5 @@ devkit workflow answer --help
   --by TEXT    Who answered (person or host)
 decisions/01-gate-intent.yaml before the fix: a `note:` holding a dated summary with quoted chat lines.
 ```
+
+- **Disposition**: S-Lane `f116d59` (`src/devkit_spec/bundle/AGENTS.md`, `skills/spec/SKILL.md`, `skills/spec-next/references/workflow-signals.md`, `skills/spec/references/worktree.md`, workflows, `CAP-DLV-delivery-workflows`, `ARCH-06-runtime-view`): records name the authority (`--by user`) and carry no conversation, following specrig's authority-only reporting.

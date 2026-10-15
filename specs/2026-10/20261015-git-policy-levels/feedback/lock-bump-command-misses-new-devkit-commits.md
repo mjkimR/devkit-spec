@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-15
 ---
 
@@ -45,3 +45,5 @@ $ uv lock --upgrade-package devkit-agt --upgrade-package devkit-advisory --refre
   Updated devkit-advisory v0.1.1 (656e9f21) -> v0.1.1 (856f1afe)
   Updated devkit-agt v0.1.1 (656e9f21) -> v0.1.1 (856f1afe)
 ```
+
+- **Disposition**: S-Lane fix of `docs/development/setup.md`: the documented bump names `devkit-agt` and `devkit-advisory` with `--refresh`.
