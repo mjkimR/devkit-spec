@@ -1,7 +1,0 @@
-request: gate:intent
-kind: approve
-action: accept
-workflow: incubated-delivery
-stage: intent-proposal
-by: user
-at: '2026-10-15T00:32:48.779763Z'
