@@ -54,7 +54,8 @@ uncertainty than the policy change.
     `<base>-wt-<slug>` can sit outside the session's allowed directories). Codex `workspace-write` confines writes to
     the project root, which excludes a sibling worktree, so the worker is `unsupported` there and the main session
     substitutes. Antigravity is `unverified` (inference: no documented working-directory control). The guarantee is
-    the post-run diff in the worker's worktree, as for the reconciler.
+    the post-run diff in the worker's worktree, as for the reconciler. These statuses are the starting point;
+    portable worktree access across hosts is investigated separately in `PROP-worktree-host-compatibility`.
 - **Q2**: What does the host verify before committing a worker's result: the diff against the write scope, the
   task's checks, and the scope registry overlaps?
   - **Finding**: in the worker's worktree, `git -C <worktree> status --short` and `diff --name-only` (unstaged and
