@@ -49,6 +49,13 @@ def test_every_role_is_projected_for_every_agent(synced: Path) -> None:
             assert (synced / pattern.format(role=role)).is_file(), pattern.format(role=role)
 
 
+def test_the_worker_is_projected_only_where_it_can_reach_a_worktree(synced: Path) -> None:
+    assert (synced / ".devkit/managed/spec/subagents/worker.md").is_file()
+    assert (synced / ".claude/agents/worker.md").is_file()
+    assert (synced / ".agents/agents/worker.md").is_file()
+    assert not (synced / ".codex/agents/worker.toml").exists()
+
+
 def test_no_skill_is_projected_for_a_procedure_only_a_role_runs(synced: Path) -> None:
     for skill in ("spec-scout", "spec-challenge"):
         assert not (synced / f".claude/skills/{skill}").exists(), skill

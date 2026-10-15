@@ -78,7 +78,7 @@ directories and writes the guidance pointer into the root `AGENTS.md` block.
 
 | Preset | Selection | Assets |
 | --- | --- | --- |
-| `core` | Automatic on `devkit sync` (`auto_select`) | Instructions, the guidance pointer, the eight rules, `templates`, the 12 skills, the four workflows, the four role contracts, the two playbooks. |
+| `core` | Automatic on `devkit sync` (`auto_select`) | Instructions, the guidance pointer, the eight rules, `templates`, the 13 skills, the four workflows, the five role contracts, the two playbooks. |
 | `docs-skeleton` | Opt-in: `devkit add spec:docs-skeleton` (or `[presets] spec = ["core", "docs-skeleton"]`) | The `docs-skeleton` seed. |
 
 A project opts out of the bundle with `[presets] spec = false` in `.devkit/config.toml`. The constitution
@@ -89,9 +89,9 @@ A project opts out of the bundle with `[presets] spec = false` in `.devkit/confi
 | `instruction` | `contract-authoring`, `living-spec-writing` |
 | `guidance` | `spec-pointer` |
 | `rule` | `document-reference`, `id-convention`, `spec-format`, `traceability-link`, `task-coverage`, `spec-lifecycle`, `reconcile-contract`, `document-summary`, `code-entrypoints` (`CAP-GOV-spec-rules`) |
-| `skill` | the 12 skills of 4.4 |
+| `skill` | the 13 skills of 4.4 |
 | `workflow` | `s-lane`, `direct-delivery`, `bugfix`, `incubated-delivery` |
-| `subagent` | `challenger`, `reconciler`, `reviewer`, `scout` |
+| `subagent` | `challenger`, `reconciler`, `reviewer`, `scout`, `worker` |
 | `playbook` | `brownfield-adoption`, `feedback-hygiene` |
 | `document` | `templates`; `docs-skeleton` (`seeded = true`, `target = "docs"`) |
 
@@ -135,6 +135,7 @@ Living Spec and `specs/` holds feature specs.
 | `spec-sync` | Reconcile the change into the Living Spec and resolve `reconcile.md`. | `list`, `refs`, `search`, `proposal new`, `scope update` |
 | `spec-integrate` | Integrate after G3: conflicts, re-verification, reconcile confirmation, cumulative check, cleanup. | `policy`, `scope sweep`, `proposal prune` |
 | `spec-delegate` | Delegate a stage to a role contract and record its envelope. | |
+| `spec-orchestrate` | User-invoked orchestration mode: coordinate workers building independent units in their own worktrees; a plain instruction returns to direct mode. | `new`, `scope register`, `scope query`, `scope update` |
 | `spec-rule` | Author or tune a project rule for `devkit rules` in the project's own bundle. | |
 | `spec-feedback` | Record and sweep feedback observations (`specs/<YYYY-MM>/feedback/`). | `list feedback`, `resolve`, `policy` |
 | `spec-entrypoints` | Derive capability and story entrypoints from spec bundles, review and apply them. | `entrypoints derive`, `list capability` |
@@ -145,7 +146,8 @@ final change report), `spec/references/worktree.md` (task worktree start, work, 
 `spec/references/playbooks.md` (Tier 2 operational playbook routing),
 `spec-next/references/post-handoff.md` (follow-up of `[REWRITTEN]` and `[UNRESOLVED_LINK]` lines),
 `spec-next/references/workflow-signals.md` (`devkit workflow next` lines and advisories),
-`spec-delegate/references/hosts.md` (spawning a role on each host), `spec-specify/references/feature.md` and
+`spec-delegate/references/hosts.md` (spawning a role on each host), `spec-delegate/references/payload.md` (payload
+rows per role), `spec-specify/references/feature.md` and
 `bugfix.md`, `spec-feedback/references/sweep.md` and `template.md`, `spec-rule/references/config.md` and
 `templates.md`.
 

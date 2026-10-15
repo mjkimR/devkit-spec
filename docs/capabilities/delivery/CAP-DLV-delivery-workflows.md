@@ -18,7 +18,7 @@ entrypoints:
 ## 1. Summary
 
 The `spec` bundle ships one devkit workflow definition per delivery route (`kind = "workflow"` assets in
-`src/devkit_spec/bundle/workflows/`) and four host-neutral role contracts (`kind = "subagent"` assets in
+`src/devkit_spec/bundle/workflows/`) and five host-neutral role contracts (`kind = "subagent"` assets in
 `src/devkit_spec/bundle/subagents/`), all in the `core` preset. devkit's workflow engine evaluates the definitions
 ([Workflow Engine](https://github.com/mjkimR/devkit/blob/main/docs/workflow/overview.md)); `devkit sync` projects the
 roles into each agent host's subagent directory
@@ -29,7 +29,7 @@ sequence.
 ## 2. Scope & Boundary
 
 - **In-Scope**: the four definitions (layout, anchor, stages, gates, entry and exit checks, returns, declared checks),
-  the gate semantics of G1, G2, G3 and the exception stage E, the envelope kinds the stages require, and the four role
+  the gate semantics of G1, G2, G3 and the exception stage E, the envelope kinds the stages require, and the five role
   contracts.
 - **Out-of-Scope**:
   - Evaluating a definition, recording answers and envelopes, binding units: devkit's `devkit workflow` commands.
@@ -207,7 +207,7 @@ Envelopes are devkit envelope files under the bundle's `envelopes/`, written wit
 | `green` | `envelopes/green-NN.yaml` | `resolved`, `preserved` |
 | `feedback` | `envelopes/feedback-NN.yaml` | `swept` |
 | `final-report` | `envelopes/final-report-NN.yaml` | `tests`, `build`, `lint` |
-| `challenger`, `reconciler`, `scout` | role returns | none required by a stage |
+| `challenger`, `reconciler`, `scout`, `worker` | role returns | none required by a stage |
 
 A role returns `status` (`completed`, `needs_input`, `failed`), `summary`, `findings` (`issue`, `evidence`,
 `failure_condition`, `suggested_action`), `assumptions`, `unverified_areas`, `checks` and `diff_scope`; the Developer
@@ -228,17 +228,27 @@ role).
 | `reconciler` | `spec-sync` | `light-medium` | docs drafts and the bundle's `reconcile.md` | `reconciler` |
 | `reviewer` | `spec-review` | `general-high` | nothing | `review`, `reverify` |
 | `scout` | none: the procedure is in the contract | `light-medium` | nothing, or the proposal's `materials/` on request | `scout` |
+| `worker` | none: the procedure is in the contract | `general-high` | the injected write scope inside its unit's worktree | `worker` |
 
 The contract body is the role's prompt and holds only what the role needs: purpose, input fields, return fields,
 write boundaries, failure handling and, for a role whose procedure no main session runs (`challenger`, `scout`), the
 procedure itself. `reviewer` and `reconciler` name the skill the main session also runs by default, with its
 managed path and the sections the role follows (the reconciler only the impact and drafting steps). Caller guidance
 (per-role payload, host guarantees, the post-run diff comparison, envelope recording) lives in `spec-delegate`
-(`SPEC-subagent-procedure-in-contract`). Only `reviewer` and `scout` have a shell (`Bash`; Antigravity `run_command`
-with `commandExecutionPolicy: sandbox`), `scout` for `devkit spec search`, `list`, `resolve` and `refs`.
+(`SPEC-subagent-procedure-in-contract`). Only `reviewer`, `scout` and `worker` have a shell (`Bash`; Antigravity
+`run_command` with `commandExecutionPolicy: sandbox`), `scout` for `devkit spec search`, `list`, `resolve` and `refs`,
+`worker` for the unit's checks.
+
+`worker` exists for orchestration mode only (`spec-orchestrate`, user-invoked): it builds one unit's tasks in that
+unit's devkit worktree, using absolute paths and `git -C <worktree>` because no host gives a subagent its own working
+directory, and leaves the result unstaged. The host compares the diff in the worktree and the base checkout against
+what it recorded before spawning, runs the checks, stages and commits. Its host statuses are Claude Code `native`,
+Codex `unsupported` (the host builds the unit itself) and Antigravity `unverified`
+(`SPEC-orchestration-mode`).
 
 Stages delegate to `reviewer` (`review-refine`), `reconciler` (`living-spec-draft`) and `scout` (`spike`);
-`challenger` has no stage and is delegated on request, typically during a spike before G2. `[DELEGATE: role=<role>
+`challenger` has no stage and is delegated on request, typically during a spike before G2; `worker` has no stage
+either: implementation stages keep `role: developer`, and the orchestration mode delegates their tasks. `[DELEGATE: role=<role>
 isolation=...]` in `next` names the role; `spec-delegate` decides between a host subagent and a main-session
 substitute and records the choice. A projected role receives only the per-call payload, since the host loads the
 contract body as its system prompt.

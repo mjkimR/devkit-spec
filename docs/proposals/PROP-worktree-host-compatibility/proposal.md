@@ -20,7 +20,7 @@ workflow_hash: sha256:c6cf386f9eb37b061d626d4bc701dd4e01f43674666d160179f69da5c3
 
 ## 1. Background & Hypothesis
 
-`PROP-orchestration-mode` has worker subagents implement in their own devkit worktree
+`SPEC-orchestration-mode` has worker subagents implement in their own devkit worktree
 (`<parent of base>/<base name>-wt-<slug>`). Its spike found that no host gives a subagent its own working directory:
 on Claude Code a worker shares the session's directory and must use absolute paths and `git -C`, and the session must
 already allow the sibling path; Codex `workspace-write` confines writes to the project root, which excludes the
@@ -58,7 +58,7 @@ Impact depends on the choice: the worker contract's host blocks and `spec-delega
 
 ## 4. Lifecycle & Retirement Criteria
 
-- Restart condition: `PROP-orchestration-mode` handed off and its Claude Code path working.
+- Restart condition: `SPEC-orchestration-mode` integrated with its Claude Code path working.
 - Expected acceptance checks: a worker on each host the chosen option supports writes only inside its worktree and
   the host's diff check passes; the worker contract's host statuses match the verified behavior.
 - On acceptance: set `status: accepted` and run `devkit spec proposal handoff worktree-host-compatibility`. On

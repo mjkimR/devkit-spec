@@ -58,6 +58,10 @@ deletion authority, and the intent gate always needs the user's intent. Report s
 skipped. Before formal worktree work read the `spec` skill's `references/worktree.md`; before completion or Git
 actions its `references/completion.md`. Explicit user instructions take precedence.
 
+Sessions run in direct mode: the host implements. The user-invoked `spec-orchestrate` skill switches a session to
+orchestration mode, where the host coordinates worker subagents building independent units in their own worktrees,
+until the user returns it to direct mode.
+
 ## 4. Verification and Completion
 
 Every route compares the final diff, the agreed requirements, the check results and the Living Spec impact before

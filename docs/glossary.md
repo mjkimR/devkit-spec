@@ -54,7 +54,8 @@ term's contract, the last column names it. Search synonyms for these terms live 
 | **Handoff workflow** | The workflow a spec follows after handoff, named in a proposal's `handoff_workflow` (default `direct-delivery`). | `ADR-handoff-workflow-key` |
 | **Envelope** | devkit's YAML record of a stage result (`specs/.../envelopes/<kind>-<NN>.yaml`): `status`, findings, checks, diff scope. Written with `devkit workflow envelope new`. | `CAP-DLV-delivery-workflows` |
 | **Final change report** | The `final-report` envelope before G3, carrying the tests, build and lint evidence. | `CAP-DLV-delivery-workflows` |
-| **Role contract / support role** | A host-neutral subagent definition (`challenger`, `reconciler`, `reviewer`, `scout`) that a stage may delegate to; projected per agent host; always optional. | `CAP-HARN-agent-guidance` |
+| **Role contract / support role** | A host-neutral subagent definition (`challenger`, `reconciler`, `reviewer`, `scout`, `worker`) that a stage may delegate to; projected per agent host; always optional. | `CAP-HARN-agent-guidance` |
+| **Direct mode / orchestration mode** | Session states, not settings: in direct mode (the default) the host implements; in orchestration mode, switched on by the user-invoked `spec-orchestrate` skill, the host coordinates `worker` subagents building independent units in their own worktrees until a plain instruction returns it. | `CAP-DLV-delivery-workflows` |
 | **Developer** | The main agent session that runs a workflow and records envelopes, as opposed to a delegated support role. | `CAP-DLV-delivery-workflows` |
 | **Project policy** | The effective gate, stage and Git policy printed by `devkit spec policy`. | `CAP-DLV-project-policy` |
 

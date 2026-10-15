@@ -1,0 +1,20 @@
+kind: final-report
+stage: final-change-report
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T00:06:59.598947Z'
+status: completed
+summary: spec-orchestrate mode skill (user-invoked), worker role contract, spec-delegate worker support with payload reference, constitution pointer; Living Spec and glossary updated; host portability retained in PROP-worktree-host-compatibility
+findings: []
+assumptions:
+- 'G1 and G2 of the spec are user answers (by: user) carried from the agreed proposal direction'
+- 'PROP-worktree-host-compatibility changed outside the task boundaries: the handoff rewrote its reference and the restart condition now reads integrated'
+- spec/references/envelope.md changed outside the boundaries to list the worker kind (review finding 1)
+- The change is uncommitted; review and checks ran on the worktree, the cumulative --ci check runs after the commit
+checks:
+  tests: 'PASS just ci: 699 passed'
+  build: 'PASS devkit sync: worker projected for Claude Code and Antigravity, no Codex file'
+  lint: PASS ruff, pyright, devkit rules check (0 violations)
+diff_scope:
+  base: d75e673
+  head: d75e673356c908a2230fe517c9e464df649774ef

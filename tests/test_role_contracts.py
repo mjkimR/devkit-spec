@@ -9,7 +9,7 @@ import pytest
 import yaml
 
 BUNDLE = Path(__file__).resolve().parents[1] / "src/devkit_spec/bundle"
-ROLES = ("challenger", "reconciler", "reviewer", "scout")
+ROLES = ("challenger", "reconciler", "reviewer", "scout", "worker")
 DELEGATE = BUNDLE / "skills/spec-delegate/SKILL.md"
 
 
@@ -49,11 +49,26 @@ def test_only_scout_gains_a_shell() -> None:
     assert "run_command" not in challenger["antigravity"]["tools"]
 
 
+def test_the_worker_writes_in_its_worktree_and_never_commits() -> None:
+    metadata, body = _contract("worker")
+    assert metadata["x-git-actions"] == ["read"]
+    hosts = metadata["hosts"]
+    assert hosts["claude-code"]["status"] == "native"
+    assert {"Write", "Edit", "Bash"} <= set(hosts["claude-code"]["tools"])
+    assert hosts["codex"]["status"] == "unsupported"
+    assert hosts["antigravity"]["status"] == "unverified"
+    assert "git -C <worktree>" in body and "absolute" in body
+    assert "Do not stage or commit (`MUST NOT`)" in body
+    assert "One path outside the write scope rejects the whole result" in body
+
+
 def test_spec_delegate_passes_only_the_payload_to_a_projected_role() -> None:
     text = DELEGATE.read_text(encoding="utf-8")
     assert "Read the contract frontmatter first" in text
     assert "With a projected file, pass only the payload" in text
     assert "When the main session substitutes, follow the contract body yourself" in text
     assert "Pass the role contract body" not in text
+    assert "[payload](references/payload.md)" in text
+    payload = (DELEGATE.parent / "references/payload.md").read_text(encoding="utf-8")
     for role in ROLES:
-        assert f"| `{role}` |" in text, role
+        assert f"| `{role}` |" in payload, role

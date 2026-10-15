@@ -1,6 +1,6 @@
 ---
 name: spec-delegate
-description: Delegate a bounded task to an optional isolated support role (Scout, Challenger, Reviewer, Reconciler) with an explicit input payload, verify the returned envelope, and compare the actual diff with the injected write boundary.
+description: Delegate a bounded task to an optional isolated role (Scout, Challenger, Reviewer, Reconciler, or a Worker in orchestration mode) with an explicit input payload, verify the returned envelope, and compare the actual diff with the injected write boundary.
 ---
 
 # spec-delegate: Support Role Invocation Workflow
@@ -11,7 +11,7 @@ Use this skill when the main Developer session hands exploration, criticism, an 
 
 ## 1. Inputs
 
-- Role contract: `challenger`, `reconciler`, `reviewer` or `scout`, shipped with the `spec` bundle. `devkit workflow next --unit <dir>` prints `[DELEGATE: role=<role> isolation=<level> contract=<path>]` for a stage that prefers isolation; `contract=` is the effective contract (managed or overridden). Outside a delegating stage, the managed contract is `.devkit/managed/spec/subagents/<role>.md`. Read its frontmatter (`hosts.<host>`, `x-git-actions`); the body is the role's prompt, already in its projected agent file, read only when the main session substitutes.
+- Role contract: `challenger`, `reconciler`, `reviewer`, `scout`, or `worker` (orchestration mode only), shipped with the `spec` bundle. `devkit workflow next --unit <dir>` prints `[DELEGATE: role=<role> isolation=<level> contract=<path>]` for a stage that prefers isolation; `contract=` is the effective contract (managed or overridden). Outside a delegating stage, the managed contract is `.devkit/managed/spec/subagents/<role>.md`. Read its frontmatter (`hosts.<host>`, `x-git-actions`); the body is the role's prompt, already in its projected agent file, read only when the main session substitutes.
 - Stage context: `devkit workflow next --unit <dir>` (current stage) and `devkit workflow show --unit <dir>` (where returns go).
 
 ---
@@ -31,17 +31,13 @@ Use this skill when the main Developer session hands exploration, criticism, an 
 
 ### Step 1: Decide whether to delegate
 - Route 1: do not delegate. Route 2: Reviewer and Reconciler only when risk or the user asks. Route 3/4: Scout and Challenger for spikes; Reviewer and Reconciler as in Route 2.
+- Orchestration mode (`spec-orchestrate`), any route: a Worker builds one unit's tasks in that unit's worktree; never outside the mode.
 - Skip it for a one-file lookup or a trivial change; delegation cost (payload, re-exploration, coordination) counts.
 
 ### Step 2: Build the input payload
 Fill all five fields: `task_goal`, `relevant_files`, `allowed_boundaries` (read scope, write scope, denied paths), `diff_scope` (base and head), `expected_output_format`. Record the head SHA you passed (`git rev-parse HEAD`). Per role:
 
-| Role | `relevant_files` | `diff_scope` | Also pass |
-| --- | --- | --- | --- |
-| `scout` | Starting points | optional | The `materials/` path when an artifact is wanted |
-| `challenger` | Proposal or spec, AC, non-goals, ADRs, capabilities, as paths (it has no shell) | optional | |
-| `reviewer` | `spec.md`, `plan.md`, `tasks.md`, touched capabilities and ADRs | required | Your check results (tests, build, `devkit rules check --staged`) |
-| `reconciler` | `spec.md`, the deciding review envelope, likely affected docs (`devkit spec refs <ID> --direction in`) | required | |
+The rows per role (`scout`, `challenger`, `reviewer`, `reconciler`, `worker`) are in [payload](references/payload.md).
 
 ### Step 3: Invoke in isolation
 - Read the stage's `isolation` from `[DELEGATE: ... isolation=none|preferred|required ...]` and the role's `hosts.<host>.status`. State one of: spawn an isolated subagent (`native`, `emulated`, `unverified`); substitute in the main session (`unsupported`, or `preferred` without a fresh context); stop with `needs_input` (`required` and `unsupported`). Record the choice and the status in the envelope's `assumptions`.
@@ -61,12 +57,14 @@ git diff --name-only --cached   # staged (should be unchanged by the role)
 ```
 - Scout, Challenger, Reviewer: expected diff is empty (Scout may add only to the agreed `materials/` path).
 - Reconciler: every changed path must be inside the injected docs scope and this spec's `reconcile.md`. One line in a declared source or test path rejects the whole draft.
+- Worker: the same commands as `git -C <worktree> ...`; its HEAD equals the recorded head, and `git -C <base> status --short` and HEAD match what you recorded before spawning. One path outside the write scope rejects the whole result.
 - A path outside `allowed_boundaries` or a change to the index or HEAD is a violation: report the paths, revert the out-of-scope change, and do not reuse earlier check results.
 
 ### Step 6: Fold the result back
-- **Envelope file** (Route 2 and above): record the role's return as `<unit>/envelopes/<kind>-<NN>.yaml` with kind `scout`, `challenger`, `review` or `reconciler`. You write it, never the role, and never by hand-editing YAML: `devkit workflow envelope new --unit <dir> --kind <kind> --stage <stage> ... --findings-file -` (findings YAML on stdin, as found), then `devkit workflow envelope check --unit <dir>`. A `review` records findings as found (all open); a `reverify` (`--from latest --resolve N --waive N=<rationale>`) closes that round. The authoring flags are in section 6 of the `spec` skill's `references/envelope.md`. The conversation keeps only the summary and the file path. Route 1 needs no envelope files. For a proposal spike the unit is the proposal bundle: `--unit docs/proposals/PROP-<slug> --stage spike`.
+- **Envelope file** (Route 2 and above): record the role's return as `<unit>/envelopes/<kind>-<NN>.yaml` with kind `scout`, `challenger`, `review`, `reconciler` or `worker`. You write it, never the role, and never by hand-editing YAML: `devkit workflow envelope new --unit <dir> --kind <kind> --stage <stage> ... --findings-file -` (findings YAML on stdin, as found), then `devkit workflow envelope check --unit <dir>`. A `review` records findings as found (all open); a `reverify` (`--from latest --resolve N --waive N=<rationale>`) closes that round. The authoring flags are in section 6 of the `spec` skill's `references/envelope.md`. The conversation keeps only the summary and the file path. Route 1 needs no envelope files. For a proposal spike the unit is the proposal bundle: `--unit docs/proposals/PROP-<slug> --stage spike`.
 - Scout/Challenger: write the comparison table and recommendation into the proposal bundle (`materials/` or `proposal.md`); keep `unverified_areas` visible for the `direction` gate (G2).
 - Reviewer: fix findings, then re-verify only the changed part (tests for touched packages, `devkit rules check --staged`).
+- Worker: in the worktree run the unit's checks, stage only write-scope paths, run `devkit rules check --staged`, `git -C <worktree> commit`, then `devkit spec scope update --spec <dir>`.
 - Reconciler: review the draft as any docs change, stage only agreed paths, run `devkit rules check --staged` (not a working-tree check), send returned contract mismatches to a code fix, never a waiver, and keep confirmation (`reconcile.md` `status: resolved`) for the Developer per the `spec-sync` skill.
 - Commits, when authorized, are the Developer's (`git commit`; the commit gate runs the checks), staging only this task's agreed paths.
 

@@ -118,6 +118,13 @@ id = "spec-delegate"
 kind = "skill"
 source = "skills/spec-delegate"
 
+# Orchestration mode: the user switches the session to coordinating workers in their own worktrees.
+[[assets]]
+id = "spec-orchestrate"
+kind = "skill"
+source = "skills/spec-orchestrate"
+invocation = "user"
+
 # Author or tune a project rule for devkit rules.
 [[assets]]
 id = "spec-rule"
@@ -212,6 +219,11 @@ id = "scout"
 kind = "subagent"
 source = "subagents/scout.md"
 
+[[assets]]
+id = "worker"
+kind = "subagent"
+source = "subagents/worker.md"
+
 # Occasional procedures, found through `devkit playbook search` on explicit request.
 [[assets]]
 id = "brownfield-adoption"
@@ -248,6 +260,7 @@ assets = [
     "spec-sync",
     "spec-integrate",
     "spec-delegate",
+    "spec-orchestrate",
     "spec-rule",
     "spec-feedback",
     "spec-entrypoints",
@@ -259,6 +272,7 @@ assets = [
     "reconciler",
     "reviewer",
     "scout",
+    "worker",
     "brownfield-adoption",
     "feedback-hygiene",
 ]

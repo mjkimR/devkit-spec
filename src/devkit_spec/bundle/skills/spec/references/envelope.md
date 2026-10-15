@@ -1,6 +1,6 @@
 # Delegation Input and Return Envelope
 
-Read this when delegating to a support role (`scout`, `challenger`, `reviewer`, `reconciler`), writing a review, presenting the final change report before G3, or reporting the integration result. Role contracts ship with the spec bundle and are projected into each agent's native agent directory by `devkit sync`; the stage definition is rendered by `devkit workflow show --unit <dir>`. Envelope files follow devkit's envelope contract; this reference says how spec-driven delivery uses it.
+Read this when delegating to a support role (`scout`, `challenger`, `reviewer`, `reconciler`, `worker`), writing a review, presenting the final change report before G3, or reporting the integration result. Role contracts ship with the spec bundle and are projected into each agent's native agent directory by `devkit sync`; the stage definition is rendered by `devkit workflow show --unit <dir>`. Envelope files follow devkit's envelope contract; this reference says how spec-driven delivery uses it.
 
 ## 1. Input payload
 
@@ -11,7 +11,7 @@ Pass all five fields. Never inject the whole tree.
 | `task_goal` | One goal for this call |
 | `relevant_files` | Files, acceptance criteria, non-goals and ADRs to read; starting points, not a dump |
 | `allowed_boundaries` | Read scope and write scope for this task, plus explicitly denied paths; repository-declared paths, not generic globs |
-| `diff_scope` | Base ref and head of the change under review (required for `reviewer` and `reconciler`) |
+| `diff_scope` | Base ref and head of the change under review (required for `reviewer`, `reconciler`, `worker`) |
 | `expected_output_format` | Summary, comparison table, review envelope, docs draft diff, etc. |
 
 Also state the host projection status for this call (`native`, `emulated`, `unsupported`) when it is not native, so the substitute guarantee is explicit.
@@ -70,7 +70,7 @@ Route 2 and above: every envelope is a file under the feature's spec directory, 
 specs/<YYYY-MM>/<YYYYMMDD>-<slug>/envelopes/<kind>-<NN>.yaml
 ```
 
-- `kind`: `scout | challenger | review | reverify | reconciler | final-report`, or any kind matching `[a-z][a-z0-9-]*` that a workflow check names (`envelope-completed(<kind>)`, `envelope-check-pass(<kind> <key>)`, `revision-ancestor(<kind> <kind>)`). Workflow `bugfix` uses `red` (`checks.reproduced`) and `green` (`checks.resolved`, `checks.preserved`), see the `spec-specify` skill's bugfix reference; the `collect-feedback` stage uses `feedback` (`checks.swept`), see the `spec-feedback` skill. `NN` is a sequence per kind; the highest is current and earlier files are history. Never overwrite; `envelope new` writes the next number.
+- `kind`: `scout | challenger | review | reverify | reconciler | worker | final-report`, or any kind matching `[a-z][a-z0-9-]*` that a workflow check names (`envelope-completed(<kind>)`, `envelope-check-pass(<kind> <key>)`, `revision-ancestor(<kind> <kind>)`). Workflow `bugfix` uses `red` (`checks.reproduced`) and `green` (`checks.resolved`, `checks.preserved`), see the `spec-specify` skill's bugfix reference; the `collect-feedback` stage uses `feedback` (`checks.swept`), see the `spec-feedback` skill. `NN` is a sequence per kind; the highest is current and earlier files are history. Never overwrite; `envelope new` writes the next number.
 - `review-NN.yaml` records a review round as found: every finding is `open`. `reverify-NN.yaml` closes a round: it names it in `review`, carries its findings forward with `resolution: resolved | waived` (a waived finding states its reason in `waiver`) and may add findings discovered while re-verifying. The deciding review state is the latest review round, or the latest reverify that closes it; a newer review round makes earlier reverify files history.
 - Required keys: `kind` (equal to the file name kind) and `status`. A malformed file is reported as `[ENVELOPE_ERROR: ...]` and ignored.
 - Everything else is optional and written only when it carries information: `stage`, `summary` (recommended), `findings`, `assumptions`, `unverified_areas`, `checks`, `diff_scope`. Do not restate other files: Git has the dates and paths, `reconcile.md` has the docs impact.

@@ -1,0 +1,10 @@
+kind: feedback
+stage: collect-feedback
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T00:06:30.363435Z'
+status: completed
+summary: 'Session and diff swept at repo-and-upstream coverage: recorded FB-handoff-moves-gate-decisions-to-materials and FB-projected-roles-need-a-session-in-the-project; duplicates FB-review-head-before-any-commit (review on an uncommitted tree again) and FB-skill-byte-budgets-leave-no-headroom (envelope.md now 24 bytes under the budget)'
+findings: []
+checks:
+  swept: PASS recorded=2 duplicates=2

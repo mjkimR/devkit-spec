@@ -1,0 +1,31 @@
+kind: review
+stage: review-refine
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T00:05:03.422987Z'
+status: completed
+summary: 'Independent reviewer: AC-01..AC-05 confirmed, non-goals respected, three low-severity consistency findings'
+findings:
+- issue: envelope.md lists only the four old roles and kinds; worker envelopes and worker diff_scope are not covered
+  evidence: src/devkit_spec/bundle/skills/spec/references/envelope.md:73
+  failure_condition: A host reading envelope.md before recording a worker return treats kind worker as invalid and records no worker envelope
+  suggested_action: Add worker to the kind and role lists and to the diff_scope-required note
+  resolution: open
+- issue: Worker Step 5 checks that the caller's checkout is unchanged without naming the base checkout or recording a baseline
+  evidence: src/devkit_spec/bundle/skills/spec-delegate/SKILL.md:60
+  failure_condition: A worker's relative-path write lands in the base checkout while the host sits in another unit's worktree; the post-run check misses it
+  suggested_action: Record git -C <base> status --short and HEAD before spawning and compare after
+  resolution: open
+- issue: PROP-worktree-host-compatibility changed outside every task boundary
+  evidence: docs/proposals/PROP-worktree-host-compatibility/proposal.md:23
+  failure_condition: Scope-drift check finds an unexplained path
+  suggested_action: State the handoff-forced reference rewrite and restart-condition wording in the final report assumptions
+  resolution: open
+assumptions:
+- Reviewer role run as an isolated subagent on Claude Code (native); diff_scope is the uncommitted working tree on d75e673
+checks:
+  tests: 'PASS just ci: 699 passed'
+  lint: PASS ruff, pyright, devkit rules check (0 errors)
+diff_scope:
+  base: d75e673
+  head: d75e673356c908a2230fe517c9e464df649774ef
