@@ -1,0 +1,18 @@
+kind: review
+stage: review-refine
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T02:07:10.695868Z'
+status: completed
+summary: 'Main-session review: AC-01 (gate status lists rules-check; both devkit pins at bc14046), AC-02 (probe commit refused with GATE_RULES_FAILED naming RULE-document-summary), AC-04 hold; AC-03 holds for the bundle, the three remaining Living Spec passages are living-spec-draft targets. No findings.'
+findings: []
+assumptions:
+- 'Review substituted in the main session: Route 2 docs and dependency change without elevated risk (spec-delegate Step 1)'
+- cgate's post-commit hook rewrote the last commit (printed e09d961, HEAD 23a9b82); content unchanged
+checks:
+  tests: PASS just test 726 passed
+  lint: PASS just lint-check, just check
+  gate: PASS the commit 23a9b82 passed the rules-check gate
+diff_scope:
+  base: main
+  head: 23a9b820b50476ca666b522ff078ed0dc3cb46f6

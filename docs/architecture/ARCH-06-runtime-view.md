@@ -127,16 +127,16 @@ sequenceDiagram
 
     Agent->>Git: git commit
     Git->>Gate: pre-commit hook
-    Gate->>Rules: verify-commands: uv run devkit rules check --staged
-    Rules->>Rules: materialize the staged tree; read config, receipt and rule files from it
+    Gate->>Rules: rules-check: staged snapshot, run_project_rules (in the hook's process)
+    Rules->>Rules: evaluate in place when the working tree holds the staged tree, else materialize it; read config, receipt and rule files from it
     Rules->>RuleFile: load rule classes
     RuleFile->>Impl: subclass of the package's rule
     Rules->>Impl: check(ctx) per targeted file (changed files of the diff)
     Impl->>Index: document_index(ctx) through ctx.cache (the snapshot)
     Impl->>Impl: ctx.snapshot: changed and deleted paths, base, mode
     Impl-->>Rules: violations on targeted files
-    Rules-->>Gate: exit 1 on errors
-    Gate-->>Git: refuse the commit (GATE_VERIFY_FAILED) or let it pass
+    Rules-->>Gate: blocking violations
+    Gate-->>Git: refuse the commit (GATE_RULES_FAILED) or let it pass
 ```
 
 - `RULE-reconcile-contract` requires every `modified` target of a resolved `reconcile.md` changed in the snapshot's

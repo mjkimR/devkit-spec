@@ -42,7 +42,7 @@ devkit is the SDD-agnostic foundation; devkit-spec owns everything spec-driven. 
 | Distribution: bundles, presets, `devkit sync`, `add`, `remove`, `status`, managed copies, agent projections, the receipt, overrides, `devkit get-context` | The `spec` bundle's content: constitution, instructions, guidance pointer, skills, role contracts, playbooks, templates, docs skeleton (`CAP-HARN-agent-guidance`) |
 | Rule engine: `devkit rules check`, `fix`, `explain`, targeting, Git snapshot runs, the built-in `RULE-markdown-link` and `RULE-file-length` | The spec rules and their guides (`CAP-GOV-spec-rules`, `CAP-TRACE-code-entrypoints`) |
 | Workflow engine: definitions, bindings, `devkit workflow next`, `show`, `answer`, `envelope`, approval gates and their policy | The four delivery workflows, their stages and check mapping (`CAP-DLV-delivery-workflows`) |
-| Commit gate: hook wrappers, `verify-commands` | Nothing; the gate runs `devkit rules check --staged`, which runs the spec rules |
+| Commit gate: hook wrappers, the `rules-check` and `verify-commands` gates | Nothing; `rules-check` evaluates the staged tree as `devkit rules check --staged` does, which runs the spec rules |
 | Search: lexical, dense and hybrid ranking (`devkit.search`, `devkit[search]`) | The search policy: candidates, fields, pinning, glossary (`CAP-DOCS-document-search`) |
 | Worktrees: `devkit worktree start`, `finish`, `status` | When routes run in a worktree (`[tool.spec] worktree`, `auto` or `required`) and the work-scope registry (`CAP-COLL-work-scope-registry`) |
 | Agent Advisory Protocol and output helpers (`devkit.advisory`, `devkit.core.cli`) | The `SPEC_` codes (`ARCH-08-cross-cutting`) |
