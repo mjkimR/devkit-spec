@@ -1,7 +1,7 @@
 ---
 id: CAP-DOCS-document-lookup
 title: Document Lookup
-summary: "Defines the devkit spec resolve, refs and list commands that map IDs to paths, follow incoming and outgoing references, and browse documents by kind, status, area, text, any frontmatter field, history, namespace or owned code path, with feedback ordered by severity, a notice for a status filter no document of those kinds carries, paging and JSON output."
+summary: "Defines devkit spec resolve, refs and list: map IDs to paths, follow references both ways, and browse documents by kind, status (with a notice for an unused status), area, text, frontmatter field, history, namespace or owned code path, with feedback by severity, paging and JSON output."
 area: documents
 status: active
 stories:
