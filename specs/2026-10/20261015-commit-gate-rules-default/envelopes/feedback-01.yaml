@@ -1,0 +1,10 @@
+kind: feedback
+stage: collect-feedback
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T02:08:32.159538Z'
+status: completed
+summary: 'Session sweep (capture=observed, coverage=repo-and-upstream): FB-post-commit-rewrite-stales-the-printed-hash, FB-integrate-merge-message-fails-commit-msg-gate, FB-feature-branch-pushed-without-a-push-command recorded; no duplicates. FB-commit-gate-runs-no-rules-check is addressed by this spec and stays open for hygiene.'
+findings: []
+checks:
+  swept: PASS recorded=3 duplicates=0
