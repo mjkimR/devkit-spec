@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: noise
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-15
 ---
 
@@ -42,3 +42,5 @@ created_at: 2026-10-15
 $ git diff --stat   -> .devkit/config.toml | 32 ++++++++++++++++++
 $ git status --short   -> ?? .devkit/transient/  (only .devkit/transient/lock)
 ```
+
+- **Disposition**: devkit `ecff122`: `devkit config template --print` writes nothing and returns the resulting file as `text`.
