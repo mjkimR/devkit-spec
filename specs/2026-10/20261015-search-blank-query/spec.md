@@ -2,7 +2,7 @@
 id: SPEC-search-blank-query
 title: Reject a blank search query
 summary: "devkit spec search rejects a query that is empty or only whitespace with ARGUMENT_INVALID (exit 2) instead of silently returning no hits."
-status: planned
+status: in-progress
 created: 2026-10-15
 related_capabilities:
   - CAP-DOCS-document-search

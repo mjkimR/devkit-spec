@@ -120,3 +120,28 @@ def test_cli_json_and_empty_result(docs: Path) -> None:
 def test_cli_rejects_a_negative_limit(docs: Path) -> None:
     result = _search(docs, "search", "--limit", "-1")
     assert result.exit_code == 2 and "(ARGUMENT_INVALID)" in result.stderr
+
+
+@pytest.mark.parametrize("words", [("",), ("   ",), ("", " ")])
+def test_cli_rejects_a_blank_query(docs: Path, words: tuple[str, ...]) -> None:
+    # AC-01: an empty or whitespace-only query is refused before any search runs.
+    result = _search(docs, *words, "--mode", "lexical")
+    assert result.exit_code == 2 and "(ARGUMENT_INVALID)" in result.stderr
+    lines = result.stderr.splitlines()
+    assert any(line.startswith("[TARGET]") and "QUERY" in line for line in lines)
+    assert any(line.startswith("[FIX]") for line in lines)
+    assert "[SEARCH:" not in result.stdout
+
+
+def test_cli_rejects_a_blank_query_in_json(docs: Path) -> None:
+    # AC-02: the JSON format reports the same error as one object.
+    result = _search(docs, "  ", "--mode", "lexical", "--format", "json")
+    assert result.exit_code == 2
+    assert json.loads(result.stdout)["error"]["code"] == "ARGUMENT_INVALID"
+
+
+def test_cli_keeps_a_non_blank_query(docs: Path) -> None:
+    # AC-03: a non-blank query searches as before.
+    result = _search(docs, "cache", "policy", "--mode", "lexical")
+    assert result.exit_code == 0
+    assert result.stdout.splitlines()[0].startswith('[SEARCH: query="cache policy" mode=lexical count=')
