@@ -8,7 +8,13 @@ the proposal. ``create_spec`` creates a spec bundle without a proposal. Contract
 
 from devkit_spec.proposals.binding import BUGFIX_WORKFLOW, DEFAULT_WORKFLOW, PROPOSAL_WORKFLOW, resolve_binding
 from devkit_spec.proposals.body import CarriedProposal, carry_proposal_body, ensure_ac_ids
-from devkit_spec.proposals.handoff import HANDOFF_WORKFLOW, HandoffResult, PromotedDecision, handoff_proposal
+from devkit_spec.proposals.handoff import (
+    HANDOFF_WORKFLOW,
+    CarriedGate,
+    HandoffResult,
+    PromotedDecision,
+    handoff_proposal,
+)
 from devkit_spec.proposals.prune import prune_proposals
 from devkit_spec.proposals.rewrite import RelocationPlan, Rewritten, Unresolved
 from devkit_spec.proposals.scaffold import (
@@ -29,6 +35,7 @@ __all__ = [
     "PROPOSAL_WORKFLOW",
     "SKELETON_MARKER",
     "TARGET_DOCS",
+    "CarriedGate",
     "CarriedProposal",
     "CreatedDecision",
     "CreatedProposal",

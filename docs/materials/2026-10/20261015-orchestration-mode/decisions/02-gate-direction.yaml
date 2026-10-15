@@ -1,7 +1,0 @@
-request: gate:direction
-kind: approve
-action: accept
-workflow: incubated-delivery
-stage: direction-handoff
-by: user
-at: '2026-10-14T23:54:48.306312Z'

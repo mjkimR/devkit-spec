@@ -6,7 +6,7 @@ from pathlib import Path
 from click.testing import CliRunner, Result
 from conftest import Write
 from devkit.cli import cli as devkit_cli
-from proposals.support import INCUBATED, accept, write_workflow
+from proposals.support import GATED, INCUBATED, accept, write_workflow
 
 
 def _proposal(workspace: Path, *args: str) -> Result:
@@ -137,3 +137,29 @@ def test_handoff_json(workspace: Path) -> None:
     assert payload["workflow"] is None and payload["next_command"] is None
     assert [notice["code"] for notice in payload["notices"]] == ["SPEC_PROPOSAL_UNBOUND"]
     assert set(payload) >= {"decisions", "rewritten", "rewritten_files", "unresolved", "materials", "target_docs"}
+    assert payload["dropped_records"] == [] and payload["carried_gates"] == []
+
+
+def test_handoff_reports_dropped_records_and_carried_gates(workspace: Path) -> None:
+    write_workflow(workspace, "incubated-delivery", INCUBATED)
+    write_workflow(workspace, "direct-delivery", GATED.format(id="direct-delivery", middle=""))
+    _proposal(workspace, "new", "gated")
+    unit = "docs/proposals/PROP-gated"
+    (workspace / unit / "decisions").mkdir(exist_ok=True)
+    (workspace / unit / "decisions/01-gate-direction.yaml").write_text(
+        "request: gate:direction\nkind: approve\naction: accept\nworkflow: incubated-delivery\n"
+        "stage: direction-handoff\nby: user\nat: '2026-10-13T00:00:00Z'\n",
+        encoding="utf-8",
+    )
+
+    result = _proposal(workspace, "handoff", "gated", "--direction-chosen")
+
+    assert result.exit_code == 0, result.output
+    lines = result.stdout.splitlines()
+    spec_dir = lines[0].split(" dir=")[1].split(" ")[0]
+    assert lines[1:4] == [
+        f"[DROPPED_RECORD: {unit}/decisions/01-gate-direction.yaml]",
+        f"[CARRIED_GATE: gate:intent decision={spec_dir}/decisions/01-gate-intent.yaml]",
+        f"[CARRIED_GATE: gate:direction decision={spec_dir}/decisions/02-gate-direction.yaml]",
+    ]
+    assert result.stderr == ""

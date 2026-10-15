@@ -71,9 +71,9 @@ removes it.
    (`SPEC_PROPOSAL_REFS_REWRITTEN`), because whether a sentence named the proposal as its origin or as the work to do
    cannot be decided mechanically.
 8. **Removal last**: the proposal is removed after every write and rewrite; if it cannot be removed the handoff still
-   succeeded and `SPEC_PROPOSAL_CLEANUP_FAILED` names what to delete. Nothing in the bundle is lost with it: files
-   outside `proposal.md`, `target-docs.md`, the promoted `PADR-*.md` and `materials/` are carried to the materials
-   directory first (4.5, step 5), operating-system junk aside.
+   succeeded and `SPEC_PROPOSAL_CLEANUP_FAILED` names what to delete. Nothing else in the bundle is lost with it:
+   files outside `proposal.md`, `target-docs.md`, the promoted `PADR-*.md` and `materials/` are carried to the
+   materials directory first (4.5, step 5), operating-system junk and the unit's workflow records (rule 12) aside.
 9. **Rejection**: a rejected proposal (`status: rejected`) is retired by recording a brief rejection ADR in
    `docs/decisions/` and deleting the bundle directory; no `archive/` directory is kept.
 10. **Discovery is dynamic**: active proposals are listed with `devkit spec list proposal`, never through catalog
@@ -82,6 +82,17 @@ removes it.
     whose branch is not the slug (a detached HEAD included) MUST be refused before anything is read or written
     (`SPEC_PROPOSAL_WRONG_WORKTREE`), so the spec bundle never lands on another task's branch. The base checkout and
     a workspace outside Git are not checked.
+12. **Workflow records stay behind; the user's direction carries**: the proposal unit's devkit workflow records
+    (decision records and envelopes as devkit's `load_decisions` and `load_envelopes` find them, malformed ones
+    included) MUST NOT be carried; they are dropped with the proposal (Git history keeps them) and listed. When the
+    effective `gate:direction` record of the proposal's bound workflow (its latest that is not a `cancel`, followed
+    by no return record) is `accept` with `by: user`, the handoff records the bound spec's open `gate:intent` and then
+    `gate:direction` as `accept`, `by: user`, note `PROP-<slug>`, through devkit's `record_answer`. A gate that is
+    not open (passed by policy, or a `bugfix` direction gate behind `characterize`) is skipped. Without such a record
+    (direction by policy, a team acceptance, `status: accepted` alone) or for an unbound spec nothing is recorded and
+    the spec's gates are asked as before. Carrying an existing answer is not inferring one (rule 2). A recording
+    failure is a `SPEC_PROPOSAL_GATE_NOT_CARRIED` warning whose `[FIX]` is the answer command; the gates recorded
+    before it stay and the handoff stays done.
 
 ## 4. Interfaces & Data Contracts
 
@@ -91,7 +102,8 @@ removes it.
 docs/proposals/PROP-<slug>/
 ├── proposal.md       # required: background, hypothesis, spike questions, design; the workflow anchor
 ├── target-docs.md    # optional (--with-target-docs): blueprint of the Living Spec changes once accepted
-├── decisions/        # preliminary decision records, PADR-<slug>.md
+├── decisions/        # preliminary decision records, PADR-<slug>.md; devkit's gate records <NN>-<request>.yaml
+├── envelopes/        # devkit envelopes of the proposal unit (a delegated spike), when any
 └── materials/        # research, benchmarks, surveys
 ```
 
@@ -176,22 +188,22 @@ With `<YYYY-MM>` and `<YYYYMMDD>` today's date:
 5. **Materials**: `materials/` moves to `docs/materials/<YYYY-MM>/<YYYYMMDD>-<slug>/` when it holds a file other
    than operating-system junk (`.DS_Store`, `Thumbs.db`, `desktop.ini`) or a symbolic link. Every other bundle file the
    steps above do not carry (a `notes.md` beside `proposal.md`, an image, a non-PADR file under `decisions/`, a
-   hidden file other than junk) moves into the same directory at its path relative to the bundle, which is created
+   hidden file other than junk) moves into the same directory, except the unit's workflow records (rule 12), at its path relative to the bundle, which is created
    for them when `materials/` is not moved. Junk is never carried and is deleted with the proposal. Symbolic links
    are moved as links, never followed: a carried file whose path in `materials/` is taken, or lies below a file or
    symbolic link there or below a `materials/` that is itself a symbolic link, and a destination (the spec bundle,
    an ADR, the materials directory, a carried file) whose directory resolves outside the workspace are refused
    before writing (`SPEC_PROPOSAL_TARGET_EXISTS`).
 6. **Rewriting** of what pointed into the proposal (4.7).
-7. **Removal** of the proposal.
+7. **Removal** of the proposal, with its workflow records.
+8. **Gates** of the spec recorded from the user's direction answer (rule 12).
 
 A failure in steps 1 to 5 rolls back: what was moved goes back, what was written is removed (a directory created
 inside the moved `materials/` is followed back and removed when empty), and the proposal is kept. A directory that
 still holds something the roll-back could not move back is kept, never removed; `SPEC_PROPOSAL_HANDOFF_FAILED` then
 lists what could not be undone in its details.
 
-The new spec's workflow is then evaluated from its first stage; its G1 is the spec bundle's intent, normally
-confirmed by the accepted proposal. Inside a linked worktree, at either `[tool.spec] worktree` level, the CLI also
+The new spec's workflow is then evaluated from its first stage, after the gates step 8 recorded. Inside a linked worktree, at either `[tool.spec] worktree` level, the CLI also
 registers the new bundle in the work-scope registry (`CAP-COLL-work-scope-registry`); a registration failure is a
 `SPEC_SCOPE_REGISTER_FAILED` warning and the handoff stays done.
 
@@ -291,6 +303,10 @@ uv run devkit spec proposal prune [<slug>]                           # base chec
 [TARGET_DOCS: specs/2026-10/20261013-fast-engine/target-docs.md]
 [MATERIALS: docs/materials/2026-10/20261013-fast-engine]
 [PROMOTED_ADR: ADR-use-ast-parser path=docs/decisions/2026-10/20261013-use-ast-parser.md padr=PADR-use-ast-parser]
+[DROPPED_RECORD: docs/proposals/PROP-fast-engine/decisions/01-gate-intent.yaml]
+[DROPPED_RECORD: docs/proposals/PROP-fast-engine/decisions/02-gate-direction.yaml]
+[CARRIED_GATE: gate:intent decision=specs/2026-10/20261013-fast-engine/decisions/01-gate-intent.yaml]
+[CARRIED_GATE: gate:direction decision=specs/2026-10/20261013-fast-engine/decisions/02-gate-direction.yaml]
 [REWRITTEN: docs/stories/core/US-x.md:5 kind=id from=PROP-fast-engine to=SPEC-fast-engine]
 [REWRITTEN: docs/stories/core/US-x.md:9 kind=link from=../../proposals/PROP-fast-engine/proposal.md to=../../../specs/2026-10/20261013-fast-engine/spec.md]
 [UNRESOLVED_LINK: docs/stories/core/US-x.md:9 kind=link target=../../proposals/PROP-fast-engine/decisions/ reason=unmapped]
@@ -307,10 +323,13 @@ uv run devkit spec proposal prune [<slug>]                           # base chec
   (`null` when none is reported), `next_command`, `notices`.
 - `padr`: one `[PADR: ...]` line. JSON: `id`, `path`, `proposal`.
 - `handoff`: `[HANDOFF: ...]` (`workflow=-`: unbound), `[TARGET_DOCS: ...]` and `[MATERIALS: ...]` when the bundle had
-  them, one `[PROMOTED_ADR: ...]` per PADR, one `[REWRITTEN: <path>:<line> kind=link|id from= to=]` per rewrite, one
+  them, one `[PROMOTED_ADR: ...]` per PADR, one `[DROPPED_RECORD: <path>]` per workflow record of the proposal
+  unit, one `[CARRIED_GATE: <request> decision=<path>]` per gate recorded from the user's direction answer (rule 12),
+  one `[REWRITTEN: <path>:<line> kind=link|id from= to=]` per rewrite, one
   `[UNRESOLVED_LINK: <path>:<line> kind= target= reason=]` per link or reference left as it was, `[SCOPE: ...]` when
   it registered the bundle, and `[NEXT_CMD: ...]` when `spec.md` is bound. JSON: `proposal`, `spec`, `dir`,
-  `workflow`, `target_docs`, `materials`, `decisions` (`id`, `path`, `padr`), `rewritten_files`, `rewritten`
+  `workflow`, `target_docs`, `materials`, `decisions` (`id`, `path`, `padr`), `dropped_records` (paths),
+  `carried_gates` (`request`, `decision`), `rewritten_files`, `rewritten`
   (`path`, `line`, `kind`, `from`, `to`), `unresolved` (`path`, `line`, `kind`, `target`, `reason`), `next_command`,
   `notices`, `scope` (`record`, `token`, `namespace`, `shared_path`, or `null`).
 - `prune`: `[PRUNED: <dir>]` per directory removed, else `[OK: nothing to prune]`. JSON: `{"pruned": [...]}`.

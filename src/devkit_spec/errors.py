@@ -153,6 +153,15 @@ class ProposalCleanupWarning(SpecError):
     fix = "Delete the proposal in [TARGET] by hand: the spec bundle replaces it"
 
 
+class ProposalGateNotCarriedWarning(SpecError):
+    """The handoff completed but a gate of the spec could not be recorded from the user's direction answer of the
+    proposal (``WARNING``); the gates recorded before it stay."""
+
+    code = "SPEC_PROPOSAL_GATE_NOT_CARRIED"
+    level = Level.WARNING
+    fix = "Record the gate in [TARGET] with devkit workflow answer --by user once the cause in [DETAIL] is resolved"
+
+
 class ProposalLinkUnresolvedWarning(SpecError):
     """Links or ID references into the removed proposal have no new target (``WARNING``)."""
 

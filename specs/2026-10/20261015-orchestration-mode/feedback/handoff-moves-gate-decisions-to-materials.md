@@ -50,4 +50,4 @@ docs/materials/2026-10/20261015-orchestration-mode/decisions/02-gate-direction.y
 $ devkit workflow next --unit specs/2026-10/20261015-orchestration-mode   -> [WAITING: human gate:intent]
 ```
 
-- **Disposition**: `SPEC-handoff-unit-records` (draft): what handoff does with the proposal unit's gate records and envelopes, and how the spec's gates follow.
+- **Disposition**: `SPEC-handoff-unit-records`: the handoff drops the proposal unit's gate records and envelopes, and records the spec's gates from the user's direction answer. The two records this observation left under `docs/materials/` were removed there.

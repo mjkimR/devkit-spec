@@ -14,9 +14,12 @@ path it would create), then:
 4. moves ``materials/`` to ``docs/materials/<YYYY-MM>/<YYYYMMDD>-<slug>/`` when it holds a file other than
    operating-system junk (``JUNK_FILES``), together with every other file of the bundle that steps 1 to 3 do not
    carry (``notes.md``, a non-PADR file in ``decisions/``; junk aside), at its path relative to the bundle. Symbolic
-   links are moved as links, never followed;
+   links are moved as links, never followed. The proposal unit's devkit workflow records (decision records and
+   envelopes, as devkit's loaders find them) are not carried: they are dropped with the proposal;
 5. rewrites links and ID references that pointed into the proposal (``rewrite``);
-6. removes the proposal.
+6. removes the proposal;
+7. when the user accepted the proposal's direction (``_user_direction``), records the spec's open ``gate:intent``
+   and then ``gate:direction`` as the user's answers carried from the proposal (``_record_gates``).
 
 A legacy proposal or PADR whose slug starts with a number (``PROP-2024-budget``) is refused: the ID it would become
 breaks ``RULE-id-convention``. A failure of any kind in steps 1 to 4 removes what they wrote, moves what they moved
@@ -39,12 +42,13 @@ from typing import Any
 from devkit.advisory import AdvisoryError
 from devkit.core import FrontmatterError, GitError, run_git
 from devkit.core.frontmatter import parse
-from devkit.workflow import Binding
+from devkit.workflow import Binding, Workspace, load_decisions, load_envelopes, record_answer
 
 from devkit_spec.config import GLOBAL
 from devkit_spec.documents import DocumentIndex, parse_document
 from devkit_spec.errors import (
     ProposalCleanupWarning,
+    ProposalGateNotCarriedWarning,
     ProposalHandoffError,
     ProposalInvalidError,
     ProposalLinkUnresolvedWarning,
@@ -102,6 +106,11 @@ NAMESPACE = "namespace"
 SUMMARY = "summary"
 ACCEPTED = "accepted"
 DIRECTION_STATUSES = ("draft", "reviewing")
+DIRECTION_GATE = "gate:direction"
+# The spec's gates a user's direction answer of the proposal covers, recorded in this order.
+CARRIED_GATES = ("gate:intent", DIRECTION_GATE)
+BY_USER = "user"
+RETURN_PREFIX = "return:"
 
 # Files an operating system leaves behind; never carried, they are deleted with the proposal.
 JUNK_FILES = frozenset({".DS_Store", "Thumbs.db", "desktop.ini"})
@@ -127,13 +136,27 @@ class PromotedDecision:
         return {"id": self.id, "path": self.path, "padr": self.padr}
 
 
+@dataclass(frozen=True)
+class CarriedGate:
+    """A gate of the spec the handoff recorded from the proposal: the ``request`` and its ``decision`` record's path
+    (workspace-relative)."""
+
+    request: str
+    decision: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {"request": self.request, "decision": self.decision}
+
+
 @dataclass
 class HandoffResult:
     """What a handoff wrote, moved and rewrote; paths are workspace-relative.
 
     ``workflow`` is the workflow ``spec.md`` is bound to (``None``: unbound), ``rewritten_files`` the files whose
     links or references changed, ``unresolved`` what pointed into the proposal and could not be mapped.
-    ``notices`` are the warnings and notices the caller reports with the result.
+    ``dropped_records`` are the proposal unit's workflow records removed with it, ``carried_gates`` the spec's gates
+    recorded from the user's direction answer. ``notices`` are the warnings and notices the caller reports with the
+    result.
     """
 
     proposal: str
@@ -143,6 +166,8 @@ class HandoffResult:
     target_docs: str | None = None
     materials: str | None = None
     decisions: list[PromotedDecision] = field(default_factory=list)
+    dropped_records: list[str] = field(default_factory=list)
+    carried_gates: list[CarriedGate] = field(default_factory=list)
     rewritten_files: list[str] = field(default_factory=list)
     rewritten: list[Rewritten] = field(default_factory=list)
     unresolved: list[Unresolved] = field(default_factory=list)
@@ -161,6 +186,8 @@ class HandoffResult:
             "target_docs": self.target_docs,
             "materials": self.materials,
             "decisions": [decision.to_dict() for decision in self.decisions],
+            "dropped_records": self.dropped_records,
+            "carried_gates": [gate.to_dict() for gate in self.carried_gates],
             "rewritten_files": self.rewritten_files,
             "rewritten": [item.to_dict() for item in self.rewritten],
             "unresolved": [item.to_dict() for item in self.unresolved],
@@ -192,7 +219,8 @@ def handoff_proposal(
     """Hand proposal ``slug`` off to a spec bundle under the workspace ``root`` (see the module docstring).
 
     Approval is ``status: accepted``, or ``draft``/``reviewing`` with ``direction_chosen`` (the user chose the
-    direction explicitly); it is never inferred. Raises, before writing anything: ``ProposalSlugError`` (also for a
+    direction explicitly); it is never inferred. The spec's gates are recorded only from the user's recorded
+    acceptance of the proposal's direction; a failure there is a ``ProposalGateNotCarriedWarning``. Raises, before writing anything: ``ProposalSlugError`` (also for a
     proposal or PADR slug whose first segment has no letter), ``ProposalNotFoundError``, ``ProposalInvalidError``,
     ``ProposalNotApprovedError``, ``ProposalSlugConflictError``, ``ProposalWorkflowError``,
     ``ProposalTargetExistsError``, ``ProposalWrongWorktreeError`` (``_check_worktree``). A failure while writing
@@ -243,13 +271,17 @@ def handoff_proposal(
     target_docs_text: str | None = None
     decisions: list[_Decision] = []
     extras: list[tuple[Path, Path]] = []
+    records: list[Path] = []
+    user_direction = False
     if is_bundle:
         if (bundle / TARGET_DOCS).is_file():
             target_docs_text = _read(bundle / TARGET_DOCS, root)
         decisions = _plan_decisions(root, bundle / DECISIONS, month, stamp)
         targets += [decision.target for decision in decisions]
+        records = _unit_records(bundle)
+        user_direction = _user_direction(bundle, text_value(meta.get("workflow")))
         preserved = root / "docs" / MATERIALS / month / f"{stamp}-{slug}"
-        extras = _plan_extras(root, bundle, decisions, preserved, move_materials)
+        extras = _plan_extras(root, bundle, decisions, records, preserved, move_materials)
         if move_materials or extras:
             materials_target = preserved
             targets.append(materials_target)
@@ -357,9 +389,13 @@ def handoff_proposal(
         removed = plan.proposal
         rel = Path(removed).relative_to(root).as_posix()
         notices.append(ProposalCleanupWarning(f"{rel} could not be removed: {exc}", target_files=[rel]))
-    return _result(
+    carried = _record_gates(root, target_dir, slug, notices) if user_direction and binding is not None else []
+    result = _result(
         root, slug, target_dir, binding, unbound, target_docs_text, materials_target, decisions, report, notices
     )
+    result.dropped_records = [path.relative_to(root).as_posix() for path in records]
+    result.carried_gates = carried
+    return result
 
 
 def _check_worktree(root: Path, slug: str) -> None:
@@ -511,6 +547,63 @@ def _plan_decisions(root: Path, decisions_dir: Path, month: str, stamp: str) -> 
     return planned
 
 
+def _unit_records(bundle: Path) -> list[Path]:
+    """The proposal unit's devkit workflow records: every decision record and envelope devkit's loaders find in
+    ``bundle``, malformed ones included, sorted. A PADR or another file under ``decisions/`` is not one of them."""
+    decisions, envelopes = load_decisions(bundle), load_envelopes(bundle)
+    files = [record.file for record in decisions.records]
+    files += [envelope.file for items in envelopes.by_kind.values() for envelope in items]
+    files += [error.file for error in [*decisions.errors, *envelopes.errors]]
+    return sorted({bundle / file for file in files if file})
+
+
+def _user_direction(bundle: Path, workflow: str) -> bool:
+    """Whether the user accepted the proposal's direction: the latest ``gate:direction`` record of the unit's bound
+    ``workflow`` that is not ``cancel`` is ``accept`` with ``by: user``, and no return record follows it."""
+    if not workflow:
+        return False
+    records = load_decisions(bundle).segment(workflow, 0)
+    answer = records.effective(DIRECTION_GATE)
+    if answer is None or answer.action != "accept" or answer.by != BY_USER:
+        return False
+    return not any(
+        record.request.startswith(RETURN_PREFIX) and record.action != "cancel" and record.seq > answer.seq
+        for record in records.records
+    )
+
+
+def _record_gates(root: Path, target_dir: Path, slug: str, notices: list[AdvisoryError]) -> list[CarriedGate]:
+    """Record each of ``CARRIED_GATES`` that is an open request of the bound spec as the user's ``accept`` carried
+    from ``PROP-<slug>`` (devkit's ``record_answer``), in order. A gate that is not open (answered by policy, or a
+    ``bugfix`` direction gate behind ``characterize``) is skipped. The first failure of any kind stops and is added
+    to ``notices`` as a ``ProposalGateNotCarriedWarning``: the handoff itself is done by then."""
+    rel = target_dir.relative_to(root).as_posix()
+    note = f"PROP-{slug}"
+    carried: list[CarriedGate] = []
+    request = CARRIED_GATES[0]
+    try:
+        workspace = Workspace(root, lint=None, ancestor=None)
+        for request in CARRIED_GATES:
+            unit = workspace.resolve_unit(rel)
+            if request not in {open_request.id for open_request in workspace.evaluate_unit(unit, lint=False).requests}:
+                continue
+            decision = record_answer(workspace, unit, request, "accept", note=note, by=BY_USER, lint=False)
+            carried.append(CarriedGate(request, f"{rel}/{decision.file}"))
+    except Exception as exc:  # the handoff is done: any failure here is reported, never raised
+        detail = f"{exc.code}: {exc.message}" if isinstance(exc, AdvisoryError) else str(exc)
+        notices.append(
+            ProposalGateNotCarriedWarning(
+                f"{request} of SPEC-{slug} was not recorded from the user's direction answer of {note}",
+                detail,
+                target_files=[f"{rel}/{SPEC_FILE}"],
+                fix=f"Once the cause is resolved, run devkit workflow answer --unit {rel} --request {request} "
+                f"--action accept --by user --note {note}, then the same for each later gate devkit workflow next "
+                "reports as waiting",
+            )
+        )
+    return carried
+
+
 def _has_material(materials_dir: Path) -> bool:
     """Whether ``materials_dir`` holds anything worth preserving: a file other than ``JUNK_FILES`` or a symbolic link,
     at any depth (empty directories and junk are deleted with the proposal). A symbolic link ``materials_dir`` is
@@ -529,17 +622,23 @@ def _has_material(materials_dir: Path) -> bool:
 
 
 def _plan_extras(
-    root: Path, bundle: Path, decisions: list[_Decision], materials: Path, move_materials: bool
+    root: Path,
+    bundle: Path,
+    decisions: list[_Decision],
+    records: list[Path],
+    materials: Path,
+    move_materials: bool,
 ) -> list[tuple[Path, Path]]:
     """Every bundle file the handoff does not carry otherwise, with its destination under ``materials`` at its path
-    relative to the bundle (``materials/`` itself moves as a whole when ``move_materials``). ``JUNK_FILES`` are not
-    carried; other hidden files are. Symbolic links are never followed: one is carried as a file.
+    relative to the bundle (``materials/`` itself moves as a whole when ``move_materials``). ``JUNK_FILES`` and the
+    unit's workflow ``records`` are not carried; other hidden files are. Symbolic links are never followed: one is
+    carried as a file.
 
     Raises ``ProposalTargetExistsError`` when a destination is also the destination of a path in ``materials/``, or
     lies below a file or symbolic link there or below a ``materials/`` that is a symbolic link (moving into it would
     leave the preserved directory).
     """
-    carried = {bundle / PROPOSAL_FILE, bundle / TARGET_DOCS, *(decision.padr for decision in decisions)}
+    carried = {bundle / PROPOSAL_FILE, bundle / TARGET_DOCS, *(decision.padr for decision in decisions), *records}
     materials_dir = bundle / MATERIALS
 
     def taken(rel: Path) -> bool:

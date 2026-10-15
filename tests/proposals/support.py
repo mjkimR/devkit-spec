@@ -60,6 +60,65 @@ Prose, not parsed.
 """
 
 
+# A spec workflow with the intent and direction gates; ``middle`` holds stages between them.
+GATED = """---
+id: {id}
+title: Delivery
+status: active
+schema_version: 1
+layout:
+  work_dir: specs
+  unit_path: "{{date:%Y-%m}}/{{date:%Y%m%d}}-{{slug}}"
+  anchor: spec.md
+stages:
+  - id: intent
+    name: G1 intent
+    human_gate: intent
+    entry: []
+    exit: [anchor-exists]
+    artifacts: [spec.md]
+    skills: []
+    role: developer
+    isolation: none
+    returns: []
+{middle}  - id: direction
+    name: G2 direction
+    human_gate: direction
+    entry: [anchor-exists]
+    exit: [anchor-exists]
+    artifacts: [spec.md]
+    skills: []
+    role: developer
+    isolation: none
+    returns: []
+  - id: specify
+    name: Specify
+    human_gate: false
+    entry: []
+    exit: [not-skeleton(spec.md)]
+    artifacts: [spec.md]
+    skills: []
+    role: developer
+    isolation: none
+    returns: []
+---
+
+Prose, not parsed.
+"""
+
+CHARACTERIZE = """  - id: characterize
+    name: Characterize
+    human_gate: false
+    entry: [anchor-exists]
+    exit: [not-skeleton(spec.md)]
+    artifacts: [spec.md]
+    skills: []
+    role: developer
+    isolation: none
+    returns: []
+"""
+
+
 def write_workflow(root: Path, workflow_id: str, text: str | None = None) -> Path:
     """A definition in the project's ``.devkit/workflows/`` (devkit's default ``definitions_dir``)."""
     path = root / ".devkit" / "workflows" / f"{workflow_id}.md"

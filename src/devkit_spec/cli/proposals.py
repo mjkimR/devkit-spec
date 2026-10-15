@@ -9,6 +9,8 @@ Text output (paths are relative to the workspace root):
 - ``prune``: ``[PRUNED: <dir>]`` per empty proposal directory removed, else ``[OK: nothing to prune]``.
 - ``handoff``: ``[HANDOFF: <proposal id> spec= dir= workflow=]``, then ``[TARGET_DOCS: <path>]``,
   ``[MATERIALS: <dir>]``, one ``[PROMOTED_ADR: <id> path= padr=]`` per promoted decision, one
+  ``[DROPPED_RECORD: <path>]`` per workflow record of the proposal unit removed with it, one
+  ``[CARRIED_GATE: <request> decision=<path>]`` per gate of the spec recorded from the user's direction answer, one
   ``[REWRITTEN: <path>:<line> kind=link|id from= to=]`` per rewritten link or reference, one
   ``[UNRESOLVED_LINK: <path>:<line> kind= target= reason=]`` per link or reference left as it was,
   ``[SCOPE: <task> namespace= ... token=]`` when it registered the bundle's work scope, and
@@ -18,9 +20,9 @@ A handoff inside a linked worktree registers the new bundle in the work-scope re
 register``) at either ``[tool.spec] worktree`` level; a registration failure is a ``SPEC_SCOPE_REGISTER_FAILED``
 warning and leaves the handoff done.
 
-Unresolved links are a ``SPEC_PROPOSAL_LINK_UNRESOLVED`` warning, rewritten ID references a
-``SPEC_PROPOSAL_REFS_REWRITTEN`` notice and an unbound proposal or spec a ``SPEC_PROPOSAL_UNBOUND`` notice, all on
-stderr.
+A gate of the spec that could not be recorded is a ``SPEC_PROPOSAL_GATE_NOT_CARRIED`` warning, unresolved links a
+``SPEC_PROPOSAL_LINK_UNRESOLVED`` warning, rewritten ID references a ``SPEC_PROPOSAL_REFS_REWRITTEN`` notice and an
+unbound proposal or spec a ``SPEC_PROPOSAL_UNBOUND`` notice, all on stderr.
 """
 
 from __future__ import annotations
@@ -182,6 +184,10 @@ def handoff_cmd(slug: str, direction_chosen: bool, workspace_root: str | None, o
             click.echo(sentinel("MATERIALS", result.materials))
         for decision in result.decisions:
             click.echo(sentinel("PROMOTED_ADR", decision.id, path=decision.path, padr=decision.padr))
+        for path in result.dropped_records:
+            click.echo(sentinel("DROPPED_RECORD", path))
+        for gate in result.carried_gates:
+            click.echo(sentinel("CARRIED_GATE", gate.request, decision=gate.decision))
         for item in result.rewritten:
             click.echo(
                 sentinel("REWRITTEN", f"{item.path}:{item.line}", kind=item.kind, **{"from": item.old, "to": item.new})

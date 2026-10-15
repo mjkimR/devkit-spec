@@ -87,7 +87,10 @@ sequenceDiagram
     Spec->>Spec: validate slug, approval, namespace, summary, binding, every target path
     Spec->>FS: write specs/<YYYY-MM>/<YYYYMMDD>-<slug>/, bind handoff_workflow
     Spec->>FS: copy target-docs.md, promote PADRs to ADRs, move materials/
-    Spec->>FS: rewrite links and ID references, remove the proposal
+    Spec->>FS: rewrite links and ID references, remove the proposal and its gate records
+    opt the user's recorded answer accepted the direction
+        Spec->>WF: record the spec's open G1 and G2 (by user)
+    end
     opt linked worktree
         Spec->>Reg: register the bundle's scope
     end
@@ -96,6 +99,9 @@ sequenceDiagram
 
 - Handoff refuses without approval (`SPEC_PROPOSAL_NOT_APPROVED`): `status: accepted`, or `--direction-chosen` passed
   only when the user explicitly chose the direction.
+- The proposal unit's gate records and envelopes are dropped with it; when the user's recorded answer accepted the
+  direction, the spec's open G1 and G2 are recorded from it (`[CARRIED_GATE]`), and a failure there is a
+  `SPEC_PROPOSAL_GATE_NOT_CARRIED` warning that leaves the handoff done.
 - A failure while writing the bundle, ADRs or materials removes what was written and keeps the proposal
   (`SPEC_PROPOSAL_HANDOFF_FAILED`); a failed scope registration is a `SPEC_SCOPE_REGISTER_FAILED` warning and the
   handoff stays done.
