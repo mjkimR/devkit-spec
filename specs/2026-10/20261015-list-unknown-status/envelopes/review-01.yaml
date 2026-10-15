@@ -1,0 +1,21 @@
+kind: review
+stage: review-refine
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T01:23:08.646561Z'
+status: completed
+summary: 'Isolated reviewer: AC-01..AC-05 hold with a CLI test each, non-goals untouched, code inside Task 1''s boundary; the code-table row is explained; no findings.'
+findings: []
+assumptions:
+- Reviewer spawned as the projected native Claude Code reviewer subagent; its diff was empty
+- The list --status prose and the notices rule in CAP-DOCS-document-lookup are updated in the living-spec-draft stage
+unverified_areas:
+- The fix wording when no document of the selected kinds carries any status has no test
+checks:
+  tests: PASS just test 721 passed; reviewer re-ran test_cli_documents and test_documented_codes
+  lint: PASS just lint-check
+  typecheck: PASS just check
+  rules_ci: PASS devkit rules check --ci --base ed2dd0d
+diff_scope:
+  base: ed2dd0de2221f1e69e63d00eeebc7ead59031015
+  head: 2058811a23ed0ae86f72607f39fce321bafe10a1
