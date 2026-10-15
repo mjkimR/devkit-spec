@@ -2,7 +2,7 @@
 id: SPEC-handoff-unit-records
 title: Proposal handoff and the workflow records of the proposal unit
 summary: Proposal handoff drops the proposal unit's devkit decision records and envelopes instead of moving them to docs/materials, and records the spec's G1 and G2 from the user's recorded acceptance of the proposal's direction.
-status: planned
+status: in-progress
 created: 2026-10-15
 related_capabilities:
   - CAP-DLV-proposal-incubation

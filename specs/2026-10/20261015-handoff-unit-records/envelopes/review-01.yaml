@@ -1,0 +1,31 @@
+kind: review
+stage: review-refine
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T00:50:44.359867Z'
+status: completed
+summary: 'Independent reviewer: AC-01..AC-05 met, rule 12 and devkit''s cancel semantics respected, no approval inferred; three low findings'
+findings:
+- issue: _user_direction treats any later non-cancel return record as voiding the user's direction accept, stricter than devkit's evaluation (an accepted return to that stage or earlier)
+  evidence: src/devkit_spec/proposals/handoff.py:569
+  failure_condition: A proposal whose accepted direction is followed by a return to handoff (or a declined return) carries no spec gates, so the agent asks again; nothing is inferred
+  suggested_action: State the conservative rule in rule 12, or align it with devkit's voiding
+  resolution: open
+- issue: The no-carry tests have no case whose only direction record is a cancel
+  evidence: tests/proposals/test_proposal_handoff_records.py:128
+  failure_condition: A later change reading the latest record instead of the effective one would carry a gate from a lone cancel without a failing test
+  suggested_action: Add a cancelled-only parametrize case
+  resolution: open
+- issue: RULE-spec-progress warns that spec.md is planned while every task is checked
+  evidence: specs/2026-10/20261015-handoff-unit-records/spec.md:5
+  failure_condition: devkit rules check --ci --base cc6d9c0 prints a warning at this head
+  suggested_action: Set the status with devkit rules fix or during spec-sync
+  resolution: open
+assumptions:
+- Reviewer role run as an isolated subagent on Claude Code (emulated from the reviewer contract)
+checks:
+  tests: 'PASS pytest tests/proposals: 153 passed'
+  lint: 'PASS devkit rules check --ci: 0 errors, 1 warning (finding 3)'
+diff_scope:
+  base: cc6d9c0
+  head: 871987cf8c760c035c6dc8de19c8434921afc1c4

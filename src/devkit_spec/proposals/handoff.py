@@ -559,7 +559,9 @@ def _unit_records(bundle: Path) -> list[Path]:
 
 def _user_direction(bundle: Path, workflow: str) -> bool:
     """Whether the user accepted the proposal's direction: the latest ``gate:direction`` record of the unit's bound
-    ``workflow`` that is not ``cancel`` is ``accept`` with ``by: user``, and no return record follows it."""
+    ``workflow`` that is not ``cancel`` is ``accept`` with ``by: user``, and no return record follows it. Any later
+    return that is not a ``cancel`` counts, whatever its stage or action: stricter than devkit's voiding, so a
+    doubtful case is asked again rather than carried."""
     if not workflow:
         return False
     records = load_decisions(bundle).segment(workflow, 0)

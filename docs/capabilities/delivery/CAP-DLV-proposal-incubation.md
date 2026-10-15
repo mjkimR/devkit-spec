@@ -86,7 +86,8 @@ removes it.
     (decision records and envelopes as devkit's `load_decisions` and `load_envelopes` find them, malformed ones
     included) MUST NOT be carried; they are dropped with the proposal (Git history keeps them) and listed. When the
     effective `gate:direction` record of the proposal's bound workflow (its latest that is not a `cancel`, followed
-    by no return record) is `accept` with `by: user`, the handoff records the bound spec's open `gate:intent` and then
+    by no return record that is not a `cancel`: stricter than devkit's voiding, so a doubtful case is asked rather
+    than carried) is `accept` with `by: user`, the handoff records the bound spec's open `gate:intent` and then
     `gate:direction` as `accept`, `by: user`, note `PROP-<slug>`, through devkit's `record_answer`. A gate that is
     not open (passed by policy, or a `bugfix` direction gate behind `characterize`) is skipped. Without such a record
     (direction by policy, a team acceptance, `status: accepted` alone) or for an unbound spec nothing is recorded and

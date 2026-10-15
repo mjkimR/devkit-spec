@@ -130,6 +130,7 @@ def test_records_only_the_intent_gate_of_a_bugfix_spec(workspace: Path) -> None:
         [],
         [("02-gate-direction.yaml", {"by": "policy"})],
         [("02-gate-direction.yaml", {"by": "user", "action": "decline"})],
+        [("02-gate-direction.yaml", {"by": "user", "action": "cancel"})],
         [
             ("02-gate-direction.yaml", {"by": "user"}),
             ("03-gate-direction.yaml", {"by": "user", "action": "decline"}),
@@ -141,7 +142,7 @@ def test_records_only_the_intent_gate_of_a_bugfix_spec(workspace: Path) -> None:
         ],
         [("02-gate-direction.yaml", {"by": "user", "workflow": "other"})],
     ],
-    ids=["none", "policy", "declined", "declined-after-accept", "returned", "other-workflow"],
+    ids=["none", "policy", "declined", "cancelled", "declined-after-accept", "returned", "other-workflow"],
 )
 def test_records_nothing_without_the_users_direction_answer(
     workspace: Path, records: list[tuple[str, dict[str, object]]]
