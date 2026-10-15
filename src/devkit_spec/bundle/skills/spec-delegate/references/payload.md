@@ -1,6 +1,6 @@
 # Payload per role
 
-Read this in Step 2 of `spec-delegate` when you fill the five payload fields. Record the head SHA you passed (`git rev-parse HEAD`). For a worker, record what [worker](worker.md) lists before spawning: the worktree's last accepted head and the base checkout's status and HEAD, since the worker shares the session's directory and a stray write lands there.
+Read this in Step 2 of `spec-delegate` when you fill the five payload fields. Record the head SHA you passed (`git rev-parse HEAD`). For a worker, record what [worker](worker.md) lists before spawning: the unit's last accepted head (a blocked unit keeps its own, never its current HEAD) and the base checkout's status and HEAD, since the worker shares the session's directory and a stray write lands there.
 
 Never inject the whole tree.
 

@@ -1,0 +1,48 @@
+kind: review
+stage: review-refine
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T02:38:42.876413Z'
+status: completed
+summary: 'Isolated reviewer: REVISE. AC-01..AC-06 met in text; the block flow cannot converge because host envelopes fall inside the validated range; five smaller consistency findings.'
+findings:
+- issue: '[high] After a block, the host''s own envelope file makes every later validation fail'
+  evidence: src/devkit_spec/bundle/skills/spec-delegate/references/worker.md:19, :25-32; src/devkit_spec/bundle/subagents/worker.md:49
+  failure_condition: An uncommitted failed envelope fails the clean-worktree check; a committed one falls inside the revalidated range outside the worker's write scope, so no later range passes. Accept has the same issue for later spawns.
+  suggested_action: Exclude host-only paths (<unit>/envelopes/) from the write-scope comparison, commit envelopes, and define the last accepted head after host commits; pin with a test.
+  resolution: open
+- issue: '[medium] ''Before spawning'' is ambiguous about the base when a worker is spawned again on a blocked unit'
+  evidence: src/devkit_spec/bundle/skills/spec-delegate/references/worker.md:9-10; references/payload.md:3
+  failure_condition: Recording the current HEAD of a blocked unit as base skips the rejected commits and lets an out-of-scope commit pass.
+  suggested_action: State that a blocked unit keeps its last accepted head; never pass a blocked unit's current HEAD as diff_scope.base.
+  resolution: open
+- issue: '[medium] The Accept command hardcodes --stage build-verify, which bugfix units do not have'
+  evidence: src/devkit_spec/bundle/skills/spec-delegate/references/worker.md:25; workflows/bugfix.md:78
+  failure_condition: A bugfix unit's worker envelope is recorded under a stage its workflow does not define.
+  suggested_action: Use the current build stage from devkit workflow next.
+  resolution: open
+- issue: '[low] Generic spec-delegate lines still assume host-only commits and a discarding revert'
+  evidence: src/devkit_spec/bundle/skills/spec-delegate/SKILL.md:50, :61, :69
+  failure_condition: A host reading SKILL.md alone can discard or distrust a valid worker range.
+  suggested_action: Add worker carve-outs for commits, out-of-scope handling and a moved head.
+  resolution: open
+- issue: '[low] needs_input/failed handling assumes no commits exist, which is not true after a block'
+  evidence: references/worker.md:33-34; subagents/worker.md:54; spec-orchestrate/SKILL.md:39
+  failure_condition: After context loss a later return could hide the blocked state; 'nothing incomplete was committed' misreads a blocked branch.
+  suggested_action: State that a unit stays blocked while its latest validation failed, and that only validations are recorded as worker envelopes.
+  resolution: open
+- issue: '[low] The AC-04 test does not pin the unchanged-base check'
+  evidence: tests/test_role_contracts.py:105-118
+  failure_condition: Removing the base-checkout check keeps CI green.
+  suggested_action: Assert the base-checkout line.
+  resolution: open
+assumptions:
+- Reviewer spawned as the projected native Claude Code reviewer subagent; its diff was empty
+unverified_areas:
+- No live orchestration run; findings 1, 2 and 5 come from reading the procedure
+checks:
+  tests: PASS reviewer reran tests/test_role_contracts.py (19 passed); host just ci 735 passed
+  rules_ci: PASS devkit rules check --ci --base main
+diff_scope:
+  base: main
+  head: 694116eb3f66294d69443dc99d19d3b2426c2f7d

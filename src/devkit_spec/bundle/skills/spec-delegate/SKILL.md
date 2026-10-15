@@ -47,7 +47,7 @@ The rows per role (`scout`, `challenger`, `reviewer`, `reconciler`, `worker`) ar
 ### Step 4: Validate the returned fields
 - Required fields present; `status` is one of `completed | needs_input | failed`.
 - Reviewer and Challenger findings each have `evidence` and `failure_condition`.
-- `failed` or a stale `diff_scope` (head moved) is not completion evidence; re-invoke only for a changed input or failure cause.
+- `failed` or a stale `diff_scope` (head moved; a worker's own head aside) is not completion evidence; re-invoke only for a changed input or failure cause.
 
 ### Step 5: Compare the actual diff with the boundary
 ```bash
@@ -58,7 +58,7 @@ git diff --name-only --cached   # staged (should be unchanged by the role)
 - Scout, Challenger, Reviewer: expected diff is empty (Scout may add only to the agreed `materials/` path).
 - Reconciler: every changed path must be inside the injected docs scope and this spec's `reconcile.md`. One line in a declared source or test path rejects the whole draft.
 - Worker: validate the committed range instead ([worker](references/worker.md)). One path outside the write scope rejects the whole result.
-- A path outside `allowed_boundaries` or a change to the index or HEAD (a worker's own commits aside) is a violation: report the paths, revert the out-of-scope change, and do not reuse earlier check results.
+- A path outside `allowed_boundaries` or a change to the index or HEAD (a worker's own commits aside) is a violation: report the paths, revert the out-of-scope change (a worker's: block it), and do not reuse earlier check results.
 
 ### Step 6: Fold the result back
 - **Envelope file** (Route 2 and above): record the role's return as `<unit>/envelopes/<kind>-<NN>.yaml` with kind `scout`, `challenger`, `review`, `reconciler` or `worker`. You write it, never the role, and never by hand-editing YAML: `devkit workflow envelope new --unit <dir> --kind <kind> --stage <stage> ... --findings-file -` (findings YAML on stdin, as found), then `devkit workflow envelope check --unit <dir>`. A `review` records findings as found (all open); a `reverify` (`--from latest --resolve N --waive N=<rationale>`) closes that round. The authoring flags are in section 6 of the `spec` skill's `references/envelope.md`. The conversation keeps only the summary and the file path. Route 1 needs no envelope files. For a proposal spike the unit is the proposal bundle: `--unit docs/proposals/PROP-<slug> --stage spike`.
@@ -66,7 +66,7 @@ git diff --name-only --cached   # staged (should be unchanged by the role)
 - Reviewer: fix findings, then re-verify only the changed part (tests for touched packages, `devkit rules check --staged`).
 - Worker: accept the range or block it ([worker](references/worker.md)); a blocked unit stops until a later range passes.
 - Reconciler: review the draft as any docs change, stage only agreed paths, run `devkit rules check --staged` (not a working-tree check), send returned contract mismatches to a code fix, never a waiver, and keep confirmation (`reconcile.md` `status: resolved`) for the Developer per the `spec-sync` skill.
-- Commits are the Developer's (`git commit`; the commit gate runs the checks), staging only this task's agreed paths.
+- Commits are the Developer's, a worker's own aside (`git commit`; the commit gate runs the checks), staging only this task's agreed paths.
 
 ---
 

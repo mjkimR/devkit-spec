@@ -109,13 +109,21 @@ def test_the_host_validates_the_committed_range_and_blocks_a_failure() -> None:
     text = " ".join(WORKER_RESULTS.read_text(encoding="utf-8").split())
     assert "From the last accepted head to the returned head" in text
     assert "merge-base --is-ancestor <accepted> <returned>" in text
-    assert "diff --name-only <accepted> <returned>` is in the write scope" in text
+    assert "diff --name-only <accepted> <returned> -- . ':(exclude)<unit>/envelopes'` is in the write scope" in text
     assert "changes the `status:` line only" in text
     assert "`git -C <worktree> status --short` is empty" in text
     assert "--status failed" in text and "never reset or amend" in text
     assert "a pull request stays open and blocked" in text
     assert "A blocked unit goes to no review and no integration" in text
     assert "validate the cumulative range again from the same last accepted head" in text
+    assert "the base checkout's status and HEAD are as recorded" in text
+    # Review of SPEC-worker-committed-result: host records never fail the range, a blocked unit keeps its base,
+    # the stage follows the workflow, and only validations decide the block.
+    assert "`<unit>/envelopes/` holds only your records and is left out of the path comparison" in text
+    assert "':(exclude)<unit>/envelopes'" in text
+    assert "Never pass a blocked unit's current HEAD as the base" in text
+    assert "`build-verify`, or `fix-verify` in `bugfix`" in text and "--stage build-verify" not in text
+    assert "A unit is blocked while its latest `worker` envelope is `failed`, whatever a worker returns afterwards" in text
 
 
 def test_orchestration_follows_the_committed_result_contract() -> None:
