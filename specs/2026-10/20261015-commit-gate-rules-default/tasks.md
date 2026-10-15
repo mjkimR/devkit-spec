@@ -6,7 +6,7 @@ plan: PLAN-commit-gate-rules-default
 
 # Task Breakdown: `SPEC-commit-gate-rules-default` Commit gate runs the spec rules by default
 
-- [ ] **Task 1**: Pin devkit at the commit with the `rules-check` gate and resync
+- [x] **Task 1**: Pin devkit at the commit with the `rules-check` gate and resync
   - **_Boundary**: `uv.lock`, `.devkit/installation.json`, `AGENTS.md`
   - _Requirements: AC-01, AC-02_
   - **Verification**: `uv run devkit gate status`; refused scratch commit with an over-long summary

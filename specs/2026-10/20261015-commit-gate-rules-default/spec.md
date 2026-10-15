@@ -2,7 +2,7 @@
 id: SPEC-commit-gate-rules-default
 title: Commit gate runs the spec rules by default
 summary: 'Adopts devkit''s built-in rules-check commit gate: bumps devkit, and rewrites the constitution, architecture, development docs, seed and brownfield playbook that told projects to list the rules check in verify-commands.'
-status: planned
+status: in-progress
 created: 2026-10-15
 related_capabilities:
   - CAP-GOV-spec-rules
