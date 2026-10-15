@@ -1,0 +1,20 @@
+kind: final-report
+stage: final-change-report
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T01:27:29.044666Z'
+status: completed
+summary: devkit spec list --status adds a SPEC_LIST_STATUS_UNKNOWN notice naming values no document of the selected kinds carries, with the statuses that occur; filter, page and exit code unchanged. CAP-DOCS-document-lookup and ARCH-08 updated. Built by an orchestration-mode worker, reviewed and reconciled by isolated roles.
+findings: []
+assumptions:
+- 'Orchestration mode: worker, reviewer and reconciler were native Claude Code projected subagents writing in the sibling worktree; host validated each diff'
+- 'Host-side edits outside the worker scope: the SPEC_LIST_STATUS_UNKNOWN code-table row, spec.md status, and the summary shortening after the sync commit'
+- Commit c0f9289 carried a RULE-document-summary error because the commit gate runs no rules check; fixed in 9ee6725
+- 'pull_request=auto: a local merge is proposed (no PR)'
+checks:
+  tests: 'PASS just ci: 721 passed'
+  build: 'PASS manual CLI runs: list spec --status bogus prints the notice and exits 0, also under --strict'
+  lint: PASS ruff, pyright, devkit rules check --ci --base ed2dd0d (0 violations)
+diff_scope:
+  base: ed2dd0de2221f1e69e63d00eeebc7ead59031015
+  head: 0dba69aa44cb9c14d321d5204a191f02d0fe8cd4
