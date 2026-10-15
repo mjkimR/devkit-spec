@@ -1,0 +1,21 @@
+kind: worker
+stage: build-verify
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T01:21:24.952333Z'
+status: completed
+summary: Worker built Task 1 (SPEC_LIST_STATUS_UNKNOWN notice for --status values no document of the selected kinds carries; CLI tests for AC-01..AC-05). Host validated the diff, added the code-table row and re-ran the checks.
+findings: []
+assumptions:
+- Worker spawned as the projected native Claude Code worker subagent; isolation by the host's post-run diff check
+- Host added the SPEC_LIST_STATUS_UNKNOWN row to CAP-DOCS-document-lookup and set spec status in-progress, both outside the worker's write scope
+unverified_areas:
+- Interaction with --where, --area, --query and --file not tested separately (non-goal 3)
+checks:
+  boundary: PASS 4 changed paths, all in the write scope; index, HEAD and base checkout unchanged
+  lint: PASS just lint-check
+  typecheck: 'PASS just check: 0 errors'
+  tests: 'PASS just test: 721 passed after the host''s code-table row (worker run: 1 expected failure in test_documented_codes)'
+diff_scope:
+  base: ed2dd0de2221f1e69e63d00eeebc7ead59031015
+  head: eaa496b69b432dba404bac79e5aceccb614cff32
