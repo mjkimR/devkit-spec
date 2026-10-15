@@ -26,8 +26,8 @@ capabilities:
 
 ## 2. Background & Context
 
-With `[tool.spec] worktree = true` (`devkit spec policy` prints `worktree=yes`) every formal task runs in its own
-devkit task worktree. Each task's scope comes from its declarations (`target-docs.md` and `reconcile.md` targets,
+Every formal task under `[tool.spec] worktree = "required"` (`devkit spec policy` prints `worktree=required`), and
+any task an agent puts in a worktree under `"auto"`, runs in its own devkit task worktree. Each task's scope comes from its declarations (`target-docs.md` and `reconcile.md` targets,
 `tasks.md` `_Boundary` entries, the targets' `entrypoints`) and from what Git observes in its worktree. The work-scope
 registry lives in the Git common directory, so every worktree of the repository shares it without configuration.
 

@@ -101,7 +101,9 @@ def test_devkit_config_template_writes_the_spec_tables(tmp_path: Path) -> None:
     assert payload["notices"] == []
     assert {"tool.spec", "tool.spec.namespaces", "tool.spec.scope"} <= set(payload["added"])
     text = (tmp_path / ".devkit/config.toml").read_text(encoding="utf-8")
-    assert "# [tool.spec]\n#   worktree = true" in text and "# [[tool.spec.namespaces]]" in text
+    assert (
+        '# [tool.spec]\n#   worktree = "auto"  # "auto" | "required";' in text and "# [[tool.spec.namespaces]]" in text
+    )
     assert tomllib.loads(text) == {"schema": 1}  # every line it wrote is a comment
 
 

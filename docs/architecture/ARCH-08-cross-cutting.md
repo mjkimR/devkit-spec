@@ -69,7 +69,7 @@ Libraries never print: modules below `cli` return results and notices or raise `
 
   | Key | Meaning |
   | :--- | :--- |
-  | `[tool.spec] worktree` | Route 2 and above run in a task worktree |
+  | `[tool.spec] worktree` | `required`: Route 2 and above always run in a task worktree; `auto` (default): when the task needs one (`ADR-worktree-and-pull-request-levels`) |
   | `[[tool.spec.namespaces]]` (`name`, `path`) | Monorepo packages with their own Living Spec under `docs/packages/<name>/` (`CAP-DOCS-namespaces`) |
   | `[tool.spec.scope]` (`shared_path`, `namespace`, `timeout`) | The work-scope registry (`CAP-COLL-work-scope-registry`) |
 

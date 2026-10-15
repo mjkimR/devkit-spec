@@ -251,10 +251,10 @@ JSON shapes: `compare` `{sets, pairs, summary}`; `register` `{record, token, nam
 devkit's `workflow next` and `worktree finish` know nothing of devkit-spec, so the bundle's skills call the commands
 (the `spec` skill's `references/worktree.md`):
 
-- `devkit spec proposal handoff` run inside a linked worktree with `[tool.spec] worktree = true` registers the new
-  bundle itself (journal `source=handoff`) and prints the `[SCOPE: ...]` line with the token; a registration failure
-  is a `SPEC_SCOPE_REGISTER_FAILED` warning and the handoff stays done. Outside Git, in the base checkout or with
-  `worktree = false` nothing is registered. After `devkit spec new` in a task worktree, the skill runs
+- `devkit spec proposal handoff` run inside a linked worktree, at either `[tool.spec] worktree` level, registers the
+  new bundle itself (journal `source=handoff`) and prints the `[SCOPE: ...]` line with the token; a registration
+  failure is a `SPEC_SCOPE_REGISTER_FAILED` warning and the handoff stays done. Outside Git or in the base checkout
+  nothing is registered. After `devkit spec new` in a task worktree, the skill runs
   `devkit spec scope register --spec <dir>`.
 - `spec-tasks` after writing `tasks.md`, and `spec-sync` after writing `reconcile.md`, run
   `devkit spec scope update --spec <dir>` in a registered worktree; `SPEC_SCOPE_TOKEN_MISSING` means the worktree

@@ -10,8 +10,9 @@ the same constitution, skills, workflows and rules it ships.
 2. Start with `/spec <intent>`; `/spec-next` orients in work already under way. The router picks the route
    (S-Lane, direct delivery, bugfix, incubated) and the workflow (`CAP-DLV-delivery-workflows`).
 3. Read `uv run --no-active devkit spec policy` before routing, gate and Git decisions. This repository sets no
-   `[workflow.approvals]`, so every gate is `ask`. It sets `[worktree] pull_request = false`: after G3 a task
-   integrates locally with `devkit worktree finish <slug> --merge`, which fast-forwards `main` and pushes it.
+   `[workflow.approvals]`, so every gate is `ask`. It sets `[tool.spec] worktree = "required"`, so every Route 2 and
+   above task runs in a task worktree, and `[worktree] pull_request = "auto"`: after G3 a task that needs no pull
+   request integrates locally with `devkit worktree finish <slug> --merge`, which fast-forwards `main` and pushes it.
 4. Route 2 and above write `spec.md`, `plan.md` and `tasks.md` (`devkit spec new <slug>`) before production code, and
    reconcile into `docs/` before completion.
 

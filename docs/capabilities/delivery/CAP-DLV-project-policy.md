@@ -1,7 +1,7 @@
 ---
 id: CAP-DLV-project-policy
 title: Project Policy
-summary: "Effective approval, stage, Git and repository-first feedback policy reported by devkit spec policy, with strict validation and commented defaults for the tool.spec configuration."
+summary: "Effective approval, stage, Git (auto or required worktree and pull request levels) and repository-first feedback policy reported by devkit spec policy, with strict validation and commented defaults for the tool.spec configuration."
 area: delivery
 status: active
 created_at: 2026-10-13
@@ -18,12 +18,12 @@ entrypoints:
 ## 1. Summary
 
 A project decides how delivery runs: which approval gates wait for a person, which stages are switched off, whether
-formal work runs in a task worktree, how it is integrated, and how repository-first feedback is recorded. Policy
+worktrees and pull requests are used when a task needs them or always, and how repository-first feedback is recorded. Policy
 devkit already models stays in devkit's tables
 (`[workflow.approvals]`, `[workflow.stages]`, `[worktree]`); devkit-spec adds only what is specific to spec-driven
 development, under the `[tool.spec]` extension table that devkit passes through unread. Agents read the effective
 policy with one command, `devkit spec policy`, before routing, gate and Git decisions. Rationale:
-`ADR-policy-in-the-tool-spec-table`.
+`ADR-policy-in-the-tool-spec-table`; the Git policy levels: `ADR-worktree-and-pull-request-levels`.
 
 ## 2. Scope & Boundary
 
@@ -48,15 +48,24 @@ policy with one command, `devkit spec policy`, before routing, gate and Git deci
 2. **devkit tables first**: a policy devkit models (approvals, stage switches, pull requests, branch cleanup, worktree
    setup) MUST live in devkit's table; `[tool.spec]` holds only keys devkit has no table for.
 3. **Defaults**: a gate the project does not set is `ask` with `source=default` (devkit's default for every gate);
-   `[tool.spec] worktree` defaults to `true`; `[worktree]` values are devkit's defaults (`pull_request = false`,
+   `[tool.spec] worktree` defaults to `"auto"`; `[worktree]` values are devkit's defaults (`pull_request = "auto"`,
    `delete_branch = true`, no `setup`).
 4. **Gate order**: the spec workflows' gates `intent`, `direction`, `integration` come first, then any other gate the
    project configures, in sorted order.
 5. **Strict table**: `[tool.spec]` MUST be a table with only the keys `worktree`, `namespaces`, `scope` and `feedback`;
-   anything else is `SPEC_CONFIG_INVALID`, raised by every command that reads the table.
-6. **Worktree routing**: `worktree = true` means Route 2 and above (formal specs, proposals, bugfix) run in a task
-   worktree; Route 1 always stays in the current checkout. An explicit user request naming the checkout overrides it
-   for that task only, recorded in the final change report's assumptions.
+   anything else is `SPEC_CONFIG_INVALID`, raised by every command that reads the table. `worktree` is `"auto"` or
+   `"required"`; a boolean is `SPEC_CONFIG_INVALID`, with no mapping (devkit rejects a boolean `pull_request` the
+   same way, `WORKTREE_CONFIG_INVALID`).
+6. **Git policy levels**: `worktree = "required"` runs every Route 2, Route 3, Route 4 and bugfix task in a task
+   worktree; S-Lane is never required to. `"auto"` leaves the choice to the agent: a worktree when the task
+   integrates through a pull request, another task is in flight in the checkout, the user's uncommitted changes must
+   stay put, the work is an isolated experiment, or the user asks; otherwise the current checkout.
+   `pull_request = "required"` integrates every route, S-Lane included, through a pull request (`devkit worktree
+   finish --merge` is refused); `"auto"` uses one when the task needs platform review or CI, the base branch refuses
+   direct pushes, or the user asks, otherwise a local merge. A task that integrates through a pull request runs in a
+   worktree at either worktree level. Each `auto` choice and its reason are reported in the final change report's
+   assumptions; an explicit user request naming the checkout or the integration path overrides the policy for that
+   task only, recorded there too.
 7. **Template at the defaults**: `template()` MUST describe every `[tool.spec]` key at the default
    `read_spec_config` applies (an example for a key unset by default and for the namespaces), so the commented
    tables `devkit config template` writes read back as the defaults once uncommented.
@@ -82,7 +91,7 @@ uv run devkit spec policy [-w/--workspace-root DIR] [--format text|json] [-q] [-
 [GATE_POLICY: direction policy=auto source=config]
 [GATE_POLICY: integration policy=ask source=default]
 [STAGE_POLICY: collect-feedback state=off]
-[GIT_POLICY: worktree=yes pull_request=no delete_branch=yes setup="uv sync"]
+[GIT_POLICY: worktree=required pull_request=auto delete_branch=yes setup="uv sync"]
 [FEEDBACK_POLICY: capture=observed coverage=repo detail=standard reminder=contextual]
 ```
 
@@ -90,13 +99,14 @@ uv run devkit spec policy [-w/--workspace-root DIR] [--format text|json] [-q] [-
   ([devkit approval gates](https://github.com/mjkimR/devkit/blob/main/docs/workflow/overview.md#3-approval-gates));
   `source` is `config` when `.devkit/config.toml` sets it, else `default`.
 - `STAGE_POLICY`: one line per stage the project switched off (`state=off`), sorted.
-- `GIT_POLICY`: `worktree` (`[tool.spec] worktree`), then devkit's `[worktree]` settings `pull_request`,
-  `delete_branch` and `setup` (`-` when unset).
+- `GIT_POLICY`: `worktree` (`[tool.spec] worktree`, `auto` or `required`), then devkit's `[worktree]` settings
+  `pull_request` (`auto` or `required`), `delete_branch` and `setup` (`-` when unset).
 
 - `FEEDBACK_POLICY`: one line with effective `capture`, `coverage`, `detail` and `reminder`, including defaults.
 
 JSON: `{"approvals": {<gate>: {"policy", "source"}}, "stages_off": [...], "git": {"worktree", "pull_request",
-"delete_branch", "setup"}, "feedback": {"capture", "coverage", "detail", "reminder"}}` (`setup` is `null` when unset).
+"delete_branch", "setup"}, "feedback": {"capture", "coverage", "detail", "reminder"}}` (`worktree` and `pull_request`
+are the level strings, `setup` is `null` when unset).
 
 ### 4.2 Configuration
 
@@ -111,12 +121,12 @@ integration = "ask"         # G3: one approval per integration unit (PR)
 collect-feedback = "off"    # switch a stage off by id
 
 [worktree]
-pull_request = true         # integrate through pull requests (default false: merge locally)
+pull_request = "required"   # always integrate through pull requests (default "auto": as the task needs)
 delete_branch = true        # delete the merged branch
 setup = "uv sync"           # run in each new worktree
 
 [tool.spec]
-worktree = true             # Route 2 and above (formal specs, proposals) run in a task worktree
+worktree = "required"       # Route 2 and above and bugfix always run in a task worktree (default "auto")
 
 [[tool.spec.namespaces]]    # monorepo packages with their own Living Spec under docs/packages/<name>/
 name = "api"
@@ -136,7 +146,7 @@ timeout = 10                # whole seconds per registry command, 1 to 300
 
 | Key | Type | Default | Validation |
 | --- | --- | --- | --- |
-| `tool.spec.worktree` | boolean | `true` | `true` or `false`. |
+| `tool.spec.worktree` | string | `"auto"` | `auto` or `required`; a boolean is rejected. |
 | `tool.spec.namespaces` | array of tables | `[]` | Each entry exactly `name` and `path`; `name` lowercase words joined by `-`, not `global`; `path` a safe workspace-relative directory in canonical form (no `./`, `//` or trailing `/`); no name or path registered twice. |
 | `tool.spec.scope.shared_path` | string | Git common dir `devkit-spec-scope/` | Absolute after `~` expansion. |
 | `tool.spec.scope.namespace` | string | common-dir hash | Letters, digits, `.`, `_`, `-`, not starting with `.`. |
@@ -172,7 +182,7 @@ tables = template()  # list[devkit.core.TemplateTable]: [tool.spec], its namespa
 
 | Code | Level | Class | Condition |
 | --- | --- | --- | --- |
-| `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecConfigError` | `[tool.spec]` is not a table, has an unknown key, `worktree` is not a boolean, or a namespace entry is malformed (keys other than `name` and `path`, an invalid or `global` name, an unsafe or non-canonical path, a name or path registered twice), or `[tool.spec.feedback]` has an invalid table, unknown key, type or choice, or `[tool.spec.scope]` is not a table, has an unknown key, a relative `shared_path`, a `namespace` that is not a plain name, or a `timeout` outside 1 to 300 whole seconds. |
+| `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecConfigError` | `[tool.spec]` is not a table, has an unknown key, `worktree` is not `auto` or `required`, or a namespace entry is malformed (keys other than `name` and `path`, an invalid or `global` name, an unsafe or non-canonical path, a name or path registered twice), or `[tool.spec.feedback]` has an invalid table, unknown key, type or choice, or `[tool.spec.scope]` is not a table, has an unknown key, a relative `shared_path`, a `namespace` that is not a plain name, or a `timeout` outside 1 to 300 whole seconds. |
 
 devkit's own errors pass through: `CONFIG_INVALID` (an unreadable file), `WORKFLOW_CONFIG_INVALID`,
 `WORKTREE_CONFIG_INVALID`.

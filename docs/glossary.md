@@ -67,7 +67,7 @@ term's contract, the last column names it. Search synonyms for these terms live 
 | **Scope registry** | One JSON record per running task under `<git-common-dir>/devkit-spec-scope/<namespace>/`, shared by every worktree, with an append-only journal. Detection only; never exclusive ownership. | `CAP-COLL-work-scope-registry` |
 | **Owner token** | The secret a registration returns once and saves in the worktree's Git directory; the record stores only its hash. | `CAP-COLL-work-scope-registry` |
 | **Overlap** | Two scope sets naming the same document path, or code paths where one equals or contains the other. Evidence for scheduling, not a proof of conflict. | `CAP-COLL-work-scope-registry` |
-| **Task worktree** | A linked Git worktree per Route 2, Route 3 or bugfix task (`devkit worktree start <slug>`) under `[tool.spec] worktree = true`. | `CAP-DLV-project-policy` |
+| **Task worktree** | A linked Git worktree for one task (`devkit worktree start <slug>`): every Route 2, Route 3 or bugfix task under `[tool.spec] worktree = "required"`, and a task that needs one under `"auto"`. | `CAP-DLV-project-policy` |
 
 ## 5. Packaging and Harness
 

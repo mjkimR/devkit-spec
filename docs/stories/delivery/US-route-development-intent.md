@@ -38,8 +38,8 @@ the gates follow the project's `[workflow.approvals]`.
 ## 3. Acceptance Criteria (Given / When / Then)
 
 ### Scenario 1: A contract change becomes a bound spec bundle
-- **Given**: the policy reports `[GIT_POLICY: worktree=no ...]` and the request changes a documented contract with
-  low uncertainty
+- **Given**: the policy reports `[GIT_POLICY: worktree=auto ...]`, the agent keeps the task in the current checkout,
+  and the request changes a documented contract with low uncertainty
 - **When**: the agent runs `devkit spec new <slug>`
 - **Then**: `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` holds skeleton-marked `spec.md`, `plan.md` and `tasks.md`,
   `spec.md` is bound to `direct-delivery`, and the output ends with

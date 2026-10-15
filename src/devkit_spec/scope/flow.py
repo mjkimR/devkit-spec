@@ -222,14 +222,12 @@ def _rollback(registry: Registry, stored: Record, token: str) -> list[str]:
 
 
 def auto_register(root: Path, spec_dir: str, *, source: str) -> tuple[Registered | None, list[AdvisoryError]]:
-    """Register ``spec_dir`` when the project runs formal work in worktrees and ``root`` is a linked worktree.
+    """Register ``spec_dir`` when ``root`` is a linked worktree, at either ``[tool.spec] worktree`` level.
 
-    Outside Git, in the base checkout or with ``[tool.spec] worktree = false`` nothing happens. A failure is a
+    Outside Git or in the base checkout nothing happens. A failure is a
     ``SPEC_SCOPE_REGISTER_FAILED`` warning: the caller's own operation has already succeeded.
     """
     try:
-        if not read_spec_config(root).worktree:
-            return None, []
         session = open_session(root)
         if not session.location.linked:
             return None, []

@@ -14,9 +14,9 @@ Text output (paths are relative to the workspace root):
   ``[SCOPE: <task> namespace= ... token=]`` when it registered the bundle's work scope, and
   ``[NEXT_CMD: devkit workflow next --unit <dir>]`` when ``spec.md`` is bound to a workflow.
 
-A handoff inside a linked worktree with ``[tool.spec] worktree = true`` registers the new bundle in the work-scope
-registry (``devkit spec scope register``); a registration failure is a ``SPEC_SCOPE_REGISTER_FAILED`` warning and
-leaves the handoff done.
+A handoff inside a linked worktree registers the new bundle in the work-scope registry (``devkit spec scope
+register``) at either ``[tool.spec] worktree`` level; a registration failure is a ``SPEC_SCOPE_REGISTER_FAILED``
+warning and leaves the handoff done.
 
 Unresolved links are a ``SPEC_PROPOSAL_LINK_UNRESOLVED`` warning, rewritten ID references a
 ``SPEC_PROPOSAL_REFS_REWRITTEN`` notice and an unbound proposal or spec a ``SPEC_PROPOSAL_UNBOUND`` notice, all on

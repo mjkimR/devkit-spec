@@ -23,7 +23,7 @@ def test_defaults(workspace: Path) -> None:
         "[GATE_POLICY: intent policy=ask source=default]",
         "[GATE_POLICY: direction policy=ask source=default]",
         "[GATE_POLICY: integration policy=ask source=default]",
-        "[GIT_POLICY: worktree=yes pull_request=no delete_branch=yes setup=-]",
+        "[GIT_POLICY: worktree=auto pull_request=auto delete_branch=yes setup=-]",
         "[FEEDBACK_POLICY: capture=observed coverage=repo detail=standard reminder=contextual]",
     ]
 
@@ -32,19 +32,24 @@ def test_configured(workspace: Path, write: Write) -> None:
     write(
         ".devkit/config.toml",
         '[workflow.approvals]\ndirection = "auto"\nhandoff = "off"\n[workflow.stages]\ncollect-feedback = "off"\n'
-        '[worktree]\npull_request = false\nsetup = "uv sync"\n[tool.spec]\nworktree = false\n',
+        '[worktree]\npull_request = "required"\nsetup = "uv sync"\n[tool.spec]\nworktree = "required"\n',
     )
     lines = _policy(workspace).stdout.splitlines()
     assert "[GATE_POLICY: direction policy=auto source=config]" in lines
     assert "[GATE_POLICY: handoff policy=off source=config]" in lines
     assert "[STAGE_POLICY: collect-feedback state=off]" in lines
-    assert lines[-2] == '[GIT_POLICY: worktree=no pull_request=no delete_branch=yes setup="uv sync"]'
+    assert lines[-2] == '[GIT_POLICY: worktree=required pull_request=required delete_branch=yes setup="uv sync"]'
     payload = json.loads(_policy(workspace, "--format", "json").stdout)
-    assert payload["git"] == {"worktree": False, "pull_request": False, "delete_branch": True, "setup": "uv sync"}
+    assert payload["git"] == {
+        "worktree": "required",
+        "pull_request": "required",
+        "delete_branch": True,
+        "setup": "uv sync",
+    }
     assert payload["stages_off"] == ["collect-feedback"]
 
 
-@pytest.mark.parametrize("table", ['worktree = "yes"', "other = 1", "spec = 1"])
+@pytest.mark.parametrize("table", ['worktree = "yes"', "worktree = true", "worktree = false", "other = 1", "spec = 1"])
 def test_malformed_tool_spec(workspace: Path, write: Write, table: str) -> None:
     body = f"[tool.spec]\n{table}\n" if not table.startswith("spec") else f"[tool]\n{table}\n"
     write(".devkit/config.toml", body)
@@ -57,6 +62,13 @@ def test_malformed_tool_spec(workspace: Path, write: Write, table: str) -> None:
 
 def test_absent_table_is_the_default(workspace: Path) -> None:
     assert read_spec_config(workspace) == SpecConfig()
+    assert SpecConfig().worktree == "auto"
+
+
+def test_a_boolean_pull_request_policy_stops_the_command(workspace: Path, write: Write) -> None:
+    write(".devkit/config.toml", "[worktree]\npull_request = true\n")
+    result = _policy(workspace)
+    assert result.exit_code == 2 and "WORKTREE_CONFIG_INVALID" in result.stderr
 
 
 def test_spec_config_error_is_a_config_error() -> None:

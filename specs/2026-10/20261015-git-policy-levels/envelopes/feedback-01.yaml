@@ -1,0 +1,10 @@
+kind: feedback
+stage: collect-feedback
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-14T23:39:55.896929Z'
+status: completed
+summary: 'Session and diff swept at repo-and-upstream coverage: recorded FB-lock-bump-command-misses-new-devkit-commits, FB-skill-byte-budgets-leave-no-headroom, FB-config-template-has-no-preview, FB-review-head-before-any-commit; FB-gate-answers-carry-conversation-transcripts was recorded earlier in this bundle; no duplicates in the open backlog'
+findings: []
+checks:
+  swept: PASS recorded=4 duplicates=0

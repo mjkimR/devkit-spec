@@ -78,10 +78,10 @@ removes it.
    `docs/decisions/` and deleting the bundle directory; no `archive/` directory is kept.
 10. **Discovery is dynamic**: active proposals are listed with `devkit spec list proposal`, never through catalog
     tables maintained in README files.
-11. **Hand off in the slug's own worktree**: with `[tool.spec] worktree = true`, a handoff in a linked worktree whose
-    branch is not the slug (a detached HEAD included) MUST be refused before anything is read or written
-    (`SPEC_PROPOSAL_WRONG_WORKTREE`), so the spec bundle never lands on another task's branch. The base checkout,
-    `worktree = false` and a workspace outside Git are not checked.
+11. **Hand off in the slug's own worktree**: at either `[tool.spec] worktree` level, a handoff in a linked worktree
+    whose branch is not the slug (a detached HEAD included) MUST be refused before anything is read or written
+    (`SPEC_PROPOSAL_WRONG_WORKTREE`), so the spec bundle never lands on another task's branch. The base checkout and
+    a workspace outside Git are not checked.
 
 ## 4. Interfaces & Data Contracts
 
@@ -191,7 +191,7 @@ still holds something the roll-back could not move back is kept, never removed; 
 lists what could not be undone in its details.
 
 The new spec's workflow is then evaluated from its first stage; its G1 is the spec bundle's intent, normally
-confirmed by the accepted proposal. Inside a linked worktree with `[tool.spec] worktree = true`, the CLI also
+confirmed by the accepted proposal. Inside a linked worktree, at either `[tool.spec] worktree` level, the CLI also
 registers the new bundle in the work-scope registry (`CAP-COLL-work-scope-registry`); a registration failure is a
 `SPEC_SCOPE_REGISTER_FAILED` warning and the handoff stays done.
 
@@ -344,7 +344,7 @@ directory whose namespace applies when `namespace` is omitted);
 | `SPEC_PROPOSAL_NOT_FOUND` | `ERROR` (`INPUT_ERROR`) | `ProposalNotFoundError` | No bundle or single-file proposal has the slug (`padr`: no bundle). |
 | `SPEC_PROPOSAL_INVALID` | `ERROR` (`MAINTENANCE`) | `ProposalInvalidError` | The proposal, its blueprint or a PADR cannot be read or its frontmatter does not parse; or, at handoff, `namespace` is not a string naming `global` or a registered namespace, or `summary` is not a string. |
 | `SPEC_PROPOSAL_NOT_APPROVED` | `ERROR` (`INTERACTION`) | `ProposalNotApprovedError` | Status is not `accepted` (or `draft`/`reviewing` with `--direction-chosen`). |
-| `SPEC_PROPOSAL_WRONG_WORKTREE` | `ERROR` (`INPUT_ERROR`) | `ProposalWrongWorktreeError` | `handoff` in a linked worktree on another branch than the slug under `[tool.spec] worktree = true` (rule 11); `[FIX]` starts the slug's worktree and reruns the handoff there. |
+| `SPEC_PROPOSAL_WRONG_WORKTREE` | `ERROR` (`INPUT_ERROR`) | `ProposalWrongWorktreeError` | `handoff` in a linked worktree on another branch than the slug, at either `[tool.spec] worktree` level (rule 11); `[FIX]` starts the slug's worktree and reruns the handoff there. |
 | `SPEC_PROPOSAL_WORKFLOW_INVALID` | `ERROR` (`MAINTENANCE`) | `ProposalWorkflowError` | `handoff_workflow` is not a string, names a definition that does not resolve or validate, or names by path a definition other than the one discovered for its id (`WORKFLOW_NOT_BINDABLE`); `[DETAIL]` carries devkit's code. |
 | `SPEC_PROPOSAL_TARGET_EXISTS` | `ERROR` (`BLOCKED`) | `ProposalTargetExistsError` | The spec bundle, an ADR file or the materials directory exists, two PADRs map to one ADR, another document declares a promoted ADR's ID, a carried bundle file clashes with a file or symbolic link of `materials/` (or `materials/` is itself a symbolic link), or the directory of the spec bundle, an ADR, the materials directory or a carried file resolves outside the workspace. |
 | `SPEC_PROPOSAL_HANDOFF_FAILED` | `ERROR` (`MAINTENANCE`) | `ProposalHandoffError` | A write failed; what was written is removed, the materials and carried files moved back, the proposal kept. When the roll-back was incomplete, `[DETAIL]` lists what could not be moved back or removed (kept, never deleted). |

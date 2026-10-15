@@ -7,7 +7,7 @@ approvals and stage switches in ``[workflow.approvals]`` and
 
 ```toml
 [tool.spec]
-worktree = true   # route 2 and above (formal specs, proposals) run in a task worktree
+worktree = "auto"   # "auto": a task worktree when the task needs one; "required": route 2 and above always
 
 [[tool.spec.namespaces]]   # a package of a monorepo with its own Living Spec under docs/packages/<name>/
 name = "api"
@@ -46,6 +46,7 @@ PACKAGES_DIR = "docs/packages"
 SCOPE_NAMESPACE = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
 SCOPE_TIMEOUT_DEFAULT = 10
 SCOPE_TIMEOUT_RANGE = (1, 300)
+WORKTREE_LEVELS = ("auto", "required")
 FEEDBACK_CHOICES = {
     "capture": ("observed", "requested-only"),
     "coverage": ("repo", "repo-and-upstream"),
@@ -91,7 +92,7 @@ class FeedbackConfig:
 
 @dataclass(frozen=True)
 class SpecConfig:
-    worktree: bool = True
+    worktree: str = "auto"
     namespaces: tuple[Namespace, ...] = field(default=())
     scope: ScopeConfig = field(default=ScopeConfig())
     feedback: FeedbackConfig = field(default=FeedbackConfig())
@@ -105,7 +106,10 @@ def template() -> list[TemplateTable]:
         TemplateTable(
             (
                 TemplateKey(
-                    "worktree", defaults.worktree, "route 2 and above (formal specs, proposals) run in a task worktree"
+                    "worktree",
+                    defaults.worktree,
+                    "auto: a task worktree when the task needs one; required: route 2 and above and bugfix always",
+                    kind=" | ".join(f'"{level}"' for level in WORKTREE_LEVELS),
                 ),
             ),
         ),
@@ -195,9 +199,9 @@ def read_spec_config(root: Path) -> SpecConfig:
     unknown = sorted(set(table) - {"worktree", "namespaces", "scope", "feedback"})
     if unknown:
         raise SpecConfigError(f"config tool.spec: unknown keys: {', '.join(unknown)}")
-    worktree = table.get("worktree", True)
-    if not isinstance(worktree, bool):
-        raise SpecConfigError(f"config tool.spec.worktree: expected true or false, got {worktree!r}")
+    worktree = table.get("worktree", "auto")
+    if worktree not in WORKTREE_LEVELS:
+        raise SpecConfigError(f'config tool.spec.worktree: expected "auto" or "required", got {worktree!r}')
     return SpecConfig(
         worktree=worktree,
         namespaces=_namespaces(table.get("namespaces", [])),

@@ -1,0 +1,19 @@
+kind: final-report
+stage: final-change-report
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-14T23:40:36.468223Z'
+status: completed
+summary: auto|required levels for [tool.spec] worktree and devkit pull_request, handoff guard and registration in any linked worktree, guidance and Living Spec updated, ADR-worktree-and-pull-request-levels added, deferred orchestration work in PROP-orchestration-mode
+findings: []
+assumptions:
+- 'G1 and G2 are recorded as user answers (by: user) for the plan agreed before work started'
+- The change is uncommitted; review and checks ran on the worktree, the cumulative --ci check runs after the commit at integration
+- 'Integration follows the base policy at task start (worktree=yes, pull_request=no): local merge with devkit worktree finish --merge'
+checks:
+  tests: 'PASS just ci: 693 passed'
+  build: PASS uv sync and devkit sync on the bumped lock
+  lint: PASS ruff, pyright, devkit rules check (0 violations)
+diff_scope:
+  base: main
+  head: 79b3cb1473df2941cca73998ec60a94e89c5d730

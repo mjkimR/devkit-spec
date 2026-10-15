@@ -41,7 +41,7 @@ from devkit.core import FrontmatterError, GitError, run_git
 from devkit.core.frontmatter import parse
 from devkit.workflow import Binding
 
-from devkit_spec.config import GLOBAL, read_spec_config
+from devkit_spec.config import GLOBAL
 from devkit_spec.documents import DocumentIndex, parse_document
 from devkit_spec.errors import (
     ProposalCleanupWarning,
@@ -363,7 +363,7 @@ def handoff_proposal(
 
 
 def _check_worktree(root: Path, slug: str) -> None:
-    """Refuse a handoff in a linked worktree on another branch than ``slug`` when ``[tool.spec] worktree`` is on.
+    """Refuse a handoff in a linked worktree on another branch than ``slug``, at either ``[tool.spec] worktree`` level.
 
     Outside Git and in the base checkout nothing is checked; a detached HEAD counts as another branch. A ``GitError``
     without an exit status (Git missing, a timeout) propagates.
@@ -375,7 +375,7 @@ def _check_worktree(root: Path, slug: str) -> None:
             raise
         return
     common, git_dir = (Path(line.decode()).resolve() for line in dirs[:2])
-    if common == git_dir or not read_spec_config(root).worktree:
+    if common == git_dir:
         return
     try:
         branch = run_git(root, "symbolic-ref", "--quiet", "--short", "HEAD").decode().strip()

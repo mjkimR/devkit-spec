@@ -1,4 +1,4 @@
-"""The handoff branch guard: a linked worktree under ``[tool.spec] worktree = true`` must be on the slug's branch."""
+"""The handoff branch guard: a linked worktree must be on the slug's branch, at either ``[tool.spec] worktree`` level."""
 
 from __future__ import annotations
 
@@ -66,11 +66,13 @@ def test_the_base_checkout_is_not_guarded(repo: Path) -> None:
     assert (spec_dir(repo, SLUG) / "spec.md").is_file()
 
 
-def test_without_the_worktree_policy_any_branch_hands_off(repo: Path) -> None:
+@pytest.mark.parametrize("level", ["auto", "required"])
+def test_both_worktree_levels_guard_a_linked_worktree(repo: Path, level: str) -> None:
     linked = _worktree(repo, "other", "-b", "feature/rate-limits")
-    write(linked, ".devkit/config.toml", "[tool.spec]\nworktree = false\n")
-    handoff_proposal(linked, SLUG, today=TODAY)
-    assert (spec_dir(linked, SLUG) / "spec.md").is_file()
+    write(linked, ".devkit/config.toml", f'[tool.spec]\nworktree = "{level}"\n')
+    with pytest.raises(ProposalWrongWorktreeError):
+        handoff_proposal(linked, SLUG, today=TODAY)
+    assert not (linked / "specs").exists()
 
 
 def test_outside_git_nothing_is_checked(workspace: Path) -> None:

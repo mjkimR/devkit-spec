@@ -27,7 +27,7 @@ Read `devkit spec policy` before routing work. Use the effective approval and Gi
 When the user enters `/spec <intent>` or asks a general engineering question:
 
 ### Tier 1: Route Selection
-Check the nature of the request against the routes of the spec constitution (`devkit get-context spec`). With `GIT_POLICY worktree=yes`, Route 2, Route 3 and bugfix start with [worktree](references/worktree.md) before any bundle or edit:
+Check the nature of the request against the routes of the spec constitution (`devkit get-context spec`). Before any bundle or edit, settle the worktree per `GIT_POLICY` ([worktree](references/worktree.md)):
 
 | Intent Category | Selected Route | Action / Sub-Skill |
 | :--- | :--- | :--- |

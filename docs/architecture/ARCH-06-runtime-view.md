@@ -88,7 +88,7 @@ sequenceDiagram
     Spec->>FS: write specs/<YYYY-MM>/<YYYYMMDD>-<slug>/, bind handoff_workflow
     Spec->>FS: copy target-docs.md, promote PADRs to ADRs, move materials/
     Spec->>FS: rewrite links and ID references, remove the proposal
-    opt linked worktree and [tool.spec] worktree = true
+    opt linked worktree
         Spec->>Reg: register the bundle's scope
     end
     Spec-->>Agent: [HANDOFF ...] [PROMOTED_ADR ...] [REWRITTEN ...] [SCOPE ...] [NEXT_CMD ...]
@@ -143,7 +143,8 @@ sequenceDiagram
 
 ## 5. Scenario 4: Worktree lifecycle with the scope registry
 
-Under `[tool.spec] worktree = true`, Route 2, Route 3 and bugfix tasks run in their own worktree; the skills keep the
+Under `[tool.spec] worktree = "required"` Route 2, Route 3 and bugfix tasks run in their own worktree, and under
+`"auto"` the tasks that need one do; the skills keep the
 registry current, and devkit-spec's `devkit.post_finish` extension cleans up after a successful finish
 (`CAP-COLL-work-scope-registry`, `ADR-cleanup-after-worktree-finish`).
 

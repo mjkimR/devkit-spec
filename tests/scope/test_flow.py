@@ -408,7 +408,7 @@ def test_journal_failure_is_one_warning(repo: Path) -> None:
     ]
 
 
-def test_auto_register_only_in_a_linked_worktree_with_the_worktree_policy(repo: Path, tmp_path: Path) -> None:
+def test_auto_register_only_in_a_linked_worktree_at_either_level(repo: Path, tmp_path: Path) -> None:
     assert auto_register(repo, SPEC, source="handoff") == (None, []), "the base checkout never registers"
     linked = tmp_path / "repo-wt-s"
     git(repo, "worktree", "add", "-q", "-b", "s", str(linked))
@@ -421,9 +421,11 @@ def test_auto_register_only_in_a_linked_worktree_with_the_worktree_policy(repo: 
     assert again is None and [notice.code for notice in notices] == ["SPEC_SCOPE_REGISTER_FAILED"]
     assert "SPEC_SCOPE_TOKEN_EXISTS" in notices[0].details[0]
 
-    write(linked, ".devkit/config.toml", "[tool.spec]\nworktree = false\n")
-    release(session)
-    assert auto_register(linked, SPEC, source="handoff") == (None, [])
+    for level in ("required", "auto"):
+        write(linked, ".devkit/config.toml", f'[tool.spec]\nworktree = "{level}"\n')
+        release(session)
+        registered, notices = auto_register(linked, SPEC, source="handoff")
+        assert registered is not None and notices == [], level
     plain = tmp_path / "plain"
     write(plain, ".devkit/config.toml", "")
     assert auto_register(plain, "specs/x", source="handoff") == (None, [])
