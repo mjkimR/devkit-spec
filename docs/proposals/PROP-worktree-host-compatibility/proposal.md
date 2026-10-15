@@ -44,6 +44,15 @@ delegation work on every supported host without weakening the post-run diff chec
   `finish`) instead of `devkit worktree start`, or does it stay excluded?
 - **Q5**: Projected roles load only in a session rooted in the project; a session started in a parent workspace has
   no `worker` subagent. Does the chosen option also cover that case, or does the caller always emulate there?
+- **Q6**: Which repository Git settings help across hosts and sandboxes: `worktree.useRelativePaths` (and the
+  `extensions.relativeWorktrees` it enables) so worktrees survive another mount path, `extensions.worktreeConfig` for
+  per-worktree settings? What Git version does every tool reading the repository need, and should devkit set or check
+  them (`[worktree]` config, `devkit worktree start`) for a repository that opts in? A personal repository can meet
+  such conditions even where the defaults could not be assumed.
+- **Q7**: How do the hosts' own worktree flows fit devkit's: Claude Code `isolation: worktree` subagents with
+  `WorktreeCreate`/`WorktreeRemove` hooks and `worktree.baseRef`, and the ChatGPT Codex app's managed worktrees
+  (detached HEAD, handoff between local and worktree, `.worktreeinclude`, `.codex` local environment setup scripts)?
+  Desk research: `MAT-host-worktree-flows`.
 
 ## 3. Proposed Design & Impact
 
@@ -53,10 +62,14 @@ Options to compare after the spike:
   where they are.
 - **O2, worktree inside the repository**: change the worktree location so every sandbox covers it.
 - **O3, worker process per worktree**: start the worker as its own host session rooted in the worktree.
-- **O4, host-native isolation**: let the host create the worktree and register it with devkit.
+- **O4, host-native isolation**: let the host create the worktree and register it with devkit. On Claude Code a
+  `WorktreeCreate` hook could run `devkit worktree start` and hand its path to `isolation: worktree` subagents.
+- **O5, repository Git settings**: an opt-in repository profile (for example relative worktree paths) that devkit
+  sets or checks, alone or combined with O1 to O4.
 
 Impact depends on the choice: the worker contract's host blocks and `spec-delegate` (all options), devkit's
-`worktree` path convention and config (O2, O4), the distribution projections (O1), and a worker launch procedure (O3).
+`worktree` path convention and config (O2, O4, O5), the distribution projections (O1, O4 hooks), and a worker launch
+procedure (O3).
 
 ## 4. Lifecycle & Retirement Criteria
 
