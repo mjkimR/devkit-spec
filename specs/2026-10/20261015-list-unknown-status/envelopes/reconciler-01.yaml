@@ -1,0 +1,18 @@
+kind: reconciler
+stage: living-spec-draft
+workflow: direct-delivery
+segment: 0
+created_at: '2026-10-15T01:26:14.443650Z'
+status: completed
+summary: 'Isolated reconciler drafted 2 targets (CAP-DOCS-document-lookup: --status notice, warnings-and-notices rule, exit codes, summary; ARCH-08-cross-cutting: code owner row); host reviewed and confirmed them, shortened the summary to RULE-document-summary''s limit, resolved reconcile.md and completed the spec.'
+findings: []
+assumptions:
+- Reconciler spawned as the projected native Claude Code reconciler subagent (no shell; host ran rules, entrypoints derive and scope update)
+- Host verified that notices never change the exit code under --strict (list --status bogus --strict exits 0)
+- 'Entrypoint candidates errors.py and tests/test_cli_documents.py not applied: shared error module and tests are not declared as capability entrypoints here'
+checks:
+  boundary: PASS draft touched only docs targets and reconcile.md; HEAD unchanged
+  rules_ci: PASS devkit rules check --ci --base ed2dd0d after the summary fix
+diff_scope:
+  base: 5efb003
+  head: 9ee6725db923fc2ddf81666d65d2651609340457
