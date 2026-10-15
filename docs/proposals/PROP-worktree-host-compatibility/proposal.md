@@ -42,6 +42,8 @@ delegation work on every supported host without weakening the post-run diff chec
   root) viable for each host, and how does it return the envelope fields and keep the host's diff check?
 - **Q4**: Can a host-native worktree isolation be adopted and registered with devkit (scope registry, setup, sync,
   `finish`) instead of `devkit worktree start`, or does it stay excluded?
+- **Q5**: Projected roles load only in a session rooted in the project; a session started in a parent workspace has
+  no `worker` subagent. Does the chosen option also cover that case, or does the caller always emulate there?
 
 ## 3. Proposed Design & Impact
 

@@ -4,17 +4,7 @@ Read this when delegating to a support role (`scout`, `challenger`, `reviewer`, 
 
 ## 1. Input payload
 
-Pass all five fields. Never inject the whole tree.
-
-| Field | Content |
-| :--- | :--- |
-| `task_goal` | One goal for this call |
-| `relevant_files` | Files, acceptance criteria, non-goals and ADRs to read; starting points, not a dump |
-| `allowed_boundaries` | Read scope and write scope for this task, plus explicitly denied paths; repository-declared paths, not generic globs |
-| `diff_scope` | Base ref and head of the change under review (required for `reviewer`, `reconciler`, `worker`) |
-| `expected_output_format` | Summary, comparison table, review envelope, docs draft diff, etc. |
-
-Also state the host projection status for this call (`native`, `emulated`, `unsupported`) when it is not native, so the substitute guarantee is explicit.
+Pass all five fields and never inject the whole tree; the `spec-delegate` skill's `references/payload.md` defines each field and the rows per role. Also state the host projection status for this call (`native`, `emulated`, `unsupported`) when it is not native, so the substitute guarantee is explicit.
 
 ## 2. Return envelope
 

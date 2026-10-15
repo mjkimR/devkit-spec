@@ -12,7 +12,7 @@ Use this skill when all implementation tasks in `tasks.md` are marked complete (
 ## 1. Prerequisites & Inputs
 
 - Feature files: `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/spec.md`, `plan.md`, `tasks.md`.
-- Working tree with all implementation changes committed or staged.
+- Implementation committed on the task branch (an intermediate commit), so the envelope's `--head` names the reviewed content. A review of uncommitted changes says so in the envelope's `assumptions`; the cumulative check after the commit covers it.
 
 ---
 

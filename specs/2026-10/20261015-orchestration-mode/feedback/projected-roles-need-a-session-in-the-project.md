@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-15
 ---
 
@@ -45,3 +45,5 @@ hosts.md: | Claude Code | The subagent named `<role>` (Agent tool or `@agent-<ro
 $ ls .claude/agents   -> challenger.md reconciler.md reviewer.md scout.md worker.md   (in the repository)
 Agent types offered to the session: claude, claude-code-guide, Explore, general-purpose, Plan, statusline-setup
 ```
+
+- **Disposition**: S-Lane: `spec-delegate/references/hosts.md` states the session-root condition and the emulated fallback; `PROP-worktree-host-compatibility` Q5 covers it for workers.

@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-15
 ---
 
@@ -49,3 +49,5 @@ docs/materials/2026-10/20261015-orchestration-mode/decisions/01-gate-intent.yaml
 docs/materials/2026-10/20261015-orchestration-mode/decisions/02-gate-direction.yaml
 $ devkit workflow next --unit specs/2026-10/20261015-orchestration-mode   -> [WAITING: human gate:intent]
 ```
+
+- **Disposition**: `PROP-handoff-unit-records` (draft): what handoff does with the proposal unit's gate records and envelopes, and how the spec's gates follow.

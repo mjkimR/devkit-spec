@@ -5,7 +5,7 @@ description: User-invoked orchestration mode. The host stops implementing and co
 
 # spec-orchestrate: Orchestration Mode
 
-Every session starts in direct mode: the host implements, in the current checkout or the task's worktree as the `GIT_POLICY` levels decide (the `spec` skill's `references/completion.md`). Invoking this skill switches the session to orchestration mode until the user returns it to direct mode with a plain instruction or the session ends. The mode is session state: nothing is configured or recorded for it. Each unit's own records (spec bundle, envelopes, scope registry, worktree) carry what a resumed session needs.
+Every session starts in direct mode: the host implements, in the current checkout or the task's worktree as the `GIT_POLICY` levels decide (the `spec` skill's `references/git-policy.md`). Invoking this skill switches the session to orchestration mode until the user returns it to direct mode with a plain instruction or the session ends. The mode is session state: nothing is configured or recorded for it. Each unit's own records (spec bundle, envelopes, scope registry, worktree) carry what a resumed session needs.
 
 ---
 

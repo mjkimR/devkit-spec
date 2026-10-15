@@ -1,0 +1,10 @@
+# Git policy levels
+
+Read this before the first edit of a task and before any Git action, after `devkit spec policy` printed the `[GIT_POLICY: worktree= pull_request= delete_branch= setup=]` line. Decide the worktree and the integration path before the first edit, not after.
+
+- `worktree=required` runs every Route 2, Route 3 and bugfix task in its own worktree from creation to cleanup ([worktree](worktree.md)); S-Lane is never required to.
+- `worktree=auto` leaves it to you: a worktree when the task integrates through a PR, another task is in flight in this checkout, the user's uncommitted changes must stay put, the work is an isolated experiment, or the user asks; otherwise the current checkout. Preserve the user's dirty checkout when creating isolation.
+- `pull_request=required` integrates every route, S-Lane included, through a PR (no `finish --merge`). `pull_request=auto` uses a PR when the task needs platform review or CI, the base refuses direct pushes, or the user asks; otherwise a local merge.
+- A task integrating through a PR runs in a worktree, at either worktree level.
+- Report each `auto` choice and its reason in the final change report's assumptions. A request that names the checkout or the integration path overrides the policy for that task and is reported there as a user request; otherwise an unavailable action the policy requires is a blocker, not silently downgraded.
+- `delete_branch=yes`: after a confirmed merge, and only under existing deletion authority, the merged task branch is removed with safe `git branch -d` after leaving it (`devkit worktree finish` does this for a worktree task). A dirty worktree, current branch, protected/base branch or unmerged branch prevents cleanup; report the remaining branch. `delete_branch=no` keeps it. This policy never deletes remote branches or forces deletion.

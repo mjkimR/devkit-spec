@@ -142,12 +142,12 @@ Living Spec and `specs/` holds feature specs.
 
 Skill references, each read at the moment it names: `spec/references/completion.md` (completion classification,
 policy, reconcile record, checks and commits), `spec/references/envelope.md` (delegation input and return envelope,
-final change report), `spec/references/worktree.md` (task worktree start, work, integrate and finish, leftovers),
+final change report), `spec/references/git-policy.md` (worktree, pull request and branch cleanup levels), `spec/references/worktree.md` (task worktree start, work, integrate and finish, leftovers),
 `spec/references/playbooks.md` (Tier 2 operational playbook routing),
 `spec-next/references/post-handoff.md` (follow-up of `[REWRITTEN]` and `[UNRESOLVED_LINK]` lines),
 `spec-next/references/workflow-signals.md` (`devkit workflow next` lines and advisories),
 `spec-delegate/references/hosts.md` (spawning a role on each host), `spec-delegate/references/payload.md` (payload
-rows per role), `spec-specify/references/feature.md` and
+fields and rows per role), `spec-specify/references/feature.md` and
 `bugfix.md`, `spec-feedback/references/sweep.md` and `template.md`, `spec-rule/references/config.md` and
 `templates.md`.
 

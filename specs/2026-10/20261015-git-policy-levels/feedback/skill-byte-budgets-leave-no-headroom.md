@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-15
 ---
 
@@ -48,3 +48,5 @@ $ wc -c skills/spec/references/completion.md   -> 8210 (before trimming), 8185 (
 $ wc -c skills/spec-integrate/SKILL.md        -> 8152 before, 8118 after
 $ wc -c skills/spec/SKILL.md                  -> 7653 before (HEADROOM 7680), 7622 after
 ```
+
+- **Disposition**: S-Lane: the Git policy levels moved from `spec/references/completion.md` to `spec/references/git-policy.md`, and the payload field table from `spec/references/envelope.md` to `spec-delegate/references/payload.md` (completion 6.7 KB, envelope 7.7 KB).

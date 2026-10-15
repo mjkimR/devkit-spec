@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-15
 ---
 
@@ -45,3 +45,5 @@ skills/spec-review/SKILL.md: "Working tree with all implementation changes commi
 skills/spec-review/SKILL.md: --base <ref> --head $(git rev-parse HEAD)
 $ git rev-parse --short HEAD   -> 79b3cb1 (base; the change is uncommitted)
 ```
+
+- **Disposition**: S-Lane: `spec-review` prerequisites ask for an intermediate commit before review, and an uncommitted-change assumption in the envelope when a review runs on uncommitted changes.
