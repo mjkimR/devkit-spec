@@ -193,6 +193,15 @@ class ProposalUnboundNotice(SpecError):
     fix = "Bind the unit with devkit workflow bind --unit <dir> --workflow <id> once a workflow fits it"
 
 
+class ListStatusUnknownNotice(SpecError):
+    """``devkit spec list --status``: a requested status occurs on no indexed document of the selected kinds
+    (``NOTICE``); the filter still applies, since a valid status may simply be unused so far."""
+
+    code = "SPEC_LIST_STATUS_UNKNOWN"
+    level = Level.NOTICE
+    fix = "Pass a status the documents of the selected kinds carry (devkit spec list shows them)"
+
+
 class SpecSlugError(SpecError):
     """A spec slug keeps no letter or digit after normalization (``INPUT_ERROR``)."""
 

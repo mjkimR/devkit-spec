@@ -2,7 +2,7 @@
 id: SPEC-list-unknown-status
 title: Flag an unknown status filter in devkit spec list
 summary: "devkit spec list adds a SPEC_LIST_STATUS_UNKNOWN notice naming each --status value no document of the selected kinds carries, with the statuses that do occur, so a mistyped filter is not read as an empty result."
-status: planned
+status: in-progress
 created: 2026-10-15
 related_capabilities:
   - CAP-DOCS-document-lookup

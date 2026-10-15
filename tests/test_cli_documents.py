@@ -112,6 +112,82 @@ def test_list_filters(docs: Path, args: tuple[str, ...], ids: list[str]) -> None
     assert [d["id"] for d in payload["documents"]] == ids
 
 
+UNKNOWN_STATUS = "(SPEC_LIST_STATUS_UNKNOWN)"
+
+
+@pytest.fixture
+def statuses(workspace: Path, write: Write) -> Path:
+    """Specs carrying planned and completed (the completed one historical), feedback carrying open."""
+    write("specs/2026-10/20261001-done/spec.md", _doc("SPEC-done", status="completed"))
+    write("specs/2026-10/20261002-next/spec.md", _doc("SPEC-next", status="planned", title="Next"))
+    write("specs/2026-10/20261003-later/spec.md", _doc("SPEC-later", status="Planned", title="Later"))
+    write("specs/2026-10/20261002-next/feedback/x.md", _doc("FB-x", status="open"))
+    return workspace
+
+
+def test_list_names_an_unknown_status(statuses: Path) -> None:
+    # AC-01: the page and the exit code stay as they were; one notice names the value and the known statuses.
+    result = _spec("list", "spec", "--status", "bogus", workspace=statuses)
+    assert result.exit_code == 0
+    assert result.stdout.splitlines() == ["[PAGE: total=0 offset=0 limit=20 count=0 next=-]"]
+    assert result.stderr.count(UNKNOWN_STATUS) == 1
+    notice = next(line for line in result.stderr.splitlines() if UNKNOWN_STATUS in line)
+    assert notice.startswith("[NOTICE]") and "bogus" in notice
+    fix = next(line for line in result.stderr.splitlines() if line.startswith("[FIX]"))
+    assert fix.endswith("completed, planned")
+
+
+def test_list_json_carries_the_unknown_status_notice(statuses: Path) -> None:
+    # AC-02
+    result = _spec("list", "spec", "--status", "bogus", "--format", "json", workspace=statuses)
+    payload = json.loads(result.stdout)
+    assert result.exit_code == 0 and payload["total"] == 0
+    [notice] = payload["notices"]
+    assert notice["code"] == "SPEC_LIST_STATUS_UNKNOWN" and "bogus" in notice["message"]
+    assert notice["advisory"]["fix"].endswith("completed, planned")
+
+
+def test_list_names_only_the_unknown_statuses(statuses: Path) -> None:
+    # AC-03: the comparison stays case-insensitive and the known value is not named.
+    result = _spec("list", "spec", "--status", "Planned,bogus", "--format", "json", workspace=statuses)
+    payload = json.loads(result.stdout)
+    assert [d["id"] for d in payload["documents"]] == ["SPEC-later", "SPEC-next"]
+    [notice] = payload["notices"]
+    assert notice["message"].startswith("--status bogus:") and "planned" not in notice["message"]
+
+
+def test_list_counts_hidden_statuses_as_known(statuses: Path, write: Write) -> None:
+    # AC-04: a status on a historical spec, or on a spec of another namespace, is known.
+    hidden = _spec("list", "spec", "--status", "completed", workspace=statuses)
+    assert hidden.exit_code == 0 and "total=0 " in hidden.stdout
+    assert UNKNOWN_STATUS not in hidden.stderr
+    write("specs/2026-10/20261004-web/spec.md", _doc("SPEC-web", status="blocked", namespace="web"))
+    write(
+        ".devkit/config.toml",
+        '[[tool.spec.namespaces]]\nname = "api"\npath = "services/api"\n'
+        '[[tool.spec.namespaces]]\nname = "web"\npath = "apps/web"\n',
+    )
+    other = _spec("list", "spec", "--status", "blocked", "--namespace", "api", workspace=statuses)
+    assert other.exit_code == 0 and "total=0 " in other.stdout
+    assert UNKNOWN_STATUS not in other.stderr
+
+
+def test_list_without_kinds_counts_every_kind(statuses: Path) -> None:
+    # AC-05
+    every = _spec("list", "--status", "open", workspace=statuses)
+    assert every.exit_code == 0 and "[DOCUMENT: FB-x " in every.stdout
+    assert UNKNOWN_STATUS not in every.stderr
+    specs = _spec("list", "spec", "--status", "open", "--format", "json", workspace=statuses)
+    [notice] = json.loads(specs.stdout)["notices"]
+    assert notice["code"] == "SPEC_LIST_STATUS_UNKNOWN" and notice["message"].startswith("--status open:")
+
+
+def test_list_without_status_values_adds_no_notice(statuses: Path) -> None:
+    result = _spec("list", "spec", "--status", ",", "--format", "json", workspace=statuses)
+    payload = json.loads(result.stdout)
+    assert payload["total"] == 2 and payload["notices"] == []
+
+
 def test_negative_paging_is_an_argument_error(docs: Path) -> None:
     result = _spec("list", "--limit", "-1", workspace=docs)
     assert result.exit_code == 2 and "(ARGUMENT_INVALID)" in result.stderr

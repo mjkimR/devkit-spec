@@ -12,7 +12,9 @@ Text output (paths are relative to the workspace root):
   is one of the values.
 
 ``refs`` and ``list`` end with ``[PAGE: total= offset= limit= count= next=]`` and, when more items follow,
-``[NEXT_CMD: ...]`` for the next page. Files that could not be indexed are ``SPEC_DOCUMENT_INVALID`` warnings.
+``[NEXT_CMD: ...]`` for the next page. Files that could not be indexed are ``SPEC_DOCUMENT_INVALID`` warnings;
+``list --status`` adds a ``SPEC_LIST_STATUS_UNKNOWN`` notice naming the values no document of the selected kinds
+carries.
 """
 
 from __future__ import annotations
@@ -41,6 +43,7 @@ from devkit_spec.cli.output import echo_page, page, sentinel
 from devkit_spec.config import Namespace, read_spec_config
 from devkit_spec.documents import Document, DocumentIndex, Kind, Reference
 from devkit_spec.entrypoints.paths import normalize, overlaps
+from devkit_spec.errors import ListStatusUnknownNotice
 from devkit_spec.namespaces import Selection, namespace_resolver, select
 
 WORKSPACE = workspace_option()
@@ -340,7 +343,10 @@ def list_cmd(
         normalize(file)  # SPEC_ENTRYPOINTS_PATH_INVALID, as derive reports it, rather than matching nothing
     index = _load(workspace_root)
     scope = NamespaceScope.of(index, namespace, all_namespaces)
-    statuses = {part.strip().lower() for part in status.split(",") if part.strip()} if status else set()
+    requested = (
+        list(dict.fromkeys(part.strip().lower() for part in status.split(",") if part.strip())) if status else []
+    )
+    statuses = set(requested)
     wanted = {Kind(kind) for kind in kinds}
     selected = [
         document
@@ -359,6 +365,7 @@ def list_cmd(
     )
     shown = page(selected, offset, limit)
     tasks = {document.path: _tasks(index.root, document) for document in shown}
+    notices = [*index.problems, *_unknown_statuses(index, wanted, requested)]
     if is_json(output_format):
         echo_json(
             {
@@ -376,7 +383,7 @@ def list_cmd(
                     | _feedback_fields(document)
                     for document in shown
                 ],
-                "notices": [notice.to_dict() for notice in index.problems],
+                "notices": [notice.to_dict() for notice in notices],
             }
         )
     else:
@@ -403,7 +410,33 @@ def list_cmd(
             args += ["--where", item.given]
         args += scope.args(namespace, all_namespaces)
         echo_page(len(selected), offset, limit, len(shown), [*args, *_paging_args(workspace_root, limit)])
-    _finish(index.problems)
+    _finish(notices)
+
+
+def _unknown_statuses(index: DocumentIndex, wanted: set[Kind], requested: list[str]) -> list[AdvisoryError]:
+    """``SPEC_LIST_STATUS_UNKNOWN`` for the requested statuses that no indexed document of the wanted kinds (every
+    kind when none is wanted) carries, whatever its history or namespace; empty when each one occurs."""
+    if not requested:
+        return []
+    known = {document.status.lower() for document in index.documents if not wanted or document.kind in wanted}
+    known.discard("")
+    unknown = [value for value in requested if value not in known]
+    if not unknown:
+        return []
+    kinds = " or ".join(str(kind) for kind in sorted(wanted, key=_KIND_ORDER.__getitem__))
+    fix = (
+        f"Pass one of the statuses these documents carry: {', '.join(sorted(known))}"
+        if known
+        else "No document of these kinds carries a status; drop --status"
+    )
+    return [
+        ListStatusUnknownNotice(
+            f"--status {','.join(unknown)}: no {kinds + ' ' if kinds else ''}document carries "
+            f"{'this status' if len(unknown) == 1 else 'these statuses'}; the filter was applied as given",
+            target_files=["--status"],
+            fix=fix,
+        )
+    ]
 
 
 def _overlaps(document: Document, path: str) -> bool:
