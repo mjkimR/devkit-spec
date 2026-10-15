@@ -34,7 +34,7 @@ When the task runs in a worktree (the `spec` skill's `references/worktree.md`): 
 ### Step 1: Integrate the base branch
 ```bash
 git -C <base> pull --ff-only
-git merge <base-branch>   # the base checkout's branch (it may be ahead of origin); or rebase
+git merge -m "<subject the commit-msg gate accepts>" <base-branch>   # the base checkout's branch (it may be ahead of origin); or rebase
 ```
 Resolve conflicts within the approved intent. If a conflict needs a design choice the approval does not cover, stop and return to G2 (`devkit workflow return --unit <dir> --to direction`; hold the PR, report the choice).
 
