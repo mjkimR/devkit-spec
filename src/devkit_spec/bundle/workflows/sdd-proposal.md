@@ -3,6 +3,9 @@ id: sdd-proposal
 title: "Proposal (planning-depth proposal: plan-intent, review, plan-accept, handoff)"
 status: active
 schema_version: 1
+gates:
+  plan-intent: { policies: [ask] }  # always a person (01 §3); configuration cannot pass it
+  plan-accept: { policies: [ask] }  # always a person (01 §3)
 # Executor-neutral stage schema: what a stage is, needs, produces and where it returns.
 # Stages shared with other workflows keep the same id and the same exit, gate, role, isolation, skills and
 # artifacts (`devkit workflow validate` reports SHARED_STAGE_MISMATCH); returns are this workflow's own.
@@ -41,7 +44,8 @@ stages:
     name: Plan accept
     human_gate: plan-accept
     entry: [anchor-exists]
-    exit: []
+    # Asked only for a proposal in review: never for a draft, nor again for a rejected one (01 §4.4, §6.2).
+    exit: [frontmatter(proposal.md status reviewing|accepted)]
     artifacts: ["proposal.md with status accepted and the recorded gate:plan-accept"]
     skills: [spec]
     role: developer

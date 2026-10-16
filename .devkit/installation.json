@@ -973,7 +973,7 @@
     },
     ".devkit/managed/devkit/instructions/resource-kinds.md": {
       "mode": 420,
-      "sha256": "608577fa5c911f5de248dc09ddc06a2fc500c17115ff10929316cb7211daabc1"
+      "sha256": "35e95599fea2172176672b75fbdfef7a7ff06888666021dc881c270d5e1a824a"
     },
     ".devkit/managed/spec/AGENTS.md": {
       "mode": 420,
@@ -1293,23 +1293,23 @@
     },
     ".devkit/managed/spec/workflows/sdd-proposal.md": {
       "mode": 420,
-      "sha256": "7e830a4f512e4cae0d6b18ab7533ff7b0aad61e068f5dea6831cc3048fa8fe28"
+      "sha256": "2d962b9dab0272e21e4bca7fc59a9a79824546fae31c387f5cfd502aeb31dcf1"
     },
     ".devkit/managed/spec/workflows/sdd-session-bugfix.md": {
       "mode": 420,
-      "sha256": "75ffc2c28fe791496cb80997d62142d137f081452b924e65ad36b521bd109544"
+      "sha256": "9b3ac4d184b6c2e732d53cc70b360a410400c9af4c322759f03e499c1fcf124b"
     },
     ".devkit/managed/spec/workflows/sdd-session-feature.md": {
       "mode": 420,
-      "sha256": "12de69a263e06e62a3d2f998b78ed8862606f06118f819b83e26514dc3939454"
+      "sha256": "7d799a81684da11b7d24dc96ec6101f4d982e027d9c9f0488cc003935a7adfaa"
     },
     ".devkit/managed/spec/workflows/sdd-spec-bugfix.md": {
       "mode": 420,
-      "sha256": "f221af5d960da3a72a0dac0c654f4a2660cd6bdbe094240132e5e059a100fdeb"
+      "sha256": "09e7dcb02c8bd22ff816da2428383bf3e0ba61fb3802f0dc0891024c2b2160cc"
     },
     ".devkit/managed/spec/workflows/sdd-spec-feature.md": {
       "mode": 420,
-      "sha256": "34a1e77498f0daada1caa8487c3bcbb100c2e03a139d95edd0a13a8893ca9911"
+      "sha256": "93c5f9cd203becf14dd779943ddb673dfdd4d2ad6afef7ae0ee273f099c69a7f"
     }
   },
   "guidance_block": "06be010db0995f6232e5352a8b090e65fe1d82eb8a51f03511adde6a77346c0d",

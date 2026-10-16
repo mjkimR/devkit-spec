@@ -6,7 +6,8 @@ schema_version: 1
 # dev-integration is asked after the change is final: its approval is passed as `--given dev-integration`, never
 # recorded (ADR-integration-approval-asserted).
 gates:
-  dev-integration: { answer: given }
+  plan-intent: { policies: [ask] }  # always a person (01 §3); configuration cannot pass it
+  dev-integration: { answer: given, policies: [ask, auto] }  # off would skip integration
 # Executor-neutral stage schema: what a stage is, needs, produces and where it returns.
 # Stages shared with other workflows keep the same id and the same exit, gate, role, isolation, skills and
 # artifacts (`devkit workflow validate` reports SHARED_STAGE_MISMATCH); returns are this workflow's own.

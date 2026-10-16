@@ -104,10 +104,15 @@ def _definition(workflow: str) -> dict[str, object]:
 
 
 @pytest.mark.parametrize("workflow", WORKFLOWS)
-def test_the_integration_gate_is_answered_by_given(workflow: str) -> None:
+def test_the_gates_fix_their_policies_and_integration_is_answered_by_given(workflow: str) -> None:
     data = _definition(workflow)
     gates = {stage.get("human_gate") for stage in data["stages"]}  # type: ignore[union-attr]
-    expected = {"dev-integration": {"answer": "given"}} if "dev-integration" in gates else None
+    expected: dict[str, dict[str, object]] = {}
+    for gate in ("plan-intent", "plan-accept"):  # always a person (01 §3): configuration cannot pass them
+        if gate in gates:
+            expected[gate] = {"policies": ["ask"]}
+    if "dev-integration" in gates:  # ask or auto; off would skip integration
+        expected["dev-integration"] = {"answer": "given", "policies": ["ask", "auto"]}
     assert data.get("gates") == expected
 
 
@@ -137,3 +142,9 @@ def test_the_session_bugfix_reproduces_before_it_fixes() -> None:
     assert order.index("reproduce-session") < order.index("execute-verify")
     feature = [stage["id"] for stage in _definition("sdd-session-feature")["stages"]]  # type: ignore[union-attr]
     assert [stage for stage in order if stage != "reproduce-session"] == feature
+
+
+def test_plan_accept_is_asked_only_for_a_proposal_in_review() -> None:
+    stage = next(s for s in _definition("sdd-proposal")["stages"] if s["id"] == "direction-handoff")  # type: ignore[union-attr]
+    assert stage["human_gate"] == "plan-accept"
+    assert stage["exit"] == ["frontmatter(proposal.md status reviewing|accepted)"]

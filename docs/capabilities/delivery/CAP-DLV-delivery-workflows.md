@@ -191,9 +191,12 @@ writes into the proposal's `materials/`. The `report-session` stage of a session
 - `dev-integration = "auto"`: the gate passes by policy; `next` prints `[GATE: dev-integration policy=auto ...
   source=policy]`.
 - `--given <gate>` asserts a gate for one run (a runner's binding).
-- devkit's engine accepts any gate key with `ask`, `auto` or `off`; devkit-spec refuses a key for `plan-intent` or
-  `plan-accept` and `dev-integration = "off"` (`CAP-DLV-project-policy`), in `devkit spec policy`; the executor
-  reads it before routing.
+- The workflow definitions fix the policies each gate accepts (`gates.<gate>.policies`): `plan-intent` and
+  `plan-accept` take only `ask`, `dev-integration` takes `ask` or `auto`. A configured policy outside them stops every
+  devkit command that evaluates the unit with `WORKFLOW_GATE_POLICY`, and `devkit spec policy` reports the same rule
+  (`CAP-DLV-project-policy`).
+- `plan-accept` is asked only for a proposal in review: the `direction-handoff` exit is
+  `frontmatter(proposal.md status reviewing|accepted)`, so a draft or a rejected proposal gets no request.
 
 ### 4.4 Checks
 
