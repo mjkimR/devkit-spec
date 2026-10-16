@@ -27,14 +27,16 @@ This document defines the target blueprint of how the docs/ backbone (Living Spe
 
 - **`CAP-DOCS-document-model`** (modify): kind `milestone` with prefix `MS` and location `docs/roadmap/`; `milestone`
   joins the single-ID relation fields, `depends_on` a list field valid on milestones only; `done` and `dropped`
-  milestones are historical documents.
+  milestones are historical documents; `decomposed_from` and `supersedes` join `proposal` as provenance fields.
 - **`CAP-DOCS-document-lookup`** (modify): `devkit spec list milestone`, hiding historical milestones by default. No
   sorting or grouping: the non-goal stays.
 - **`CAP-GOV-spec-rules`** (modify): `RULE-id-convention` knows the milestone location; `RULE-spec-format` and
   `RULE-document-summary` cover milestones; a `depends_on` cycle is a `RULE-document-reference` error; `issue` is a
-  positive integer; the two milestone warnings in the hygiene profile.
+  positive integer; the fix of `RULE-spec-format` fills `status: planned` for a milestone; the two milestone member
+  warnings in the hygiene profile.
 - **`CAP-DLV-proposal-incubation`** (modify): `milestone` is an `MS-` ID; new optional `issue` and
-  `decomposed_from`; `milestone` and `issue` carried on handoff; `new` takes `--issue` and `--decomposed-from`.
+  `decomposed_from`; `milestone`, `issue`, `decomposed_from` and `supersedes` carried on handoff; `new` takes `--issue`
+  and `--decomposed-from`.
 - **`CAP-DLV-spec-bundles`** (modify): `spec.md` accepts `milestone` as an `MS-` ID and `issue`; `devkit spec new`
   takes `--milestone` and `--issue`.
 
@@ -59,9 +61,10 @@ This document defines the target blueprint of how the docs/ backbone (Living Spe
 ## 4. Development Conventions & Governance (docs/development/ & .devkit/)
 
 - **`CAP-HARN-agent-guidance`** (modify): the `spec` skill's classification reference gains the Backlog procedure
-  (drain open issues, place work in a milestone, decompose into drafts, activate and close milestones after a branch
-  check); `spec-next` gains the idle next-work recommendation; `spec-integrate` writes `Closes` or `Refs`; a milestone
-  template; the docs skeleton gains `docs/roadmap/`.
+  (drain open issues no Unit links, place work in a milestone, decompose into drafts, activate, close and drop
+  milestones); `spec-next` gains the idle next-work recommendation and the roadmap review signal; `spec-integrate`
+  writes `Closes` or `Refs`; a milestone template; the docs skeleton gains `docs/roadmap/`; the seed
+  `docs/proposals/README.md` and the repository's own copy replace the free-text `milestone` example.
 - **Outside this repository**: the strategy layer's 01 §1, §5, §5.1, §5.2, §7.4, §10 and glossary, and 02's
   responsibilities (workbench), are updated before the handoff.
 

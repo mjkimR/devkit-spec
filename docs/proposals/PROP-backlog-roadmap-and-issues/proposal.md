@@ -77,10 +77,10 @@ Settled in Planning; each links its preliminary decision. Planning ran at `high`
 | D1 | Where the roadmap lives | The repository. GitHub is an optional intake, autohub is not an owner | `PADR-roadmap-in-repository` |
 | D2 | The form of a milestone | A document kind, `MS-<slug>` under `docs/roadmap/`, status `planned`/`active`/`done`/`dropped`; finished ones stay as hidden history; global only | `PADR-milestone-documents` |
 | D3 | Goals | Stay as prose in `ARCH-01-introduction-and-goals`; a milestone cites it. No goal IDs | `PADR-roadmap-in-repository` |
-| D4 | Order of milestones | `depends_on`, declared by the successor, a start condition enforced by warnings only | `PADR-milestone-documents` |
-| D5 | Requests not yet started | Always a draft proposal; a decomposition yields drafts only, linked by `decomposed_from`; small drafts run Planning at `low` | `PADR-roadmap-in-repository` |
+| D4 | Order of milestones | `depends_on`, declared by the successor, a start condition checked at the Backlog decision points (activate, close, drop), never refused | `PADR-milestone-documents` |
+| D5 | Requests not yet started | Always a draft proposal; a decomposition yields drafts only, linked by `decomposed_from` and carried to `spec.md` with `supersedes`; small drafts run Planning at `low` | `PADR-roadmap-in-repository` |
 | D6 | GitHub link | Optional `issue` number of an inbound request, carried on handoff; closed when its last linked Unit merges; never an autohub record issue; no sync | `PADR-issue-link-only` |
-| D7 | Choosing the next work | `spec-next` orders Planning-eligible drafts by milestone rank, `priority`, `size`, `created_at`, ID; no CLI sorting | `PADR-milestone-documents` |
+| D7 | Choosing the next work | When no Unit is in progress, `spec-next` recommends Planning-eligible drafts: `critical` first, then by milestone rank, `priority`, `size`, `created_at`, ID; no CLI sorting | `PADR-milestone-documents` |
 | D8 | Scope | Milestone kind and checks, Unit links, the Backlog procedure, next-work recommendation; see 3.1 for what is left out | This section |
 
 ## 3. Proposed Design & Impact
@@ -98,14 +98,16 @@ Settled in Planning; each links its preliminary decision. Planning ran at `high`
 - **Document model**: kind `milestone`, prefix `MS`, location `docs/roadmap/`; `milestone` becomes a single-ID
   relation field; `depends_on` a list of `MS-` IDs on milestones only; `done` and `dropped` milestones are historical.
 - **Commands**: `devkit spec proposal new` and `devkit spec new` take `--milestone MS-<slug>` and `--issue <n>`;
-  `proposal new` takes `--decomposed-from PROP-<slug>`; the handoff carries `issue` as it does `milestone`.
+  `proposal new` takes `--decomposed-from PROP-<slug>`; the handoff carries `issue` as it does `milestone`, and
+  `decomposed_from` and `supersedes` as provenance fields.
   `devkit spec list` is unchanged apart from listing the new kind.
 - **Checks**: `RULE-spec-format` and `RULE-document-summary` cover milestones; a `depends_on` cycle is a
-  `RULE-document-reference` error; two hygiene warnings through the `devkit.hygiene` extension
-  (`PADR-milestone-documents`).
-- **Guidance**: the `spec` skill's classification reference gains the Backlog procedure (drain open issues, place work
-  in a milestone, decompose into drafts, activate and close milestones with the user after a branch check);
-  `spec-next` gains the idle next-work recommendation; `spec-integrate` writes `Closes` or `Refs`; a milestone
+  `RULE-document-reference` error; two hygiene warnings (unsettled members of a `done` or `dropped` milestone)
+  through the `devkit.hygiene` extension; dependencies and members are otherwise checked at the Backlog decision
+  points (`PADR-milestone-documents`).
+- **Guidance**: the `spec` skill's classification reference gains the Backlog procedure (drain open issues no Unit links,
+  place work in a milestone, decompose into drafts, activate, close and drop milestones with the user);
+  `spec-next` gains the idle next-work recommendation and the roadmap review signal; `spec-integrate` writes `Closes` or `Refs`; a milestone
   template joins the bundle's templates.
 
 ### 3.1 Non-Goals

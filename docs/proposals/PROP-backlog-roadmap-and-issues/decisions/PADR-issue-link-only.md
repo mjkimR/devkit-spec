@@ -60,13 +60,15 @@ Option 2:
 - **Inbound requests only**: `issue` names an issue someone filed as a request. Issues autohub creates as Work Plan
   records are autohub's one-way records and are never linked or closed from a Unit.
 - **Closing**: when a Unit is the last open Unit linking its issue, `spec-integrate` writes `Closes #<n>` into the PR
-  body, or into the final commit message on a local merge; otherwise it writes `Refs #<n>`. "Open Units" are the
-  drafts, proposals and incomplete specs on the base plus the `plan-` and `dev-` branches of linked slugs. When a later
-  sibling is added after a close, Backlog reopens the issue or files a follow-up.
+  body, or into the final commit message on a local merge; otherwise it writes `Refs #<n>`. The open Units are the
+  linked slugs other than the integrating one, each counted once across the base and its `plan-` and `dev-` branches,
+  that are a draft, a `reviewing` or `accepted` proposal or a spec not completed; rejected proposals do not count. When
+  a later sibling is added after a close, Backlog reopens the issue or files a follow-up.
 - **Decomposition and supersede**: every resulting draft keeps the original's `issue`; the provenance is
   `decomposed_from` or `supersedes`. No child issues are required.
 - **`session` depth**: no Unit; the PR body or the final commit message carries `Closes #<n>`.
-- **Intake**: an issue is never required. Backlog drains open issues into drafts or feedback when `gh` is available
+- **Intake**: an issue is never required. When `gh` is available, Backlog drains the open issues no Unit links into
+  drafts, feedback (closing the issue with the feedback ID) or a declined close, skipping autohub record issues
   (`PADR-roadmap-in-repository`).
 - **Not done here**: creating issues or milestones, importing issue bodies, any sync, GitHub lookup commands (if needed
   later, considered for devkit, since tracker access is not specific to spec-driven development).

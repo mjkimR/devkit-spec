@@ -80,13 +80,19 @@ Option 2:
   one GitHub milestone" becomes "Phase = one milestone document".
 - **Requests not yet started are draft proposals**, whatever their eventual depth. A decomposition splits a draft into
   drafts only, each naming the original in `decomposed_from: PROP-<slug>` (a plain field like `supersedes`, not a
-  validated reference, since the original is deleted in the same commit). Until a direct-acceptance path exists, a
-  small draft runs Planning at `low` effort.
+  validated reference, since the original is deleted in the same commit; `--decomposed-from` checks at creation that
+  the original exists and is a draft). The handoff carries `decomposed_from` and `supersedes` to `spec.md` as
+  provenance fields, like `proposal`, so a spec keeps the link to the request it came from. Until a direct-acceptance
+  path exists (the draft proposal `draft-direct-acceptance` on the base), a small draft runs Planning at `low` effort.
 - **Follow-ups found during work** stay feedback; Backlog promotes a `repo`-scope feedback item it accepts into a
   draft placed in a milestone.
-- **GitHub issues are intake, not backlog.** When `gh` is available, Backlog lists open issues and drains each into a
-  draft (linked by `issue`) or feedback, or closes it; an open issue is a request not yet triaged, never the record of
-  queued work. Issues autohub creates as Work Plan records are outside this intake (`PADR-issue-link-only`).
+- **GitHub issues are intake, not backlog.** An open issue that no Unit links is a request not yet triaged; a linked
+  one is tracked by its Unit. When `gh` is available, Backlog lists open issues, skips those a Unit links (`issue` on a
+  draft, proposal or spec on the base, or on the `plan-`/`dev-` branch of a linked slug) and drains each of the rest:
+  into a draft linked by `issue`; into feedback, closing the issue with a comment naming the feedback ID; or closed as
+  declined, with the reason. Issues autohub creates as Work Plan records are skipped, recognized by the record-keeping
+  notice autohub writes into them; the exact marker is agreed with autohub before the procedure ships
+  (`PADR-issue-link-only`).
 - **Backlog** keeps its role (classify, add drafts, decompose) and adds placing work in a milestone and draining open
   issues; it does not create or manage GitHub milestones.
 

@@ -77,32 +77,47 @@ Option 2 with `depends_on`, ordered by the skill:
   `ARCH-01-introduction-and-goals`), the exit condition, out of scope; no work items. The slug starts with a word:
   release-style names read `MS-release-1-0`, not `MS-1-0`. Milestones are global; per-namespace roadmaps are deferred
   until a repository needs them.
-- **Status**: `planned` → `active` → `done`, or `dropped` from `planned` or `active`. The user activates and closes a
-  milestone through Backlog (base commits, like drafts). Several may be `active` at once. `done` and `dropped`
+- **Status**: `planned` → `active` → `done`, or `dropped` from `planned` or `active`. The user activates, closes and
+  drops a milestone through Backlog (base commits, like drafts). Several may be `active` at once. `done` and `dropped`
   milestones stay as historical documents: `devkit spec list` hides them by default as it hides completed spec
   bundles, and `refs --direction in` keeps their membership history.
 - **`depends_on`** is a start condition: a milestone is *ready* when every milestone it depends on is `done` or
-  `dropped`; a `dropped` dependency also raises a warning so the user can revisit the successor. Enforced by guidance
-  and warnings, never by refusal; `depends_on` is valid on milestones only.
+  `dropped`. Enforced at the decision points, never by refusal; `depends_on` is valid on milestones only.
 - **Membership**: `milestone` in `proposal.md` and `spec.md` changes from free text to one `MS-` ID, validated by
   `RULE-document-reference` and carried on handoff. A member is *settled* when it is a completed spec; a rejected
   proposal is not a member; `session` work has no Unit and is never a member. Units without a milestone stay valid.
+- **Decision points** (Backlog steps, each with the user):
+  - *Activate*: the Host lists the dependencies not yet `done` or `dropped`; the user may activate anyway.
+  - *Close* (`done`): the Host first checks the members on the base and the `plan-` and `dev-` branches of their
+    slugs (as the proposal listing does); open members are re-pointed to another milestone or the close waits.
+  - *Drop*: each unsettled member is re-pointed, has its `milestone` cleared, or is rejected; each successor that
+    depends on the milestone is shown, and the user keeps or edits its `depends_on`.
 - **Checks**:
-  - Rules: `RULE-spec-format` covers `docs/roadmap/` (required keys, the status vocabulary); `RULE-document-summary`
-    requires a milestone `summary`; a `depends_on` cycle is a `RULE-document-reference` error.
-  - Hygiene warnings, which read the base only: an `active` milestone with a dependency neither `done` nor `dropped`;
-    a `done` milestone with a base member not settled.
-  - No "candidate to close" warning: membership on branches is invisible to the base. Closing a milestone is a
-    Backlog step that first checks the `plan-` and `dev-` branches of its members (as the proposal listing does).
-    Reconsider the warning once two or more milestones are `active` at once in practice.
-- **Next work**: when no Unit is in progress, `spec-next` considers drafts whose displayed status is `draft` (no
-  `plan-<slug>` branch) and that carry no `needs_decompose`. Order: drafts of `active` milestones, then of ready
-  `planned` milestones, then drafts without a milestone; milestones of one rank by `created_at`, then ID; drafts by
-  `priority` (`critical`, `high`, `medium`, `low`), then `size` (`S`, `M`, `L`, `XL`), then `created_at`, then ID.
-  A draft without `plan-intent` is recommended as "confirm the intent". Drafts in milestones that are not ready, and
-  `needs_decompose` drafts, are reported as Backlog actions. Open feedback adds a suggestion of a hygiene pass.
-- **Review**: when three milestones have closed or by 2027-01-31, whichever comes first, Backlog reviews whether
-  milestones were used and whether the warnings fired usefully; unused machinery is proposed for removal.
+  - Rules: `RULE-spec-format` covers `docs/roadmap/` (required keys, the status vocabulary); its fix fills
+    `status: planned` and derives `MS-<stem>` for a milestone. `RULE-document-summary` requires a milestone `summary`;
+    a `depends_on` cycle is a `RULE-document-reference` error.
+  - Two hygiene warnings, which read the base only and settle when the members are fixed: a `done` or `dropped`
+    milestone with a member on the base that is neither settled nor rejected. Out-of-order activation raises no
+    warning: the user decided it at activation.
+  - No "candidate to close" warning: membership on branches is invisible to the base. Reconsider it once two or more
+    milestones are `active` at once in practice.
+- **Next work**: a Unit is *in progress* when it has a `plan-` or `dev-` branch, is a `reviewing` or `accepted`
+  proposal, or is a spec not completed. While one is, `spec-next` follows the stage matrix for it. Queued drafts are not
+  in progress: when nothing is, `spec-next` considers drafts whose displayed status is `draft` and that carry no
+  `needs_decompose`, in this order:
+  1. `critical` drafts, whatever their milestone;
+  2. drafts of `active` milestones, then of ready `planned` milestones, then drafts without a milestone; milestones of
+     one rank by `created_at`, then ID;
+  3. within a group, `priority` (`critical`, `high`, `medium`, `low`), then `size` (`S`, `M`, `L`, `XL`), then
+     `created_at`, then ID.
+
+  A draft without `plan-intent` is recommended as "confirm the intent". Drafts in milestones that are not ready or are
+  `done` or `dropped`, and `needs_decompose` drafts, are reported as Backlog actions. Open feedback adds a suggestion of
+  a hygiene pass.
+- **Review**: when three milestones are `done` or on 2027-01-31, whichever comes first, Backlog reviews whether
+  milestones were used and whether the warnings fired usefully, and records the result as a decision
+  (a roadmap-review ADR); unused machinery is proposed for removal. The carrier is `spec-next`'s idle
+  step: it counts `done` milestones, compares the date and, until that decision exists, reports the review as due.
 
 ---
 
