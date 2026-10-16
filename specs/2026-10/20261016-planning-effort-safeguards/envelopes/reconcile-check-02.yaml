@@ -1,0 +1,21 @@
+kind: reconcile-check
+stage: living-spec-draft
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-16T08:30:45.098217Z'
+status: completed
+summary: 'Both reconcile-check-01 findings fixed; one new minor finding: the recording sentence sits in §4.2 while reconcile.md names §4.6, where ''challenger has no stage'' remains'
+findings:
+- issue: The recording sentence went into §4.2, not §4.6 as reconcile.md says, and §4.6 still says the challenger has no stage
+  evidence: docs/capabilities/delivery/CAP-DLV-delivery-workflows.md:180-181, :299-300; reconcile.md:20-21
+  failure_condition: A reader follows reconcile.md to §4.6 and finds no recording rule, or reads 'has no stage' against the --stage spike envelopes
+  suggested_action: 'Qualify §4.6: challenger has no stage of its own (its return is recorded at spike); fix the section reference in reconcile.md'
+  resolution: open
+assumptions:
+- Native Claude Code reviewer subagent, scope limited to the two fixes
+checks:
+  rules_check: PASS
+diff_scope:
+  base: 15e3ae9
+  head: 684dedd
+activity_effort: medium

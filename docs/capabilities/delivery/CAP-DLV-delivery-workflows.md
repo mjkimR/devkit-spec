@@ -178,7 +178,8 @@ Every workflow also has `exception`. Stage details of the spec-bundle workflows:
 | `exception` | `exception-raised` | `exception-handled` | developer / none | `spec` |
 
 The `spike` stage of `sdd-proposal` delegates to the `scout` role (isolation `preferred`, skill `spec-delegate`) and
-writes into the proposal's `materials/`; `scout` and `challenger` returns are recorded as envelopes at `spike`. The `report-session` stage of a session runs `spec-review` and, unless
+writes into the proposal's `materials/`; `scout` and `challenger` returns are recorded as envelopes at
+`spike`. The `report-session` stage of a session runs `spec-review` and, unless
 `collect-feedback` is switched off, `spec-feedback`; it runs no `spec-sync`, because a session has no reconcile record.
 
 ### 4.3 Gates
@@ -297,7 +298,8 @@ from review and integration without discarding anything until a resolution names
 `native`, Codex `unsupported` (the Host runs the unit itself in `direct`), Antigravity `unverified`.
 
 Stages delegate to `reviewer` (`review-refine`), `reconciler` (`living-spec-draft`, as verifier) and `scout`
-(`spike`); `challenger` has no stage and is delegated as the Planning effort asks (at `medium` and `high`, rule 15). Implementation stages keep
+(`spike`); `challenger` has no stage of its own (its return is recorded at `spike`) and is delegated as the Planning effort asks
+(at `medium` and `high`, rule 15). Implementation stages keep
 `role: developer`; the orchestration mode hands their turn to a worker. `[DELEGATE: role=<role> isolation=...]` in
 `next` names the role; `spec-delegate` decides between a host subagent and a main-session substitute and records the
 choice. A projected role receives only the per-call payload, since the host loads the contract body as its system
