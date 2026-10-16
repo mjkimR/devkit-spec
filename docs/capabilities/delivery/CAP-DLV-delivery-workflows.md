@@ -1,7 +1,7 @@
 ---
 id: CAP-DLV-delivery-workflows
 title: Delivery Workflows
-summary: "Five spec delivery workflows define stages, gates, checks and envelopes, with separate code and reconcile reviewers, mandatory initial medium code review, conditional reconcile self-verification and discretionary medium repeat calls."
+summary: "Five spec delivery workflows define stages, gates, checks and envelopes, including Planning feedback sweeps before user returns, per-run capture and separate code and reconcile verification."
 area: delivery
 status: active
 created_at: 2026-10-13
@@ -162,7 +162,8 @@ expects them and `devkit workflow list` finds both. `schema_version` is `1` in e
   stages of `sdd-spec-feature` from `review-refine` on.
 - **`sdd-proposal`**: `intent-proposal` (`plan-intent`), `spike` (optional in the schema and never current on
   its own, but run whenever the Planning effort requires a `challenger`, rule 15, or the direction needs evidence),
-  `direction-handoff` (`plan-accept`), `handoff` (no exit check, no return: Development never returns to Planning).
+  `collect-feedback`, `direction-handoff` (`plan-accept`), `handoff` (no exit check, no return:
+  Development never returns to Planning).
 
 Every workflow also has `exception`. Stage details of the spec-bundle workflows:
 
@@ -183,6 +184,15 @@ Every workflow also has `exception`. Stage details of the spec-bundle workflows:
 | `integrate` | the three final-report checks | `frontmatter(reconcile.md status resolved)`, `anchor-status-completed`, `lint-ci-clean` | developer / none | `spec-integrate` |
 | `merge` | `lint-ci-clean` | `merged` | `-` / none | |
 | `exception` | `exception-raised` | `exception-handled` | developer / none | `spec` |
+
+For a proposal, `collect-feedback` has entry `anchor-exists` and the same exit, gate, role, isolation,
+skills and artifacts as the Development stage. Feedback files and sweep envelopes live in the proposal, without
+requiring a spec or reconcile record. Before every Planning return (including questions), the executor writes fresh
+sweep evidence, then its single worker record. Latest-envelope checks do not enforce run freshness mechanically;
+the executor validates coverage. Stage-off writes no envelope, requested-only writes policy-skip PASS, zero
+observations passes, and incomplete coverage records FAIL with its gap. Rejection starts no new agent and uses the
+last recorded coverage/skip/gap. A rejected proposal may show an unmet collect-feedback check; it is ended work, not
+an instruction to start another sweep. Handoff drops Planning envelopes; Development runs its own sweep.
 
 The `spike` stage of `sdd-proposal` delegates to the `scout` role (isolation `preferred`, skill `spec-delegate`) and
 writes into the proposal's `materials/`; `scout` and `challenger` returns are recorded as envelopes at
@@ -249,7 +259,7 @@ Envelopes are devkit envelope files under a unit's `envelopes/`, written with
 | `review`, `reverify` | `envelopes/review-NN.yaml`, `envelopes/reverify-NN.yaml` | the reviewing executor; reverify closes the round |
 | `red` | `envelopes/red-NN.yaml` (`checks.reproduced`) | the implementer |
 | `green` | `envelopes/green-NN.yaml` (`checks.resolved`, `checks.preserved`) | the implementer |
-| `feedback` | `envelopes/feedback-NN.yaml` (`checks.swept`) | the implementer |
+| `feedback` | `envelopes/feedback-NN.yaml` (`checks.swept`), in the proposal or spec Unit | the executor; each Planning run supplies fresh coverage |
 | `final-report` | `envelopes/final-report-NN.yaml` (`checks.tests`, `build`, `lint`) | the implementer |
 | `challenger`, `scout` | role returns | the caller, from the role's fields |
 | `reconcile-check` | the reconcile verification at `living-spec-draft`, read by its exit (`envelope-completed(reconcile-check)`) | the implementer: self-check at `low`, reconcile-reviewer's returned fields at `medium`/`high`, or medium self-verification under rule 15; identify verifier, evidence and any initial omission reason |

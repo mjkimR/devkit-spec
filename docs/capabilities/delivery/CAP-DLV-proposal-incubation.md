@@ -1,7 +1,7 @@
 ---
 id: CAP-DLV-proposal-incubation
 title: Proposal Incubation and Handoff
-summary: The proposal lifecycle under docs/proposals/PROP-<slug>/ (devkit spec proposal new, padr, handoff, prune), from scaffolding and preliminary decisions to the approved handoff that creates a spec bundle, promotes PADRs to ADRs, moves materials and rewrites links and ID references.
+summary: "Proposal incubation and handoff create a bound spec, promote decisions, carry open Planning feedback, preserve settled feedback as materials, carry approvals and rewrite references; Host cleanup preserves open feedback before deletion without handoff."
 area: delivery
 status: active
 created_at: 2026-10-13
@@ -79,11 +79,13 @@ removes it.
 8. **Removal last**: the proposal is removed after every write and rewrite; if it cannot be removed the handoff still
    succeeded and `SPEC_PROPOSAL_CLEANUP_FAILED` names what to delete. Nothing else in the bundle is lost with it:
    files outside `proposal.md`, `target-docs.md`, the promoted `PADR-*.md` and `materials/` are carried to the
-   materials directory first (4.5, step 5), operating-system junk and the unit's workflow records (rule 12) aside.
+   materials directory first (4.5, step 5), except open feedback, which enters the spec's feedback directory.
+   Operating-system junk and the unit's workflow records (rule 12) are excluded.
 9. **Rejection changes the status only**: the party that received the user's rejection sets `status: rejected`
    with the user's reason in the commit message (kept through a squash) and merges the Planning branch; no worker
    runs. A later hygiene pass writes a rejection ADR outside the proposal directory, referencing the proposal and the
-   rejection commit, and deletes the proposal in the same commit; no `archive/` directory is kept. A `rejected`
+   rejection commit, preserves open feedback, and deletes the proposal in the same commit; no `archive/`
+   directory is kept. Feedback remains with the rejected proposal until that cleanup; no new rejection sweep runs. A `rejected`
    proposal is never resumed, accepted or handed off, and the tools hold to it: its `plan-accept` is never answered,
    the attach check refuses it on `plan-` and `dev-` branches, and a
    whole-workspace `devkit rules check -p hygiene` warns about each rejected proposal still in the base
@@ -119,6 +121,28 @@ removes it.
     `padr` applies the branch half of the guard itself: while `plan-<slug>` exists it writes a PADR only from the
     checkout of that branch (`SPEC_PROPOSAL_IN_PLANNING` elsewhere).
 
+### 3.1 Planning feedback retirement
+
+Planning writes direct `feedback/<name>.md` files with `FB-<name>` and existing feedback metadata.
+Handoff preflight requires readable frontmatter, a path-derived ID, nonblank title, a known status and an undated
+kebab-case name. Missing/unknown status, unreadable/malformed files, nested directories and symbolic-link feedback
+sources are refused with `SPEC_PROPOSAL_INVALID` before writes. Non-Markdown sidecars and README keep generic
+preservation. Unsafe/conflicting destinations use `SPEC_PROPOSAL_TARGET_EXISTS`.
+
+Only `open` feedback enters the new spec's `feedback/`; `promoted`, `dismissed` and
+`forwarded` files follow the materials path. IDs, statuses and observation dates stay unchanged. Feedback uses
+the existing preflight, move, cross-filesystem rollback and exact/source relocation maps, never generic carry a second
+time. Link/ID rewrites retain the best-effort notice contract of rule 7.
+
+Without handoff, rejection/decomposition return keeps feedback in place until authorized Host deletion. Before any
+such deletion, the Host moves open files once to `specs/<current-month>/feedback/<today>-<name>.md` in the same
+commit, preserving observation dates; settled records remain in Git. Inspect all source/destination paths and IDs.
+Keep the source on invalid input, collision, failed move or unresolved live dependency. Update relative links;
+historical references to retired proposal/PADR/settled-feedback IDs use existing strikethrough syntax plus retrievable
+Git revision/path context. Current document-reference/link validation must pass before committing deletion.
+Do not copy observations into every decomposed child or automatically settle them. The `spec` skill's
+`references/feedback-retirement.md` defines the Host procedure; no cleanup command is added.
+
 ## 4. Interfaces & Data Contracts
 
 ### 4.1 Bundle Layout
@@ -129,6 +153,7 @@ docs/proposals/PROP-<slug>/
 ├── target-docs.md    # optional (--with-target-docs): blueprint of the Living Spec changes once accepted
 ├── decisions/        # preliminary decision records, PADR-<slug>.md; devkit's gate records <NN>-<request>.yaml
 ├── envelopes/        # devkit envelopes of the proposal unit (a delegated spike), when any
+├── feedback/         # direct feedback files; open files follow the spec at handoff
 └── materials/        # research, benchmarks, surveys
 ```
 
@@ -210,9 +235,10 @@ With `<YYYY-MM>` and `<YYYYMMDD>` today's date:
    rest of the frontmatter, `summary` included, is kept. Only the IDs of the PADRs this handoff promotes change, and
    never inside a file name (`PADR-<slug>.md` in a link is left to step 6). Other files under `decisions/` are not
    promoted.
-5. **Materials**: `materials/` moves to `docs/materials/<YYYY-MM>/<YYYYMMDD>-<slug>/` when it holds a file other
+5. **Feedback and materials**: open `feedback/*.md` files move into the new spec's feedback directory;
+   settled feedback follows the generic extras route. `materials/` moves to `docs/materials/<YYYY-MM>/<YYYYMMDD>-<slug>/` when it holds a file other
    than operating-system junk (`.DS_Store`, `Thumbs.db`, `desktop.ini`) or a symbolic link. Every other bundle file the
-   steps above do not carry (a `notes.md` beside `proposal.md`, an image, a non-PADR file under `decisions/`, a
+   steps above do not carry (settled feedback, a `notes.md` beside `proposal.md`, an image, a non-PADR file under `decisions/`, a
    hidden file other than junk) moves into the same directory, except the unit's workflow records (rule 12), at its path relative to the bundle, which is created
    for them when `materials/` is not moved. Junk is never carried and is deleted with the proposal. Symbolic links
    are moved as links, never followed: a carried file whose path in `materials/` is taken, or lies below a file or

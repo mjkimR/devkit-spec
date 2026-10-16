@@ -65,6 +65,10 @@ lookup commands (`CAP-DOCS-document-lookup`), document search (`CAP-DOCS-documen
    `feedback/` directory is the exception: a feedback file stays `open` until a feedback-hygiene session settles it,
    so it MUST stay current whatever the bundle's status (`SPEC-open-feedback-and-progress`).
 
+Proposal-local feedback also stays current while a rejected proposal awaits cleanup. Handoff carries open feedback
+into the spec; Host deletion without handoff preserves it in the month-level backlog
+(`CAP-DLV-proposal-incubation`). Existing discovery, resolution and namespace rules apply before and after moves.
+
 ### 3.2 IDs and Kinds
 
 An ID is `<PREFIX>-<slug>`: one of the prefixes below, a dash, then a letter or digit followed by letters, digits,
@@ -80,7 +84,7 @@ live; the index itself does not check it.
 | `PROP` | `proposal` | `docs/proposals/...` |
 | `PADR` | `proposal-decision` | `docs/proposals/...` |
 | `SPEC`, `PLAN`, `TASKS`, `REC` | `spec`, `plan`, `tasks`, `reconcile` | `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/{spec,plan,tasks,reconcile}.md` |
-| `FB` | `feedback` | `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/feedback/<slug>.md`, `specs/<YYYY-MM>/feedback/<YYYYMMDD>-<slug>.md` |
+| `FB` | `feedback` | `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/feedback/<slug>.md`, `specs/<YYYY-MM>/feedback/<YYYYMMDD>-<slug>.md`, `docs/proposals/PROP-<slug>/feedback/<slug>.md` |
 | `MAT` | `material` | `docs/materials/...` |
 
 The table order is the kind order: `devkit spec list` sorts by it. Living Spec documents of a namespace live under

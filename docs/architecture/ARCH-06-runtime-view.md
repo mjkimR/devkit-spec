@@ -83,6 +83,8 @@ sequenceDiagram
     User-->>Agent: confirms the draft
     Agent->>WF: workflow answer --request gate:plan-intent --action accept --by user
     Agent->>Spec: proposal padr <slug> <title> (Planning, on plan-<slug>)
+    Agent->>FS: record observed proposal feedback before last work commit
+    Agent->>WF: collect-feedback sweep, fresh feedback envelope before each Planning return
     Agent->>WF: workflow next --unit docs/proposals/PROP-<slug>
     WF-->>Agent: [WAITING: human gate:plan-accept]
     User-->>Agent: accepts the direction
@@ -90,7 +92,8 @@ sequenceDiagram
     Agent->>Spec: proposal handoff <slug> (Development, on dev-<slug>)
     Spec->>Spec: validate slug, approval, needs_decompose, namespace, summary, task_kind, binding, every target path
     Spec->>FS: write specs/<YYYY-MM>/<YYYYMMDD>-<slug>/, bind sdd-spec-<task_kind>
-    Spec->>FS: copy target-docs.md, promote PADRs to ADRs, move materials/
+    Spec->>FS: copy target-docs.md, promote PADRs to ADRs
+    Spec->>FS: move open feedback into spec, settled feedback and materials into docs/materials
     Spec->>FS: rewrite links and ID references, remove the proposal and its gate records
     opt the proposal recorded plan-intent and plan-accept
         Spec->>WF: carry gate:plan-intent and gate:plan-accept to the spec under the same names
@@ -106,7 +109,8 @@ sequenceDiagram
 - The proposal unit's gate records and envelopes are dropped with it; its `plan-intent` and `plan-accept` records are
   carried to the spec under the same names (`[CARRIED_GATE]`), and a failure there is a
   `SPEC_PROPOSAL_GATE_NOT_CARRIED` warning that leaves the handoff done.
-- A failure while writing the bundle, ADRs or materials removes what was written and keeps the proposal
+- A failure while writing the bundle, ADRs, feedback or materials removes what was written, restores moved feedback
+  and keeps the proposal
   (`SPEC_PROPOSAL_HANDOFF_FAILED`); a failed scope registration is a `SPEC_SCOPE_REGISTER_FAILED` warning and the
   handoff stays done.
 - devkit's own `devkit workflow handoff` is not used: it rebinds a unit in place and cannot move a proposal bundle

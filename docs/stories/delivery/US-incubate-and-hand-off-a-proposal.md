@@ -5,6 +5,10 @@ summary: An AI coding agent shapes an idea whose direction must be decided first
 area: delivery
 actor: AI coding agent
 status: active
+entrypoints:
+  - src/devkit_spec/bundle/workflows/sdd-proposal.md
+  - src/devkit_spec/proposals/feedback.py
+  - src/devkit_spec/proposals/handoff.py
 created_at: 2026-10-13
 capabilities:
   - CAP-DLV-proposal-incubation
@@ -68,3 +72,16 @@ which creates the spec bundle bound to `sdd-spec-<task_kind>`.
 - **When**: the agent hands it off
 - **Then**: the spec holds the same two requests as decision records with note `PROP-<slug>`, each reported as
   `[CARRIED_GATE: ...]`; `plan-intent` is not asked again and `plan-accept` satisfies no spec stage
+
+
+### Scenario 6: Planning observations follow the outcome
+- **Given** a proposal with open and settled feedback, captured inside its own write boundary
+- **When** Planning returns to the user and the proposal is later handed off
+- **Then** each enabled run sweep has fresh recorded coverage, open feedback enters the spec with unchanged IDs,
+  statuses and observation dates, settled feedback is preserved as material, and Development supplies its own sweep
+
+### Scenario 7: Deletion without handoff preserves open work
+- **Given** rejected or decomposed proposal feedback
+- **When** the Host deletes the original proposal
+- **Then** open feedback is preserved once in the month-level backlog with retrievable historical context and valid
+  current references; invalid input, collisions or unresolved live dependencies prevent deletion

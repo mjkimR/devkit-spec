@@ -2,7 +2,7 @@
 id: SPEC-planning-feedback-capture
 title: Feedback capture in Planning
 summary: Keeps Planning feedback in its proposal bundle, carries open observations into the spec at handoff, and preserves them before proposal cleanup. Adds run-level capture and a Planning feedback sweep using the existing policy.
-status: in-progress
+status: completed
 created: 2026-10-16
 related_capabilities: []
 related_stories: []

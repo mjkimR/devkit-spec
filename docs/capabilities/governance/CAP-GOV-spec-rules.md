@@ -109,7 +109,8 @@ sequence numbers are forbidden (they collide across parallel branches).
 - **Dated partitions**: ADR `docs/decisions/<YYYY-MM>/<YYYYMMDD>-<slug>.md` with `ADR-<slug>`; spec bundle
   `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/{spec,plan,tasks,reconcile}.md` with `SPEC-`, `PLAN-`, `TASKS-<slug>` and
   `reconcile_id: REC-<slug>`; feedback `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/feedback/<name>.md` (no date prefix) or
-  `specs/<YYYY-MM>/feedback/<YYYYMMDD>-<name>.md` with `FB-<name>`. Slugs are kebab-case, their first segment MUST
+  `specs/<YYYY-MM>/feedback/<YYYYMMDD>-<name>.md`, or proposal-local
+  `docs/proposals/PROP-<slug>/feedback/<name>.md` (no date prefix), with `FB-<name>`. Slugs are kebab-case, their first segment MUST
   contain a letter (a year or number there would read as a retired number-based ID), and the month partition MUST
   match the date prefix.
 - **Living Spec stems** (the ID is the file stem): `docs/capabilities/<area>/CAP-<AREA>-<slug>.md` (`<AREA>`
@@ -146,10 +147,10 @@ non-blank strings.
   registered namespace (not fixable). The `namespace` field is checked in current proposals and specs, and in every
   one of them when the run targets `.devkit/config.toml`.
 - **Fix**: fills what is missing and leaves present values alone: `id` the ID the path derives, `title` the first
-  `# ` heading (a leading ID token dropped) else the file stem, `status: draft`, and `created_at` today when none of
+  `# ` heading (a leading ID token dropped) else the file stem, `status: draft` (`open` for proposal feedback), and `created_at` today when none of
   `created_at`, `created`, `date` is set. The path derives the file stem for a capability, story, single-file
-  proposal or PADR, `PROP-<slug>` for a bundle's `proposal.md` and `PROP-<slug>-target` for its `target-docs.md`;
-  any other file under `docs/proposals/` derives none, and its missing `id` is reported without a fix.
+  proposal or PADR, `PROP-<slug>` for a bundle's `proposal.md` and `PROP-<slug>-target` for its `target-docs.md`, and
+  `FB-<name>` for its direct `feedback/<name>.md`; any other file under `docs/proposals/` derives none, and its missing `id` is reported without a fix.
 
 ### 3.6 `RULE-traceability-link`
 

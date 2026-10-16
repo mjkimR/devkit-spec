@@ -1,7 +1,7 @@
 ---
 id: CAP-HARN-agent-guidance
 title: Agent Guidance Assets
-summary: "Agent guidance deployed by the spec bundle: constitution, skills, instructions, roles, playbooks, templates and optional docs skeleton, including configurable repository-first feedback capture and hygiene."
+summary: "Agent guidance deployed by the spec bundle, including proposal-local Planning feedback, per-run capture and sweep policy, worker contracts and feedback preservation before proposal deletion."
 area: harness
 status: active
 created_at: 2026-10-13
@@ -179,6 +179,24 @@ classification or frontmatter from them.
   is not constrained by the brief/standard one-minute writing budget.
 - `reminder=contextual` suggests an optional sweep when reusable observations warrant it; `off` disables optional
   reminders without changing required stages.
+
+Planning feedback lives at `docs/proposals/PROP-<slug>/feedback/<name>.md`, inside the existing worker boundary;
+Development uses its spec's `feedback/<name>.md`, and work without a Unit uses the month-level backlog.
+Under observed capture, direct executors and both workers record concrete observations before each run's last work
+commit, including runs ending on questions or problems. Capture does not depend on the sweep stage being on.
+
+Before each Planning return to the user, an enabled sweep covers that run plus committed accumulated records,
+deduplicates the full open backlog and writes fresh feedback evidence before its single worker record. A prior PASS
+does not cover later work. Requested-only writes policy-skip PASS, zero observations passes, stage-off writes no sweep
+envelope and incomplete coverage records FAIL with its gap. Explicit user sweeps write no envelope. Rejection uses
+recorded coverage/skip/gap and starts no new worker/Cloud Agent; it claims no sweep of a later conversation.
+
+Handoff carries only `status: open` files into the spec and settled files into materials
+(`CAP-DLV-proposal-incubation`). Rejected/decomposition-return feedback stays with the proposal until deletion.
+The Host then preserves open files in the month-level backlog in the deletion commit, updates links and historical
+references with Git context, validates current references, and keeps the proposal on invalid input, collision or an
+unresolved live dependency. Capture and relocation never change feedback status. The procedure is
+`spec/references/feedback-retirement.md`; category lookup is `spec-feedback/references/categories.md`.
 
 Feedback uses `scope: repo | upstream | unknown`, determined by ownership rather than product name. An asset
 developed in this repository is `repo`, even if it is shipped to other repositories; an installed upstream copy
