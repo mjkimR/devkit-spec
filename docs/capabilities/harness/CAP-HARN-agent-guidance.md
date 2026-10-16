@@ -98,7 +98,7 @@ A project opts out of the bundle with `[presets] spec = false` in `.devkit/confi
 | `rule` | `document-reference`, `id-convention`, `spec-format`, `traceability-link`, `task-coverage`, `spec-lifecycle`, `reconcile-contract`, `document-summary`, `code-entrypoints` (`CAP-GOV-spec-rules`) |
 | `skill` | the 13 skills of 4.4 |
 | `workflow` | `sdd-session-feature`, `sdd-session-bugfix`, `sdd-spec-feature`, `sdd-spec-bugfix`, `sdd-proposal` |
-| `subagent` | `challenger`, `reconciler`, `reviewer`, `scout`, `planning-worker`, `development-worker` |
+| `subagent` | `challenger`, `reconcile-reviewer`, `code-reviewer`, `scout`, `planning-worker`, `development-worker` |
 | `playbook` | `brownfield-adoption`, `feedback-hygiene` |
 | `document` | `templates`; `docs-skeleton` (`seeded = true`, `target = "docs"`) |
 

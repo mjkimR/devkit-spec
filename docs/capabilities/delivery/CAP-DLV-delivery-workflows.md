@@ -1,7 +1,7 @@
 ---
 id: CAP-DLV-delivery-workflows
 title: Delivery Workflows
-summary: The five delivery workflows the spec bundle ships as devkit workflow definitions, one per planning-depth and task-kind, with their stages, the plan-intent, plan-accept and dev-integration gates, exit checks, envelopes and the roles they delegate to.
+summary: "Five spec delivery workflows define stages, gates, checks and envelopes, with separate code and reconcile reviewers, mandatory initial medium code review, conditional reconcile self-verification and discretionary medium repeat calls."
 area: delivery
 status: active
 created_at: 2026-10-13
@@ -111,9 +111,16 @@ sequence.
     another anchor (`HANDOFF_LAYOUT_MISMATCH`). Once `plan-accept` holds, `next` reports the unit complete
     (`[STAGE: - complete=true]`, no `[HANDOFF]` line) and Development starts with `devkit spec proposal handoff <slug>`.
 15. **`activity-effort` sets the review, never the floor**: Development of a spec unit reviews at `low` by the author
-    (stated as self-review in the envelope), at `medium` with one `reviewer` pass plus reverification of fixes (the
-    reviewer also checks the reconcile result), at `high` with a re-review after fixes and a separate `reconciler`
-    verification. The implementer always writes the Living Spec reflection and resolves `reconcile.md`; the
+    (stated as self-review in the envelope), at `medium` with one mandatory initial `code-reviewer` pass regardless
+    of size and a separate `reconcile-reviewer` check, at `high` with code re-review after fixes and independent
+    reconcile verification. Only medium permits omitting the initial reconcile reviewer when all affected contracts
+    and documents are identified, agreement with the actual diff is directly demonstrated, and no unresolved contract
+    interpretation or cross-component impact remains. The implementer then records a self-check, omission reason and
+    verification evidence in `reconcile-check`; small size alone is insufficient. At medium the implementer verifies
+    fixes and subsequent changes and decides repeat calls, considering expanded scope, uncertain correctness and
+    contract interpretation. A failed or stale initial call is not required-review evidence. These choices do not
+    change the effort, stages, required policies or high obligations (`ADR-medium-review-delegation`).
+    The implementer always writes, fixes and resolves the Living Spec reflection and `reconcile.md`; the
     verification at every effort is a `reconcile-check` envelope the `living-spec-draft` exit reads, so its findings
     are fixed in the reconcile and never reopen `review-refine`. A session
     reviews at the same levels but its reviewer returns a message and nothing is written. Proposal Planning runs
@@ -168,8 +175,8 @@ Every workflow also has `exception`. Stage details of the spec-bundle workflows:
 | `reproduce` (bugfix) | `tasks-exists` | `envelope-check-pass(red reproduced)` | developer / none | `spec-specify` |
 | `fix-verify` (bugfix) | `envelope-check-pass(red reproduced)` | `tasks-all-checked`, `envelope-check-pass(green resolved)`, `envelope-check-pass(green preserved)`, `lint-clean` | developer / none | |
 | `build-verify` | `tasks-exists` | `tasks-all-checked`, `lint-clean` | developer / none | |
-| `review-refine` | `tasks-all-checked` | `envelope-review-passed` | reviewer / preferred | `spec-review`, `spec-delegate` |
-| `living-spec-draft` | `envelope-review-passed` | `frontmatter(reconcile.md status resolved)`, `envelope-completed(reconcile-check)`, `anchor-status-completed` | reconciler / preferred | `spec-sync`, `spec-delegate` |
+| `review-refine` | `tasks-all-checked` | `envelope-review-passed` | code-reviewer / preferred | `spec-review`, `spec-delegate` |
+| `living-spec-draft` | `envelope-review-passed` | `frontmatter(reconcile.md status resolved)`, `envelope-completed(reconcile-check)`, `anchor-status-completed` | reconcile-reviewer / preferred (verification only; implementer writes) | `spec-sync`, `spec-delegate` |
 | `collect-feedback` | `frontmatter(reconcile.md status resolved)` | `envelope-check-pass(feedback swept)` | developer / none | `spec-feedback` |
 | `final-change-report` | `envelope-check-pass(feedback swept)` | `envelope-check-pass(final-report tests)`, `envelope-check-pass(final-report build)`, `envelope-check-pass(final-report lint)` | developer / none | `spec` |
 | `integration-approval` | the three final-report checks | none | developer / none | `spec` |
@@ -245,7 +252,7 @@ Envelopes are devkit envelope files under a unit's `envelopes/`, written with
 | `feedback` | `envelopes/feedback-NN.yaml` (`checks.swept`) | the implementer |
 | `final-report` | `envelopes/final-report-NN.yaml` (`checks.tests`, `build`, `lint`) | the implementer |
 | `challenger`, `scout` | role returns | the caller, from the role's fields |
-| `reconcile-check` | the reconcile verification at `living-spec-draft`, read by its exit (`envelope-completed(reconcile-check)`) | the implementer: its self-check at `low`, the reviewer's returned check at `medium`, the reconciler's at `high` |
+| `reconcile-check` | the reconcile verification at `living-spec-draft`, read by its exit (`envelope-completed(reconcile-check)`) | the implementer: self-check at `low`, reconcile-reviewer's returned fields at `medium`/`high`, or medium self-verification under rule 15; identify verifier, evidence and any initial omission reason |
 | `worker` | one run's result, exactly one per run: the applied `activity-effort`, the run's `questions` (status `needs_input`) and its `problem` (`cause`, `attempts`, `recovery`; `failed` requires it) | the run itself: a worker, the Host in `direct`, or the Host for a range it blocks |
 | `answer` | the rewritten answers to a run's questions (`answers_to: worker-NN.yaml`), one decision per question | the run that processes them, first, in a commit of its own |
 | `resolution` | the fix of a run's problem (`resolves: worker-NN.yaml`, `summary`) | whoever actually fixed it, with the fix |
@@ -273,8 +280,8 @@ role but the two workers, `[read, commit]`).
 | Role | Skill | Model profile | Writes | Envelope kind |
 | --- | --- | --- | --- | --- |
 | `challenger` | none: the procedure is in the contract | `high-reasoning` | nothing | `challenger` |
-| `reconciler` | `spec-sync` | `light-medium` | nothing: it verifies the implementer's reconcile result at `high` | `reconcile-check` |
-| `reviewer` | `spec-review` | `general-high` | nothing | `review`, `reverify`, `reconcile-check` at `medium`, or a message for a session |
+| `reconcile-reviewer` | `spec-sync` | `light-medium` | nothing: verifies the implementer's reconcile at `medium`/`high`, subject to rule 15 | `reconcile-check` |
+| `code-reviewer` | `spec-review` | `general-high` | nothing: verifies implementation against requirements and checks | `review`, `reverify`, or a message for a session |
 | `scout` | none: the procedure is in the contract | `light-medium` | nothing, or the proposal's `materials/` on request | `scout` |
 | `planning-worker` | none: the procedure is in the contract | `general-high` | the proposal directory in its `plan-` worktree, committed | `worker` (its own) |
 | `development-worker` | none: the procedure is in the contract | `general-high` | the unit's write scope in its `dev-` worktree, committed at every stage boundary | `worker` (its own) and the stage envelopes |
@@ -297,7 +304,7 @@ from review and integration without discarding anything until a resolution names
 (`ADR-worker-delivers-committed-result`, `ADR-run-records-and-activity-branches`). Host statuses: Claude Code
 `native`, Codex `unsupported` (the Host runs the unit itself in `direct`), Antigravity `unverified`.
 
-Stages delegate to `reviewer` (`review-refine`), `reconciler` (`living-spec-draft`, as verifier) and `scout`
+Stages delegate to `code-reviewer` (`review-refine`), `reconcile-reviewer` (`living-spec-draft`, as verifier) and `scout`
 (`spike`); `challenger` has no stage of its own (its return is recorded at `spike`) and is delegated as the Planning effort asks
 (at `medium` and `high`, rule 15). Implementation stages keep
 `role: developer`; the orchestration mode hands their turn to a worker. `[DELEGATE: role=<role> isolation=...]` in

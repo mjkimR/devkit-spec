@@ -87,7 +87,7 @@ def test_the_development_worker_result_is_self_contained() -> None:
     body = _contract("development-worker")[1]
     assert "run `devkit rules fix <unit>/spec.md`" in body
     assert "pytest's `tmp_path` or an ignored path inside the worktree" in body
-    # activity-effort decides the nested roles; the reconciler only verifies.
+    # activity-effort decides the nested roles; the reconcile reviewer only verifies.
     assert "a separate `reconcile-reviewer` nested subagent that verifies" in body
 
 

@@ -600,7 +600,7 @@
     },
     ".agents/skills/spec-delegate/SKILL.md": {
       "mode": 420,
-      "sha256": "95f4872f26fc8cada3136d45eb8345725fcad5d626ec3d08eb13fea7cc736cfe"
+      "sha256": "066821a3069ae73cf88eaab3a1412dc990006d88bd14cd23d6028f04cff88c12"
     },
     ".agents/skills/spec-delegate/references/hosts.md": {
       "mode": 420,
@@ -688,7 +688,7 @@
     },
     ".agents/skills/spec-sync/SKILL.md": {
       "mode": 420,
-      "sha256": "adb6b269ccd1d4155c3863afba4efff15365d2b4e05b9e0f4d52c2b909f06509"
+      "sha256": "922a7d2f64ea1de246991a29751c2af26cf56d798379b971cc67e40f03fbbba3"
     },
     ".agents/skills/spec-tasks/SKILL.md": {
       "mode": 420,
@@ -708,7 +708,7 @@
     },
     ".agents/skills/spec/references/completion.md": {
       "mode": 420,
-      "sha256": "6ae2646b3b1041fa14a93709e6fde0152d80748505844a6d1afb590ed1c8d51f"
+      "sha256": "2a3b2a38a41ac5b31b94ca04b9e1b78e0fec7cd6e7e41f799adce811759af8d6"
     },
     ".agents/skills/spec/references/effort.md": {
       "mode": 420,
@@ -716,7 +716,7 @@
     },
     ".agents/skills/spec/references/envelope.md": {
       "mode": 420,
-      "sha256": "0abc34cf91179ea5c35eda7894b89ea4eb1135b995eb85ccbc19659075bf92fc"
+      "sha256": "5e5429e6651c12a71331622c7f244fa1e1d4785883cfbc0e8473a7e4f7fed7f2"
     },
     ".agents/skills/spec/references/git-policy.md": {
       "mode": 420,
@@ -768,7 +768,7 @@
     },
     ".claude/skills/spec-delegate/SKILL.md": {
       "mode": 420,
-      "sha256": "95f4872f26fc8cada3136d45eb8345725fcad5d626ec3d08eb13fea7cc736cfe"
+      "sha256": "066821a3069ae73cf88eaab3a1412dc990006d88bd14cd23d6028f04cff88c12"
     },
     ".claude/skills/spec-delegate/references/hosts.md": {
       "mode": 420,
@@ -852,7 +852,7 @@
     },
     ".claude/skills/spec-sync/SKILL.md": {
       "mode": 420,
-      "sha256": "adb6b269ccd1d4155c3863afba4efff15365d2b4e05b9e0f4d52c2b909f06509"
+      "sha256": "922a7d2f64ea1de246991a29751c2af26cf56d798379b971cc67e40f03fbbba3"
     },
     ".claude/skills/spec-tasks/SKILL.md": {
       "mode": 420,
@@ -872,7 +872,7 @@
     },
     ".claude/skills/spec/references/completion.md": {
       "mode": 420,
-      "sha256": "6ae2646b3b1041fa14a93709e6fde0152d80748505844a6d1afb590ed1c8d51f"
+      "sha256": "2a3b2a38a41ac5b31b94ca04b9e1b78e0fec7cd6e7e41f799adce811759af8d6"
     },
     ".claude/skills/spec/references/effort.md": {
       "mode": 420,
@@ -880,7 +880,7 @@
     },
     ".claude/skills/spec/references/envelope.md": {
       "mode": 420,
-      "sha256": "0abc34cf91179ea5c35eda7894b89ea4eb1135b995eb85ccbc19659075bf92fc"
+      "sha256": "5e5429e6651c12a71331622c7f244fa1e1d4785883cfbc0e8473a7e4f7fed7f2"
     },
     ".claude/skills/spec/references/git-policy.md": {
       "mode": 420,
@@ -1136,7 +1136,7 @@
     },
     ".devkit/managed/spec/skills/spec-delegate/SKILL.md": {
       "mode": 420,
-      "sha256": "95f4872f26fc8cada3136d45eb8345725fcad5d626ec3d08eb13fea7cc736cfe"
+      "sha256": "066821a3069ae73cf88eaab3a1412dc990006d88bd14cd23d6028f04cff88c12"
     },
     ".devkit/managed/spec/skills/spec-delegate/references/hosts.md": {
       "mode": 420,
@@ -1220,7 +1220,7 @@
     },
     ".devkit/managed/spec/skills/spec-sync/SKILL.md": {
       "mode": 420,
-      "sha256": "adb6b269ccd1d4155c3863afba4efff15365d2b4e05b9e0f4d52c2b909f06509"
+      "sha256": "922a7d2f64ea1de246991a29751c2af26cf56d798379b971cc67e40f03fbbba3"
     },
     ".devkit/managed/spec/skills/spec-tasks/SKILL.md": {
       "mode": 420,
@@ -1240,7 +1240,7 @@
     },
     ".devkit/managed/spec/skills/spec/references/completion.md": {
       "mode": 420,
-      "sha256": "6ae2646b3b1041fa14a93709e6fde0152d80748505844a6d1afb590ed1c8d51f"
+      "sha256": "2a3b2a38a41ac5b31b94ca04b9e1b78e0fec7cd6e7e41f799adce811759af8d6"
     },
     ".devkit/managed/spec/skills/spec/references/effort.md": {
       "mode": 420,
@@ -1248,7 +1248,7 @@
     },
     ".devkit/managed/spec/skills/spec/references/envelope.md": {
       "mode": 420,
-      "sha256": "0abc34cf91179ea5c35eda7894b89ea4eb1135b995eb85ccbc19659075bf92fc"
+      "sha256": "5e5429e6651c12a71331622c7f244fa1e1d4785883cfbc0e8473a7e4f7fed7f2"
     },
     ".devkit/managed/spec/skills/spec/references/git-policy.md": {
       "mode": 420,

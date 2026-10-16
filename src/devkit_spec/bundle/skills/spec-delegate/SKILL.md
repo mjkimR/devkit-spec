@@ -1,6 +1,6 @@
 ---
 name: spec-delegate
-description: Delegate a bounded task to an isolated role (Scout, Challenger, Reviewer, Reconciler, or a Planning or Development worker in local-orchestrated mode) with an explicit input payload, verify the returned envelope, and compare the actual diff with the injected write boundary.
+description: Delegate to Scout, Challenger, Code Reviewer, Reconcile Reviewer, or a local-orchestrated worker with an explicit payload; verify the returned envelope and actual diff against write boundaries.
 ---
 
 # spec-delegate: Support Role Invocation Workflow
@@ -30,7 +30,7 @@ Use this skill when the main Developer session hands exploration, criticism, an 
 ## 3. Procedure
 
 ### Step 1: Decide whether to delegate
-- By `activity-effort`, never below the floor: `session` depth runs a `code-reviewer` at `medium` and `high` (a message, no envelope) and never a worker; Unit-path Development runs a `code-reviewer` at `medium` and `high` and a separate `reconcile-reviewer` at `medium` and `high`. Only medium permits the initial reconcile self-check exception in the `spec` skill's `references/effort.md`; the first medium code review is mandatory regardless of size, and repeat code/reconcile calls are discretionary after the implementer verifies changes. Proposal Planning runs a `challenger` at `medium` and `high` (re-review at `high`), a `scout` when evidence is needed. `low` is the author's self-review. `[DELEGATE]` names the role at any effort; the effort decides.
+- Follow the `spec` skill's `references/effort.md`: `low` self-review; `medium` and `high` initial `code-reviewer` required regardless of size. Unit paths also use `reconcile-reviewer`; only medium permits its documented initial self-check exception and discretionary repeat calls. A session returns a message, never an envelope or worker. Proposal Planning uses `challenger` at medium/high (re-review at high), `scout` for evidence. `[DELEGATE]` names the role; effort decides how it runs.
 - `local-orchestrated` (`spec-orchestrate`): a `planning-worker` runs one proposal Planning turn, a `development-worker` one Development turn of a spec unit, each in its worktree; never for `session`. A worker runs its role subagents nested (Host → worker → role).
 
 ### Step 2: Build the input payload

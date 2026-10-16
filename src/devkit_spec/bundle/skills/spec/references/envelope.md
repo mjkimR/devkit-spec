@@ -1,6 +1,6 @@
 # Delegation Input and Return Envelope
 
-Read this when delegating to a support role (`scout`, `challenger`, `code-reviewer`, `reconcile-reviewer`), writing a review, presenting the final change report before `dev-integration`, or reporting the integration result. Role contracts ship with the spec bundle and are projected into each agent's native agent directory by `devkit sync`; the stage definition is rendered by `devkit workflow show --unit <dir>`. Envelope files follow devkit's envelope contract; this reference says how spec-driven delivery uses it. A `planning-worker` or `development-worker` run writes its own records instead ([worker records](worker-records.md)).
+Read this for support-role delegation (`scout`, `challenger`, `code-reviewer`, `reconcile-reviewer`), reviews, the final change report before `dev-integration`, or the integration result. `devkit sync` projects the bundle's role contracts into each host's agent directory; `devkit workflow show --unit <dir>` renders the stage definition. Envelopes follow devkit's contract; this reference defines their spec-driven use. A `planning-worker` or `development-worker` writes its own records ([worker records](worker-records.md)).
 
 ## 1. Input payload
 
