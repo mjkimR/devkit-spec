@@ -65,11 +65,20 @@ def test_a_person_decides_plan_gates_and_integration_is_never_skipped(
     assert result.exit_code == 2 and "SPEC_CONFIG_INVALID" in result.stderr
 
 
-@pytest.mark.parametrize("approvals", ['plan-intent = "ask"', 'plan-accept = "ask"', 'exception = "auto"'])
-def test_an_explicit_ask_and_a_key_for_no_gate_are_accepted(workspace: Path, write: Write, approvals: str) -> None:
-    # ask is the fixed gates' default; exception is a stage, not a gate, so its key concerns no gate.
-    write(".devkit/config.toml", f"[workflow.approvals]\n{approvals}\n")
+@pytest.mark.parametrize("approvals", ['plan-intent = "ask"', 'plan-accept = "ask"'])
+def test_an_explicit_ask_is_accepted(workspace: Path, write: Write, approvals: str) -> None:
+    write(".devkit/config.toml", f"[workflow.approvals]\n{approvals}\n")  # ask is the fixed gates' default
     assert _policy(workspace).exit_code == 0
+
+
+def test_a_key_for_no_gate_warns_and_is_not_listed(workspace: Path, write: Write) -> None:
+    write(".devkit/config.toml", '[workflow.approvals]\nexception = "auto"\n')
+    result = _policy(workspace)
+    assert result.exit_code == 0 and "GATE_POLICY: exception" not in result.stdout
+    assert "(SPEC_APPROVAL_KEY_IGNORED)" in result.stderr
+    data = json.loads(_policy(workspace, "--format", "json").stdout)
+    assert "exception" not in data["approvals"] and data["notices"][0]["code"] == "SPEC_APPROVAL_KEY_IGNORED"
+    assert _policy(workspace, "--strict").exit_code == 1
 
 
 @pytest.mark.parametrize(

@@ -56,13 +56,14 @@ When investigation shows the fix needs a contract change or a design choice outs
 
 ## Output standard
 
-Keep the frontmatter lines `devkit spec new --workflow sdd-spec-bugfix` or `devkit spec proposal handoff` wrote (`id`, `workflow`, `workflow_hash`).
+It is the skeleton `devkit spec new --workflow sdd-spec-bugfix` and `devkit spec proposal handoff` write, filled in: keep their section order and frontmatter lines (`id`, `summary`, `workflow`, `workflow_hash`). The Step 1 scope goes under Non-Goals.
 
 ```markdown
 ---
 id: SPEC-<defect-slug>
 title: <Defect Title>
-status: draft # draft | planned | in-progress | completed
+summary: <one English sentence>     # written by `devkit spec new --summary`; RULE-document-summary requires it
+status: planned # planned | in-progress | completed
 created: <YYYY-MM-DD>
 related_capabilities:
   - CAP-<AREA>-<slug>
@@ -74,24 +75,21 @@ workflow_hash: sha256:<hex>
 
 # [SPEC-<defect-slug>] <Defect Title>
 
-## 1. Current Behavior
-<Trigger, environment, observed result, evidence.>
+## 1. Problem Statement & Motivation
+<What breaks, for whom, and why it matters now.>
 
-## 2. Expected Behavior and Basis
-<Required result and the contract that defines it.>
+## 2. Defect Characterization
+- **Current behavior**: <trigger, environment, observed result, evidence>
+- **Expected behavior and its basis**: <required result and the contract that defines it, by ID>
+- **Behavior to preserve**: <paths, boundaries, existing tests, gaps>
+- **Reproduction conditions**: <command, data, environment, or alternative observation conditions>
 
-## 3. Behavior to Preserve
-<Paths, boundaries, existing tests, gaps.>
-
-## 4. Reproduction Conditions
-<Command, data, environment, or alternative observation conditions.>
-
-## 5. Non-Goals
+## 3. Non-Goals
 1. **Scope Excluded**: <Item>
    - **Rationale**: <Why, when it helps>
    - **When to Reconsider**: <Trigger, when one exists>
 
-## 6. Acceptance Criteria & Behavioral Contracts
+## 4. Acceptance Criteria & Behavioral Contracts
 ### Scenario 1: [AC-01] <Resolved behavior>
 - **Given** <reproduction conditions>
 - **When** <the trigger>

@@ -203,6 +203,14 @@ class ProposalLinkUnresolvedWarning(SpecError):
     )
 
 
+class ApprovalKeyIgnoredWarning(SpecError):
+    """A ``[workflow.approvals]`` key that names no gate of the spec workflows' policy, such as ``exception`` (a stage,
+    always handled by a person) (``WARNING``): it has no effect and is not listed as a policy."""
+
+    code = "SPEC_APPROVAL_KEY_IGNORED"
+    level = Level.WARNING
+
+
 class ProposalReferencesRewrittenNotice(SpecError):
     """ID references to the proposal or its PADRs now name the spec or the ADRs (``NOTICE``)."""
 

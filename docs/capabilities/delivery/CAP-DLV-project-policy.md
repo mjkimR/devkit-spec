@@ -56,7 +56,7 @@ policy with one command, `devkit spec policy`, before routing, gate and Git deci
    `SPEC_CONFIG_INVALID`, and so is `dev-integration = "off"` (it would skip the integration stage); `dev-integration`
    takes `ask` or `auto`, and `auto` applies at every `activity-effort`. The workflow definitions declare the same rule
    (`gates.<gate>.policies`), so devkit refuses it too wherever it evaluates a unit (`WORKFLOW_GATE_POLICY`).
-   `exception` is a stage, not a gate: no key concerns it.
+   `exception` is a stage, not a gate: a key for it has no effect, so `devkit spec policy` does not list it and warns `SPEC_APPROVAL_KEY_IGNORED`.
 5. **Strict table**: `[tool.spec]` MUST be a table with only the keys `worktree`, `depth_escalation`, `namespaces`,
    `scope` and `feedback`; anything else is `SPEC_CONFIG_INVALID`, raised by every command that reads the table.
    `worktree` is `"auto"` or `"required"`, `depth_escalation` `"auto"` or `"ask"`; a boolean is `SPEC_CONFIG_INVALID`, with no mapping (devkit rejects a boolean `pull_request` the
