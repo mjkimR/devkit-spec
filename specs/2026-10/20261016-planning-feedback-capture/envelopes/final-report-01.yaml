@@ -1,0 +1,20 @@
+kind: final-report
+stage: final-change-report
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-16T11:19:34.365026Z'
+status: completed
+summary: Proposal-local feedback validates and is discoverable; handoff transfers open files with preflight/rollback/rewrites, settled files become materials; Planning sweep/capture and Host preservation contracts are updated. Independent code and eight-target reconcile reviews passed; ready for dev-integration.
+findings: []
+assumptions:
+- Direct Development at medium effort; independent code reviewer and independent reconcile reviewer; category table extracted to meet unchanged asset size budget.
+- Local merge selected under pull_request=auto because local CI and independent reviews suffice; integration and base push wait for dev-integration authority.
+- Manual Host deletion and per-run sweep freshness are executor contracts, with no new cleanup CLI or freshness engine.
+checks:
+  tests: PASS just ci; 821 tests
+  build: PASS uv build sdist and wheel; new code/reference assets verified in wheel
+  lint: PASS just ci; lint-check, pyright and governance 0 errors 0 warnings
+  rules: PASS RULE-id-convention and RULE-spec-format bundled tests; cumulative --ci --base main
+diff_scope:
+  base: a121059
+  head: ca28e96536b1f2c3336dd1c18e93e578fc5d0da1
