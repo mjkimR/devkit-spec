@@ -116,7 +116,11 @@ sequence.
     verification. The implementer always writes the Living Spec reflection and resolves `reconcile.md`; the
     verification at every effort is a `reconcile-check` envelope the `living-spec-draft` exit reads, so its findings
     are fixed in the reconcile and never reopen `review-refine`. A session
-    reviews at the same levels but its reviewer returns a message and nothing is written. Gates, exit checks and
+    reviews at the same levels but its reviewer returns a message and nothing is written. Proposal Planning runs
+    questions only at `low`, one `challenger` pass at `medium` (a `scout` when the direction needs evidence) and, at
+    `high`, two or more options compared, a `challenger` and a re-review after changes. The effort is always
+    proposed with a reason when the activity starts (a proposal's with its `plan-intent`), and the `plan-accept`
+    request shows each Planning run's effort and the support-role envelopes present. Gates, exit checks and
     `required` policies hold at every effort.
 16. **Only the workers write to Git**: a read-only role never stages or commits (`x-git-actions: [read]`). The two
     workers (`[read, commit]`) commit on their activity branch, write their own records and never push, merge, rebase,
@@ -292,7 +296,7 @@ from review and integration without discarding anything until a resolution names
 `native`, Codex `unsupported` (the Host runs the unit itself in `direct`), Antigravity `unverified`.
 
 Stages delegate to `reviewer` (`review-refine`), `reconciler` (`living-spec-draft`, as verifier) and `scout`
-(`spike`); `challenger` has no stage and is delegated as the Planning effort asks. Implementation stages keep
+(`spike`); `challenger` has no stage and is delegated as the Planning effort asks (at `medium` and `high`, rule 15). Implementation stages keep
 `role: developer`; the orchestration mode hands their turn to a worker. `[DELEGATE: role=<role> isolation=...]` in
 `next` names the role; `spec-delegate` decides between a host subagent and a main-session substitute and records the
 choice. A projected role receives only the per-call payload, since the host loads the contract body as its system

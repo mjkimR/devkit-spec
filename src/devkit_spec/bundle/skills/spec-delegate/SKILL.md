@@ -30,7 +30,7 @@ Use this skill when the main Developer session hands exploration, criticism, an 
 ## 3. Procedure
 
 ### Step 1: Decide whether to delegate
-- By `activity-effort`, never below the floor: `session` depth runs a `reviewer` at `medium` and `high` (a message, no envelope) and never a worker; Unit-path Development runs a `reviewer` at `medium` and `high` and a separate `reconciler` at `high`; proposal Planning runs `scout` and `challenger` when needed at `medium` and always a `challenger` at `high`. `low` is the author's self-review. `[DELEGATE]` names the role at any effort; the effort decides.
+- By `activity-effort`, never below the floor: `session` depth runs a `reviewer` at `medium` and `high` (a message, no envelope) and never a worker; Unit-path Development runs a `reviewer` at `medium` and `high` and a separate `reconciler` at `high`; proposal Planning runs a `challenger` at `medium` and `high` (re-review at `high`), a `scout` when evidence is needed. `low` is the author's self-review. `[DELEGATE]` names the role at any effort; the effort decides.
 - `local-orchestrated` (`spec-orchestrate`): a `planning-worker` runs one proposal Planning turn, a `development-worker` one Development turn of a spec unit, each in its worktree; never for `session`. A worker runs its role subagents nested (Host → worker → role).
 
 ### Step 2: Build the input payload

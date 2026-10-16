@@ -1,10 +1,12 @@
 # activity-effort
 
-How thoroughly one activity of a slug is done: `low`, `medium` (the default) or `high`, chosen when the activity starts and passed to its executor as run input, never stored in the Unit or the configuration. Backlog and inline Planning have no effort: Backlog's work is fixed and inline Planning is the intent agreement only. Propose a value other than `medium` only when the activity needs it.
+How thoroughly one activity of a slug is done: `low`, `medium` (the default) or `high`, chosen when the activity starts and passed to its executor as run input, never stored in the Unit or the configuration. Backlog and inline Planning have no effort: Backlog's work is fixed and inline Planning is the intent agreement only.
+
+**Always propose it.** When an activity starts, state the effort you propose and why, and let the user confirm it; never apply the default silently. A proposal's Planning effort is proposed in its `plan-intent` request ([classification](classification.md) §1). `medium` is the default proposal. Propose `high` when the work reverses an upstream or accepted decision (a strategy-layer rule, an ADR, an accepted proposal), creates a contract or a document kind, or affects more than one package (devkit, devkit-spec, autohub, or several packages of a monorepo); propose `low` only for work whose direction leaves nothing to criticize.
 
 | Activity | `low` | `medium` | `high` |
 | --- | --- | --- | --- |
-| Planning (`proposal`) | questions only; no `scout` or `challenger` | `scout` and `challenger` when needed | two or more options compared, `challenger` required, re-review after changes |
+| Planning (`proposal`) | questions only; no `scout` or `challenger` | one `challenger` pass always; `scout` when the direction needs evidence | two or more options compared, `challenger` required, re-review after changes |
 | Development (`session`) | the author's self-review | one `reviewer` subagent pass, then reverification of the fixes | `reviewer` subagent review, re-review after the fixes |
 | Development (Unit path) | the author's self-review and self-checked reconcile | one `reviewer` pass plus reverification of the fixes; the reviewer also checks the reconcile result | `reviewer` with re-review after fixes; a separate `reconciler` verifies the reconcile independently |
 
