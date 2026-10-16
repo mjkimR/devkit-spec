@@ -99,6 +99,22 @@ class ProposalInvalidError(SpecError):
     fix = "Correct the file in [TARGET] (UTF-8 text, devkit's frontmatter grammar), then rerun the command"
 
 
+class ProposalRejectedPendingWarning(SpecError):
+    """``rules check --phase hygiene``: a rejected proposal is still in the base, waiting for the Host's cleanup
+    (rejection ADR, then deletion; ``WARNING``)."""
+
+    code = "SPEC_PROPOSAL_REJECTED_PENDING"
+    level = Level.WARNING
+
+
+class ProposalInPlanningError(SpecError):
+    """``proposal check``: Backlog may not change the proposal: its ``plan-<slug>`` exists (Planning runs there), or
+    it is no longer a draft (``INPUT_ERROR``)."""
+
+    code = "SPEC_PROPOSAL_IN_PLANNING"
+    input_error = True
+
+
 class ProposalNotApprovedError(SpecError):
     """The proposal is not approved for handoff (``INTERACTION``)."""
 
@@ -222,6 +238,14 @@ class SpecSlugError(SpecError):
     code = "SPEC_SLUG_INVALID"
     input_error = True
     fix = "Pass a slug with at least one letter or digit (for example login-flow)"
+
+
+class SpecWrongBranchError(SpecError):
+    """``devkit spec new`` on another branch than ``dev-<slug>`` (``INPUT_ERROR``): a spec unit is Development's and
+    lives on its activity branch (inline Planning starts that branch first)."""
+
+    code = "SPEC_WRONG_BRANCH"
+    input_error = True
 
 
 class SpecExistsError(SpecError):

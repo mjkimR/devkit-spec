@@ -22,9 +22,9 @@ Pass it as `diff_scope` base, and record the base checkout's `git -C <base> stat
 
 ## Validate the cumulative range
 
-From the last accepted head to the returned head (`diff_scope.head`):
+From the last accepted head to the worker's *final HEAD* (`<returned>`: the `final_head` it returns, the commit that contains its `worker` envelope). The envelope's `diff_scope.head` is the head of the work it did, committed before the envelope, so it is never `<returned>`; it is evidence about the work, not the end of the range:
 
-- `git -C <worktree> merge-base --is-ancestor <accepted> <returned>` succeeds and the worktree's HEAD is `<returned>`.
+- `git -C <worktree> merge-base --is-ancestor <accepted> <returned>` succeeds, the worktree's HEAD is `<returned>`, and the envelope's `diff_scope.head` is an ancestor of `<returned>` (`merge-base --is-ancestor <diff_scope.head> <returned>`).
 - Every path of `git -C <worktree> diff --name-only <accepted> <returned>` is in the write scope: the worker's own
   records under `<unit>/envelopes/` and `<unit>/decisions/` included, except the records you wrote under
   `<unit>/envelopes/` since `<accepted>` (your blocking `worker` envelopes and your resolutions), each unchanged since
@@ -45,7 +45,8 @@ From the last accepted head to the returned head (`diff_scope.head`):
   --base <accepted> --head <returned>`, one finding per violation (path or check, cause), and commit it before
   anything else, so the worktree stays clean. Keep the commits: never reset or amend; a pull request stays open and
   blocked (changes requested or a failing required check). A blocked unit goes to no review and no integration: devkit
-  holds every gate and refuses `devkit worktree finish --merge` (`WORKTREE_BLOCKED`). Send a new worker the findings
+  holds the gates of the blocked stage and later ones and the handoff, and refuses `devkit worktree finish --merge`
+  (`WORKTREE_BLOCKED`); `devkit workflow next` keeps naming the current stage, where the recovery runs. Send a new worker the findings
   as a recovery request, or fix it yourself, with further commits on the same branch (a revert commit for an
   out-of-scope change); whoever fixes it commits a `resolution` naming your envelope with the fix. Then validate the
   cumulative range again from the same last accepted head.
@@ -59,7 +60,7 @@ nothing. A comment or a rerun request alone resolves nothing.
 - **Questions** (`needs_input` without a problem; `[PENDING_QUESTION]`): put the questions of the worker's envelope to
   the user in one round, ask back at once about anything ambiguous, and hand the rewritten answers to a new worker,
   which records them first as an `answer` envelope naming that `worker` envelope. Waiting for answers is not a problem
-  and needs no resolution, but it holds every gate until answered.
+  and needs no resolution, but it holds the gates from the run's stage on, and the handoff, until answered.
 - **Problems** (`failed`, or `needs_input` with a problem): read the cause, what was tried and the recommended recovery.
   Inside the approved scope decide yourself: fix or revert (`git revert`, never reset) and commit the fix together
   with a resolution that names the problem, or send a new worker the recovery request, which commits its fix with

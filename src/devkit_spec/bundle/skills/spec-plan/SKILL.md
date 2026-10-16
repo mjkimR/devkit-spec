@@ -11,7 +11,7 @@ Use this skill after a specification (`specs/<YYYY-MM>/<YYYYMMDD>-<slug>/spec.md
 
 ## 1. Prerequisites & Inputs
 
-- A validated specification at `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/spec.md`; `plan.md` beside it is the skeleton `devkit spec new` or `devkit spec proposal handoff` wrote.
+- A validated specification at `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/spec.md`; `plan.md` beside it is the skeleton `devkit spec new` or `devkit spec proposal handoff` wrote. A bugfix bundle from `devkit spec new` has none: write `plan.md` at the `plan-tasks` stage with the frontmatter `id: PLAN-<slug>` and `spec: SPEC-<slug>`, then the sections below.
 - System architecture documentation at `docs/architecture/` (e.g., arc42, C4 diagrams).
 - Existing capability definitions at `docs/capabilities/` (`devkit spec list capability`).
 - Architecture Decision Records at `docs/decisions/` (`devkit spec list decision`).

@@ -12,7 +12,8 @@ When `GIT_POLICY` leaves the worktree to you and the task needs none ([git polic
 
 - `devkit worktree start <branch> --no-worktree` creates the branch from the current HEAD, switches this checkout to it and carries uncommitted changes (`[BRANCH_STARTED: <branch> checkout= from=]`). It records the branch it started from.
 - `session` → `spec` during Development: on the session's own `dev-<slug>` keep going; otherwise run this command in the same checkout, then `devkit spec new <slug>` ([classification](classification.md) §3).
-- Integrate from the base branch: switch back to the recorded start branch, then `devkit worktree finish <branch> --merge` (or the PR path); finish refuses while the base checkout is on the branch and names the switch.
+- No scope record: the work-scope registry tracks linked worktrees only, so a branch in the base checkout registers nothing (a handoff there registers nothing either). One registered by hand anyway is released when the branch is finished or discarded.
+- Integrate from the base branch: switch back to the recorded start branch (`git switch <from>`), then `devkit worktree finish <branch> --merge` (or the PR path). The switch is routine: `finish` refuses with `WORKTREE_CONFLICT` while the base checkout is on the branch, or `--merge` from any branch but the recorded one, and its `[FIX]` is that switch; run it without asking.
 
 ## 3. Continue an existing branch
 
@@ -32,10 +33,10 @@ devkit worktree start <branch> --existing-branch <branch|remote/branch> --unit <
 `devkit worktree status` (from the base or any worktree; it changes nothing) lists each worktree as `[WORKTREE: <path> branch= head= role= merged= dirty= prunable=]` and each local branch no worktree checks out and the base HEAD does not contain as `[BRANCH: <name> head= merged=no]`.
 
 - A linked worktree with `merged=yes dirty=no` (including one with no commits yet): `devkit worktree finish <branch>` cleans it.
-- `merged=no`, `dirty=yes`, `dirty=-` (unreadable), `prunable=yes` or a `[BRANCH]` line: remove only with the user's authorization, never with `-D` or `--force`. A prunable worktree's directory is already gone; `git worktree prune` forgets it.
+- `merged=no`, `dirty=yes`, `dirty=-` (unreadable), `prunable=yes` or a `[BRANCH]` line: remove only with the user's authorization. An unmerged activity branch is dropped only with `devkit worktree finish <branch> --discard` (a close, [classification](classification.md) §4); never `git branch -D` or `--force` by hand. A prunable worktree's directory is already gone; `git worktree prune` forgets it.
 - `devkit spec scope sweep` lists registry records whose worktree is gone (`verdict=stale`); `devkit spec scope sweep --apply` removes them.
 
 A `plan-*` or `dev-*` branch whose last commit and pull request activity are older than `[worktree] stale_after` (default `14d`) is stale. `devkit worktree stale` reports each as `[STALE_BRANCH: ...]` with its pull request state and the resume command, and `devkit rules check -p hygiene` repeats them as warnings; both run only when `gh auth status` succeeds and skip with a notice otherwise. Neither blocks anything. Report them with the two ways on, and do neither unasked:
 
-- **Resume**: the `--existing-branch` command it prints. When its unit is `-` (recorded only by an earlier `--existing-branch`), map the slug: `plan-<slug>` → `docs/proposals/PROP-<slug>`; `dev-<slug>` → the spec bundle whose `spec.md` path ends in `-<slug>/spec.md` in `git ls-tree -r --name-only <branch> -- specs`, else the accepted proposal.
-- **Discard**: only once the user decides: close its pull request, delete the branch, and for an accepted proposal follow a close ([classification](classification.md) §4).
+- **Resume**: the `--existing-branch` command it prints. When its unit is `-` (recorded only by an earlier `--existing-branch`), map the slug: `plan-<slug>` → `docs/proposals/PROP-<slug>`; `dev-<slug>` → the spec bundle whose path matches `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/spec.md` exactly in `git ls-tree -r --name-only <branch> -- specs` (the eight-digit date, then the whole slug: `-login` never matches `...-user-login`), else the accepted proposal.
+- **Discard**: only once the user decides: close its pull request, drop the branch with the `devkit worktree finish <branch> --discard` command it prints, and for an accepted proposal follow a close ([classification](classification.md) §4).

@@ -56,7 +56,7 @@ Libraries never print: modules below `cli` return results and notices or raise `
 | `SPEC_GLOSSARY_INVALID` | `CAP-DOCS-document-search` |
 | `SPEC_CONFIG_INVALID` | `CAP-DLV-project-policy` |
 | `SPEC_PROPOSAL_*` | `CAP-DLV-proposal-incubation` |
-| `SPEC_SLUG_INVALID`, `SPEC_EXISTS`, `SPEC_WORKFLOW_INVALID`, `SPEC_WRITE_FAILED`, `SPEC_UNBOUND` | `CAP-DLV-spec-bundles` |
+| `SPEC_SLUG_INVALID`, `SPEC_WRONG_BRANCH`, `SPEC_EXISTS`, `SPEC_WORKFLOW_INVALID`, `SPEC_WRITE_FAILED`, `SPEC_UNBOUND` | `CAP-DLV-spec-bundles` |
 | `SPEC_ENTRYPOINTS_*` | `CAP-TRACE-code-entrypoints` |
 | `SPEC_SCOPE_*` | `CAP-COLL-work-scope-registry` |
 
@@ -70,7 +70,7 @@ Libraries never print: modules below `cli` return results and notices or raise `
 
   | Key | Meaning |
   | :--- | :--- |
-  | `[tool.spec] worktree` | `direct` mode only: `required` runs every `spec` and `proposal` activity in a task worktree; `auto` (default): when the activity needs one (`ADR-worktree-and-pull-request-levels`) |
+  | `[tool.spec] worktree` | `direct` mode only: `required` runs every `spec` and `proposal` activity in a task worktree; `auto` (default): when the activity needs one (`ADR-branch-guards-and-close-discard`) |
 | `[tool.spec] depth_escalation` | `auto` (default): the Host raises `planning-depth` on its own; `ask`: the user confirms each raise (`ADR-task-kind-and-planning-depth`) |
   | `[[tool.spec.namespaces]]` (`name`, `path`) | Monorepo packages with their own Living Spec under `docs/packages/<name>/` (`CAP-DOCS-namespaces`) |
   | `[tool.spec.scope]` (`shared_path`, `namespace`, `timeout`) | The work-scope registry (`CAP-COLL-work-scope-registry`) |

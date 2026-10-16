@@ -48,6 +48,19 @@ def test_finish_prunes_the_proposal_and_removes_only_the_finished_worktree_recor
     assert after_finish(repo, {"slug": "s", "path": str(finished)}) is None  # nothing left: idempotent
 
 
+def test_a_task_of_the_base_checkout_releases_its_record(tmp_path: Path) -> None:
+    repo = make_repo(tmp_path / "repo")
+    (repo / ".devkit/managed/spec").mkdir(parents=True)
+    write(repo, "specs/2026-10/20261002-b/spec.md", "---\nid: SPEC-b\n---\n")
+    write(repo, "specs/2026-10/20261002-b/tasks.md", "- [ ] t\n  - _Boundary: src/a/\n")
+    assert "[SCOPE: SPEC-b " in _scope(repo, "register", "--spec", "specs/2026-10/20261002-b")
+    # devkit reports a --no-worktree task (finished or discarded) with the base checkout's own path.
+    lines = after_finish(repo, {"branch": "dev-b", "slug": "b", "path": str(repo), "discarded": True})
+    assert lines == ["released the scope record of SPEC-b"]
+    assert "SPEC-b" not in _scope(repo, "query")
+    assert after_finish(repo, {"branch": "dev-b", "slug": "b", "path": str(repo)}) is None  # idempotent
+
+
 def test_a_failed_record_removal_keeps_the_prune_notices(tmp_path: Path) -> None:
     repo = make_repo(tmp_path / "repo")
     (repo / ".devkit/managed/spec").mkdir(parents=True)

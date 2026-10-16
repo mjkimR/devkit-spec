@@ -4,7 +4,7 @@ Read when the bundle is bound to workflow `sdd-spec-feature` (a new feature, enh
 
 ## Step 1: Clarify intent and the core problem
 
-- Ask targeted questions to understand the real user problem, target audience and business context (3-question batches, options with a recommended default).
+- Derive the real user problem, target audience and business context from the agreed intent (`plan-intent`), the issue and the proposal or its carried content; do not ask the user during Development. Record what you inferred as assumptions (`SKILL.md` §4).
 - Identify the primary user story:
   - **As a** `<role>`
   - **I want to** `<action/capability>`

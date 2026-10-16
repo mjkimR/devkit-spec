@@ -27,6 +27,6 @@ task_kind: feature                    # feature | bugfix: the spec follows sdd-s
 
 ## 4. Lifecycle & Retirement Criteria
 <!-- 
-- On Acceptance: Reconciled into docs/capabilities/ ledger and proposal directory is retired/archived
-- On Rejection: Record rejection ADR in docs/decisions/ and retire proposal directory
+- On Acceptance: handed off to a spec bundle on dev-<slug>; the proposal is deleted there and its decisions become ADRs
+- On Rejection: status: rejected only, with the user's reason in the commit message; a later hygiene pass writes the rejection ADR and deletes the proposal
 -->

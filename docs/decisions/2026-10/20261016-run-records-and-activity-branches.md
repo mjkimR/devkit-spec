@@ -61,8 +61,8 @@ Option 1, with activity branches:
 
 - A `planning-worker` writes its questions with `--questions-file` in its `worker` envelope; the run that processes the
   answers records them first as an `answer` envelope. Any run that stops on a problem records `--problem`, `--tried`
-  and `--recovery`; whoever actually fixes it commits a `resolution` with the fix. devkit holds every gate while a
-  problem is unresolved or a question unanswered and refuses `devkit worktree finish --merge`; a pull request merges
+  and `--recovery`; whoever actually fixes it commits a `resolution` with the fix. devkit holds the gates from the holding run's stage on, and the handoff, while a
+  problem is unresolved or a question unanswered (gates passed before stay passed) and refuses `devkit worktree finish --merge`; a pull request merges
   only while `devkit workflow envelope check` reports neither.
 - Every `spec` and `proposal` activity runs on `plan-<slug>` or `dev-<slug>`, in a worktree or, in `direct` mode
   without one, on a branch started with `--no-worktree`. A branch that exists is continued only with
@@ -76,8 +76,8 @@ Option 1, with activity branches:
 
 - `ADR-worker-delivers-committed-result` stays: a failed range check is a `failed` worker envelope; it is cleared by a
   resolution that names it, not by a later check.
-- `devkit spec proposal handoff` refuses a linked worktree on any branch but `dev-<slug>`
-  (`SPEC_PROPOSAL_WRONG_WORKTREE`).
+- `devkit spec proposal handoff` refuses any checkout on another branch than `dev-<slug>`
+  (`SPEC_PROPOSAL_WRONG_WORKTREE`); `ADR-branch-guards-and-close-discard` extends the guard to the base checkout.
 - `/spec-next` reports `[PENDING_QUESTION]`, `[BLOCKED]` and stale activity branches; the feedback hygiene playbook
   lists stale branches for the user to resume or discard.
 - A stale branch's unit is shown only when an attach recorded it; the Host maps the slug otherwise.

@@ -46,7 +46,7 @@ Run `devkit spec list spec` (completed bundles are left out unless `--history`; 
 ### Step 3: Check Incubating Proposals (`docs/proposals/`)
 Run `devkit spec list proposal`:
 - Are there proposals in `reviewing` or `accepted` status waiting for handoff?
-- Is there an accepted proposal ready for `devkit spec proposal handoff <slug>`?
+- Is there an accepted proposal ready for `devkit spec proposal handoff <slug>` (on `dev-<slug>`)?
 
 ### Step 4: Check Open Feedback
 Run `devkit spec list feedback --status open --where severity=critical` for the critical items, and the same without `--where` for the count of the rest; feedback lines carry `severity`, `scope` and `target`.
@@ -63,7 +63,7 @@ Map `[STAGE]` ids onto these rows with the stage table in [workflow signals](ref
 
 | Diagnosed State | Status Criteria | Recommended Next Action | Associated Skill / Tool |
 | :--- | :--- | :--- | :--- |
-| **Shaping (Proposal Hand-off)** | Proposal is `status: accepted` (`plan-accept` given) and `next` reports it complete | Run handoff to move the proposal into `specs/`, then the post-handoff link check (§3.1) | `devkit spec proposal handoff <slug>` |
+| **Shaping (Proposal Hand-off)** | Proposal is `status: accepted` (`plan-accept` given) and `next` reports it complete | Start or continue `dev-<slug>` (`devkit worktree start dev-<slug>`, `--no-worktree` in this checkout, or `--existing-branch`), run `devkit spec proposal handoff <slug>` there to move the proposal into `specs/`, then the post-handoff link check (§3.1) | `devkit spec proposal handoff <slug>` |
 | **Shaping (Proposal Incubation)** | Proposal is in `draft` or `reviewing` | Review hypothesis, add research to `materials/`, or draft a PADR; for a spike, delegate `scout`/`challenger` | `devkit spec proposal padr <slug> <title>`, `spec-delegate` |
 | **Specification (Drafting)** | Spec folder exists, `spec.md` incomplete | Complete user stories, non-goals, and Given/When/Then criteria | `spec-specify` |
 | **Specification (Planning)** | `spec.md` approved, `plan.md` incomplete | Review architecture invariants and define component contracts | `spec-plan` |

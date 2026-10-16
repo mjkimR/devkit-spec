@@ -30,8 +30,8 @@ Use this skill when the main Developer session hands exploration, criticism, an 
 ## 3. Procedure
 
 ### Step 1: Decide whether to delegate
-- By `activity-effort`, never below the floor: `session` depth runs a `reviewer` at `medium` and `high` (it returns a message, no envelope) and never a worker; Unit-path Development runs a `reviewer` at `medium` and `high` and a separate `reconciler` at `high`; proposal Planning runs `scout` and `challenger` when needed at `medium` and always a `challenger` at `high`. `low` is the author's self-review.
-- `local-orchestrated` (`spec-orchestrate`): a `planning-worker` runs one proposal Planning turn, a `development-worker` one Development turn of a spec unit, each in its worktree; never for `session` depth. A worker runs its role subagents nested (Host → worker → role).
+- By `activity-effort`, never below the floor: `session` depth runs a `reviewer` at `medium` and `high` (a message, no envelope) and never a worker; Unit-path Development runs a `reviewer` at `medium` and `high` and a separate `reconciler` at `high`; proposal Planning runs `scout` and `challenger` when needed at `medium` and always a `challenger` at `high`. `low` is the author's self-review. `[DELEGATE]` names the role at any effort; the effort decides.
+- `local-orchestrated` (`spec-orchestrate`): a `planning-worker` runs one proposal Planning turn, a `development-worker` one Development turn of a spec unit, each in its worktree; never for `session`. A worker runs its role subagents nested (Host → worker → role).
 
 ### Step 2: Build the input payload
 Fill all five fields: `task_goal`, `relevant_files`, `allowed_boundaries` (read scope, write scope, denied paths), `diff_scope` (base and head), `expected_output_format`. Record the head SHA you passed (`git rev-parse HEAD`). Per role:
@@ -41,7 +41,7 @@ The rows per role are in [payload](references/payload.md).
 ### Step 3: Invoke in isolation
 - Read the stage's `isolation` from `[DELEGATE: ... isolation=none|preferred|required ...]` and the role's `hosts.<host>.status`. State one of: spawn an isolated subagent (`native`, `emulated`, `unverified`); substitute in the main session (`unsupported`, or `preferred` without a fresh context); stop with `needs_input` (`required` and `unsupported`). Record the choice and the status in the envelope's `assumptions`.
 - To spawn, use the host's isolated-context mechanism: read [hosts](references/hosts.md) for the tool, the projected file and the Codex trust requirement. Do not fork the main context when a fresh context is what isolates the result.
-- With a projected file, pass only the payload: the host already loads the contract body as the subagent's system prompt. When the main session substitutes, follow the contract body yourself. Pass the actual change and the intent, never the main session's narrative.
+- With a projected file, pass only the payload: the host loads the contract body as the system prompt. When the main session substitutes, follow the contract body yourself. Pass the actual change and the intent, never the main session's narrative.
 
 ### Step 4: Validate the returned fields
 - Required fields present; `status` is one of `completed | needs_input | failed`.

@@ -48,17 +48,6 @@ stages:
     isolation: none
     returns:
       - { to: execute-verify, when: defects }
-  - id: approval-session
-    name: Dev integration approval
-    human_gate: dev-integration
-    entry: []
-    exit: []
-    artifacts: [session OK or PR ready state (no file)]
-    skills: [spec]
-    role: developer
-    isolation: none
-    returns:
-      - { to: report-session, when: the objection is about the change }
   - id: commit-session
     name: Commit
     human_gate: false
@@ -71,6 +60,17 @@ stages:
     returns:
       - { to: execute-verify, when: defects found by CI }
       - { to: exception, when: retry caps }
+  - id: approval-session
+    name: Dev integration approval
+    human_gate: dev-integration
+    entry: []
+    exit: []
+    artifacts: [session OK or PR ready state (no file)]
+    skills: [spec]
+    role: developer
+    isolation: none
+    returns:
+      - { to: report-session, when: the objection is about the change }
   - id: merge
     name: Merge
     human_gate: false
@@ -118,7 +118,7 @@ A session runs in `direct` or through the `cloud-pr` general PR path (a Work Pla
 
 - `merge` and `exception` are the shared stages of the delivery workflows. A session has no `reconcile.md`, so it uses `commit-session` instead of `integrate` and does not run `spec-integrate` or `spec-sync`.
 - `devkit workflow next` is not used: there is no unit to evaluate, so the executor follows the stages itself (`devkit workflow show sdd-session-feature`).
-- **Commit**: plain `git commit` after `dev-integration`; devkit's commit gate runs the staged checks, and repository CI runs the cumulative check (`lint-ci-clean`, locally `devkit rules check --ci --base <ref>`). If integrating the base needed conflict resolution, re-run the checks for what it changed.
+- **Commit before approval**: plain `git commit` once the review is done and before `dev-integration`, so the approval (the user's OK, or a PR's ready state) is given on committed work CI has checked; a PR is pushed and opened at this stage. devkit's commit gate runs the staged checks, and repository CI runs the cumulative check (`lint-ci-clean`, locally `devkit rules check --ci --base <ref>`). If integrating the base needed conflict resolution, re-run the checks for what it changed.
 
 ## Project policy execution
 

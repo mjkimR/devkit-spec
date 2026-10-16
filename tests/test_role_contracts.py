@@ -67,7 +67,7 @@ def test_a_worker_commits_its_result_and_records_in_its_worktree(role: str) -> N
     assert "git -C <worktree>" in body and "absolute" in body
     assert "Do not push, merge, rebase, reset, amend, stash or check out (`MUST NOT`)" in body
     assert "devkit workflow envelope new" in body and "`worker` envelope" in body
-    assert "`head` set to your last commit" in body
+    assert "`head` set to your last work commit" in body and "`final_head`" in body
     assert "do not write envelope files" not in body
 
 
@@ -75,7 +75,8 @@ def test_the_development_worker_commits_at_stage_boundaries_and_on_a_problem() -
     body = " ".join(_contract("development-worker")[1].split())
     assert "Commit at every stage boundary" in body
     assert "with write-scope paths only, then `git -C <worktree> commit` on the unit branch" in body
-    assert "never bypassed (`--no-verify`). Leave the worktree clean." in body
+    assert "never bypassed (`--no-verify`), except in the emergency commit of a problem (below)" in body
+    assert "this commit alone may use `git -C <worktree> commit --no-verify`" in body
     assert "One path outside the write scope rejects the whole result" in body
     assert "emergency commit" in body and "what you tried and the recovery you recommend" in body
     assert "Do not revert, close, raise the depth or narrow the scope yourself" in body
@@ -131,7 +132,8 @@ def test_the_host_validates_the_committed_range_and_blocks_a_failure() -> None:
     assert "except a worker, which commits on its activity branch ([worker](references/worker.md))" in delegate
     assert "a range you block is a problem in your own `worker` envelope" in delegate
     text = " ".join(WORKER_RESULTS.read_text(encoding="utf-8").split())
-    assert "From the last accepted head to the returned head" in text
+    assert "From the last accepted head to the worker's *final HEAD* (`<returned>`" in text
+    assert "merge-base --is-ancestor <diff_scope.head> <returned>" in text
     assert "merge-base --is-ancestor <accepted> <returned>" in text
     assert "diff --name-only <accepted> <returned>` is in the write scope" in text
     assert "`git -C <worktree> status --short` is empty" in text

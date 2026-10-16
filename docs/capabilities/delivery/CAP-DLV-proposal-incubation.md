@@ -84,13 +84,20 @@ removes it.
    with the user's reason in the commit message (kept through a squash) and merges the Planning branch; no worker
    runs. A later hygiene pass writes a rejection ADR outside the proposal directory, referencing the proposal and the
    rejection commit, and deletes the proposal in the same commit; no `archive/` directory is kept. A `rejected`
-   proposal is never resumed, accepted or handed off.
+   proposal is never resumed, accepted or handed off, and the tools hold to it: its `plan-accept` is never answered,
+   the attach check refuses it on `plan-` and `dev-` branches, and a
+   whole-workspace `devkit rules check -p hygiene` warns about each rejected proposal still in the base
+   (`SPEC_PROPOSAL_REJECTED_PENDING`, the `devkit.hygiene` extension) until its cleanup is done. Open questions of
+   the last Planning run are closed with `choice: null` answers giving the rejection as the decision (01 §6.2), so
+   they do not hold the merge of the Planning branch.
 10. **Discovery is dynamic**: active proposals are listed with `devkit spec list proposal`, never through catalog
-    tables maintained in README files.
-11. **Hand off in the slug's own worktree**: at either `[tool.spec] worktree` level, a handoff in a linked worktree
-    whose branch is not the slug (a detached HEAD included) MUST be refused before anything is read or written
-    (`SPEC_PROPOSAL_WRONG_WORKTREE`), so the spec bundle never lands on another task's branch. The base checkout and
-    a workspace outside Git are not checked.
+    tables maintained in README files. A `draft` whose `plan-<slug>` exists, locally or fetched from a remote, is
+    listed as `reviewing` with its `planning_branch`: Planning is running there (01 §5.1). Only the display changes;
+    the base's `status` is never written for it, and a branch made elsewhere shows once it is fetched.
+11. **Hand off on the slug's Development branch**: at either `[tool.spec] worktree` level, a handoff in a checkout,
+    linked or base, whose branch is not `dev-<slug>` (a detached HEAD included) MUST be refused before anything is
+    read or written (`SPEC_PROPOSAL_WRONG_WORKTREE`), so the spec bundle never lands on another task's branch and the
+    accepted proposal is never deleted from the base itself. A workspace outside Git is not checked.
 12. **Workflow records stay behind; the approvals carry by name**: the proposal unit's devkit workflow records
     (decision records and envelopes as devkit's `load_decisions` and `load_envelopes` find them, malformed ones
     included) MUST NOT be carried; they are dropped with the proposal (Git history keeps them) and listed. The
@@ -104,6 +111,11 @@ removes it.
     skipped; an unbound spec records nothing. Carrying an existing answer is not inferring one (rule 2). A recording
     failure is a `SPEC_PROPOSAL_GATE_NOT_CARRIED` warning; the gates recorded before it stay and the handoff stays
     done.
+13. **Backlog changes only a draft not in Planning**: Backlog edits, splits and deletes proposals by hand, so before
+    each such change the agent MUST run `devkit spec proposal check <slug>`, which refuses
+    (`SPEC_PROPOSAL_IN_PLANNING`) while `plan-<slug>` exists locally or as a fetched remote branch (Planning changes the
+    proposal on that branch only), and for a proposal that is no longer `draft` (01 §5.1). Fetch first to see a
+    branch made elsewhere. The list display of rule 10 is not the check: Planning may start right after a listing.
 
 ## 4. Interfaces & Data Contracts
 
@@ -290,6 +302,7 @@ uv run devkit spec proposal padr fast-engine "Use AST parser"        # decisions
 uv run devkit spec proposal padr fast-engine "2024 roadmap" --slug roadmap-2024
 uv run devkit spec proposal handoff fast-engine                      # status: accepted (plan-accept given)
 uv run devkit spec proposal prune [<slug>]                           # base checkout; finish's extension does it per slug
+uv run devkit spec proposal check fast-engine                        # before any Backlog edit, split or delete
 ```
 
 | Option | Command | Meaning |
@@ -311,6 +324,7 @@ uv run devkit spec proposal prune [<slug>]                           # base chec
 [PROPOSAL: PROP-fast-engine path=docs/proposals/PROP-fast-engine/proposal.md dir=docs/proposals/PROP-fast-engine target_docs=- workflow=sdd-proposal]
 [NEXT_CMD: devkit workflow next --unit docs/proposals/PROP-fast-engine]
 [PADR: PADR-use-ast-parser path=docs/proposals/PROP-fast-engine/decisions/PADR-use-ast-parser.md proposal=PROP-fast-engine]
+[PROPOSAL: PROP-fast-engine path=docs/proposals/PROP-fast-engine/proposal.md status=draft editable=yes]
 [HANDOFF: PROP-fast-engine spec=SPEC-fast-engine dir=specs/2026-10/20261013-fast-engine workflow=sdd-spec-feature]
 [TARGET_DOCS: specs/2026-10/20261013-fast-engine/target-docs.md]
 [MATERIALS: docs/materials/2026-10/20261013-fast-engine]
@@ -374,10 +388,12 @@ directory whose namespace applies when `namespace` is omitted);
 | `SPEC_PROPOSAL_EXISTS` | `ERROR` (`INPUT_ERROR`) | `ProposalExistsError` | `new`: the bundle or `PROP-<slug>.md` exists. `padr`: a document already declares the PADR ID; `[TARGET]` lists it. |
 | `SPEC_PROPOSAL_SLUG_CONFLICT` | `ERROR` (`INTERACTION`) | `ProposalSlugConflictError` | `SPEC-<slug>` exists (`[TARGET]`); the user picks another slug or drops the duplicate. |
 | `SPEC_PROPOSAL_NOT_FOUND` | `ERROR` (`INPUT_ERROR`) | `ProposalNotFoundError` | No bundle or single-file proposal has the slug (`padr`: no bundle). |
+| `SPEC_PROPOSAL_REJECTED_PENDING` | `WARNING` | `ProposalRejectedPendingWarning` | `rules check -p hygiene` (whole workspace): a rejected proposal is still in the base; `[FIX]` finds the rejection commit, writes the rejection ADR and deletes the proposal in one commit (rule 9). |
+| `SPEC_PROPOSAL_IN_PLANNING` | `ERROR` (`INPUT_ERROR`) | `ProposalInPlanningError` | `check`: Backlog may not change the proposal, because its `plan-<slug>` exists (locally or fetched; rule 13) or it is no longer `draft`. |
 | `SPEC_PROPOSAL_INVALID` | `ERROR` (`MAINTENANCE`) | `ProposalInvalidError` | The proposal, its blueprint or a PADR cannot be read or its frontmatter does not parse; or, at handoff, `namespace` is not a string naming `global` or a registered namespace, `summary` is not a string, or `task_kind` is not `feature` or `bugfix`. |
 | `SPEC_PROPOSAL_NOT_APPROVED` | `ERROR` (`INTERACTION`) | `ProposalNotApprovedError` | Status is not `accepted`: `plan-accept` was not given. |
 | `SPEC_PROPOSAL_NEEDS_DECOMPOSE` | `ERROR` (`INTERACTION`) | `ProposalNeedsDecomposeError` | The proposal carries `needs_decompose: true`; Backlog splits it into new drafts. |
-| `SPEC_PROPOSAL_WRONG_WORKTREE` | `ERROR` (`INPUT_ERROR`) | `ProposalWrongWorktreeError` | `handoff` in a linked worktree on another branch than the slug, at either `[tool.spec] worktree` level (rule 11); `[FIX]` starts the slug's worktree and reruns the handoff there. |
+| `SPEC_PROPOSAL_WRONG_WORKTREE` | `ERROR` (`INPUT_ERROR`) | `ProposalWrongWorktreeError` | `handoff` in a checkout, linked or base, on another branch than `dev-<slug>`, at either `[tool.spec] worktree` level (rule 11); `[FIX]` starts or continues `dev-<slug>` and reruns the handoff there. |
 | `SPEC_PROPOSAL_WORKFLOW_INVALID` | `ERROR` (`MAINTENANCE`) | `ProposalWorkflowError` | `task_kind: bugfix` and `sdd-spec-bugfix` does not resolve or validate; `[DETAIL]` carries devkit's code. |
 | `SPEC_PROPOSAL_TARGET_EXISTS` | `ERROR` (`BLOCKED`) | `ProposalTargetExistsError` | The spec bundle, an ADR file or the materials directory exists, two PADRs map to one ADR, another document declares a promoted ADR's ID, a carried bundle file clashes with a file or symbolic link of `materials/` (or `materials/` is itself a symbolic link), or the directory of the spec bundle, an ADR, the materials directory or a carried file resolves outside the workspace. |
 | `SPEC_PROPOSAL_HANDOFF_FAILED` | `ERROR` (`MAINTENANCE`) | `ProposalHandoffError` | A write failed; what was written is removed, the materials and carried files moved back, the proposal kept. When the roll-back was incomplete, `[DETAIL]` lists what could not be moved back or removed (kept, never deleted). |

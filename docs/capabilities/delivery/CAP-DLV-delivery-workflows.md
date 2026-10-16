@@ -192,7 +192,8 @@ writes into the proposal's `materials/`. The `report-session` stage of a session
   source=policy]`.
 - `--given <gate>` asserts a gate for one run (a runner's binding).
 - devkit's engine accepts any gate key with `ask`, `auto` or `off`; devkit-spec refuses a key for `plan-intent` or
-  `plan-accept` and `dev-integration = "off"` (`CAP-DLV-project-policy`).
+  `plan-accept` and `dev-integration = "off"` (`CAP-DLV-project-policy`), in `devkit spec policy`; the executor
+  reads it before routing.
 
 ### 4.4 Checks
 

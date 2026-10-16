@@ -1,4 +1,4 @@
-"""The handoff branch guard: a linked worktree must be on ``dev-<slug>``, at either ``[tool.spec] worktree`` level."""
+"""The handoff branch guard: the checkout must be on ``dev-<slug>``, linked or base, at either worktree level."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def test_a_handoff_in_another_tasks_worktree_is_refused_before_writing(repo: Pat
     assert result.exit_code == 2 and result.stdout == ""
     assert "SPEC_PROPOSAL_WRONG_WORKTREE" in result.stderr
     branch = "- (detached HEAD)" if detached else "other-task"
-    assert f"in the worktree of branch {branch}; it runs in the worktree of branch dev-{SLUG}" in result.stderr
+    assert f"in the worktree of branch {branch}; it runs on branch dev-{SLUG}" in result.stderr
     assert f"devkit worktree start dev-{SLUG}" in result.stderr
     assert (linked / f"docs/proposals/PROP-{SLUG}/proposal.md").is_file() and not (linked / "specs").exists()
 
@@ -63,8 +63,11 @@ def test_the_development_branch_of_the_slug_hands_off(repo: Path) -> None:
     assert result.stdout.startswith(f"[HANDOFF: PROP-{SLUG} spec=SPEC-{SLUG} ")
 
 
-def test_the_base_checkout_is_not_guarded(repo: Path) -> None:
-    git(repo, "checkout", "-q", "-b", "anything")
+def test_the_base_checkout_is_guarded_too(repo: Path) -> None:
+    with pytest.raises(ProposalWrongWorktreeError, match="in the checkout of branch main"):
+        handoff_proposal(repo, SLUG, today=TODAY)  # the accepted proposal would be deleted from the base itself
+    assert not (repo / "specs").exists()
+    git(repo, "checkout", "-q", "-b", f"dev-{SLUG}")  # devkit worktree start dev-<slug> --no-worktree
     handoff_proposal(repo, SLUG, today=TODAY)
     assert (spec_dir(repo, SLUG) / "spec.md").is_file()
 

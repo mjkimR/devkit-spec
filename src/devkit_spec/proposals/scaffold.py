@@ -26,6 +26,7 @@ from devkit.advisory import AdvisoryError
 from devkit.core.errors import ArgumentError
 from devkit.workflow import write_binding
 
+from devkit_spec.branches import SLUG_LIMIT
 from devkit_spec.config import GLOBAL, read_spec_config
 from devkit_spec.documents import DocumentIndex
 from devkit_spec.errors import (
@@ -71,13 +72,21 @@ def require_slug(raw: str, what: str = "slug") -> str:
 def new_slug(raw: str, what: str = "slug", error: type[SpecError] = ProposalSlugError, fix: str | None = None) -> str:
     """The slug of a new document: ``clean_slug(raw)`` with ``_`` written as ``-``.
 
-    Raises ``error`` when nothing is left, or when the first segment has no letter: ``RULE-id-convention`` reads
-    ``2024-budget`` as a retired number-based ID (``fix`` replaces the default directive then). Lookups of existing
-    documents use ``require_slug``.
+    Raises ``error`` when nothing is left, when it is longer than ``SLUG_LIMIT`` (its activity branches
+    ``plan-<slug>`` and ``dev-<slug>`` must fit devkit worktree's 64 characters), or when the first segment has no
+    letter: ``RULE-id-convention`` reads ``2024-budget`` as a retired number-based ID (``fix`` replaces the default
+    directive then). Lookups of existing documents use ``require_slug``.
     """
     slug = _DASHES.sub("-", clean_slug(raw)).strip("-")
     if not slug:
         raise error(f"{what} {raw!r} has no letter or digit", target_files=[raw])
+    if len(slug) > SLUG_LIMIT:
+        raise error(
+            f"{what} {slug!r} is {len(slug)} characters; at most {SLUG_LIMIT}, so its activity branches plan-<slug>"
+            " and dev-<slug> fit 64 characters",
+            target_files=[raw],
+            fix=f"Pass a shorter {what}",
+        )
     if not first_segment_has_letter(slug):
         raise error(
             f"{what} {raw!r} gives {slug!r}, whose first segment has no letter",

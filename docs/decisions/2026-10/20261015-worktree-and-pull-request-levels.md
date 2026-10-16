@@ -2,13 +2,14 @@
 id: ADR-worktree-and-pull-request-levels
 title: Worktree and pull request policy as auto or required levels
 summary: "[tool.spec] worktree and devkit's [worktree] pull_request are auto or required levels instead of booleans, defaulting to auto; booleans are rejected, a pull-request-bound task runs in a worktree, and the handoff guard and scope registration apply in any linked worktree."
-status: accepted
+status: superseded
 created_at: 2026-10-15
+superseded_by: ADR-branch-guards-and-close-discard
 ---
 
 # [ADR-worktree-and-pull-request-levels] Worktree and pull request policy as auto or required levels
 
-- **Status**: Accepted
+- **Status**: Superseded by `ADR-branch-guards-and-close-discard`
 - **Date**: 2026-10-15
 - **Deciders**: @mjkimR
 - **Involved Components/Capabilities**: `CAP-DLV-project-policy`, `CAP-DLV-proposal-incubation`,

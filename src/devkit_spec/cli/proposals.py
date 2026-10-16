@@ -1,4 +1,5 @@
-"""``devkit spec proposal new|padr|handoff|prune``: incubate a proposal, record its preliminary decisions, hand it off.
+"""``devkit spec proposal new|padr|handoff|prune|check``: incubate a proposal, record its preliminary decisions, hand
+it off, and guard Backlog changes.
 
 Text output (paths are relative to the workspace root):
 
@@ -7,6 +8,8 @@ Text output (paths are relative to the workspace root):
   ``[NEXT_CMD: devkit workflow next --unit <dir>]``.
 - ``padr``: ``[PADR: <id> path= proposal=]``.
 - ``prune``: ``[PRUNED: <dir>]`` per empty proposal directory removed, else ``[OK: nothing to prune]``.
+- ``check``: ``[PROPOSAL: <id> path= status=draft editable=yes]`` when Backlog may edit, split or delete the proposal;
+  ``SPEC_PROPOSAL_IN_PLANNING`` while its ``plan-<slug>`` exists or once it left ``draft``.
 - ``handoff``: ``[HANDOFF: <proposal id> spec= dir= workflow=]``, then ``[TARGET_DOCS: <path>]``,
   ``[MATERIALS: <dir>]``, one ``[PROMOTED_ADR: <id> path= padr=]`` per promoted decision, one
   ``[DROPPED_RECORD: <path>]`` per workflow record of the proposal unit removed with it, one
@@ -45,6 +48,7 @@ from devkit.core.cli import (
 from devkit_spec.cli.output import sentinel
 from devkit_spec.cli.scope import echo_registered, registered_dict
 from devkit_spec.proposals import create_padr, create_proposal, handoff_proposal, prune_proposals
+from devkit_spec.proposals.backlog import check_backlog_editable
 from devkit_spec.scope import SOURCE_HANDOFF, auto_register
 
 WORKSPACE = workspace_option()
@@ -235,3 +239,20 @@ def prune_cmd(slug: str | None, workspace_root: str | None, output_format: str) 
             click.echo(sentinel("PRUNED", path))
     else:
         click.echo("[OK: nothing to prune]")
+
+
+@proposal_group.command(name="check")
+@click.argument("slug")
+@WORKSPACE
+@FORMAT_OPTION
+@boundary
+def check_cmd(slug: str, workspace_root: str | None, output_format: str) -> None:
+    """Check that Backlog may edit, split or delete proposal SLUG: a draft without a plan-<slug> branch.
+
+    Run it before every Backlog change of a proposal. Remote branches count once fetched (git fetch first).
+    """
+    checked = check_backlog_editable(resolve_root(workspace_root), slug)
+    if is_json(output_format):
+        echo_json(checked.to_dict())
+        return
+    click.echo(sentinel("PROPOSAL", checked.id, path=checked.path, status=checked.status, editable="yes"))

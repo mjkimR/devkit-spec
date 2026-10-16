@@ -6,7 +6,8 @@ devkit calls ``attach_check(root, branch, unit, tip)`` before ``devkit worktree 
 checks only the branch name and that the directory exists at ``tip``; which unit belongs to which activity is
 spec-driven knowledge, so it is checked here (``CAP-DLV-delivery-workflows``):
 
-- ``plan-<slug>``: the proposal bundle ``docs/proposals/PROP-<slug>`` bound to ``sdd-proposal``;
+- ``plan-<slug>``: the proposal bundle ``docs/proposals/PROP-<slug>`` bound to ``sdd-proposal``, neither
+  ``rejected`` (a rejected proposal is never resumed) nor marked ``needs_decompose`` (Backlog splits it first);
 - ``dev-<slug>``: the spec bundle ``specs/<YYYY-MM>/<YYYYMMDD>-<slug>`` bound to an ``sdd-spec-*`` workflow, or,
   before Development's first step handed it off, the accepted proposal bundle ``docs/proposals/PROP-<slug>``.
 
@@ -84,6 +85,11 @@ def attach_check(root: Path, branch: str, unit: str, tip: str) -> list[str]:
     fits = workflow.startswith(SPEC_WORKFLOW_PREFIX) if anchor == "spec.md" else workflow == PROPOSAL_WORKFLOW
     if anchor == "proposal.md" and activity == "dev" and meta is not None and meta.get("status") != "accepted":
         fits = False
+    if anchor == "proposal.md" and activity == "plan" and meta is not None:
+        if meta.get("status") == "rejected":
+            reasons.append(f"{unit} is rejected: a rejected proposal is never resumed; it waits for hygiene cleanup")
+        if meta.get("needs_decompose") is True:
+            reasons.append(f"{unit} is marked needs_decompose: Backlog splits it before Planning")
     if not fits:
         reasons.append(f"{unit}/{anchor} at {tip[:7]} is not {expected} (workflow: {workflow or '-'})")
     return reasons

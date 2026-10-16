@@ -13,7 +13,7 @@ Use this skill once `spec.md` and `plan.md` exist (the `specify` stage of workfl
 
 - The specification at `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/spec.md`.
 - The technical plan at `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/plan.md`.
-- The skeleton `tasks.md` beside them (written by `devkit spec new` or `devkit spec proposal handoff`).
+- The skeleton `tasks.md` beside them (written by `devkit spec new` or `devkit spec proposal handoff`). A bugfix bundle from `devkit spec new` has none: write `tasks.md` with the frontmatter `id: TASKS-<slug>`, `spec: SPEC-<slug>` and `plan: PLAN-<slug>`, then the tasks.
 
 ---
 

@@ -88,9 +88,19 @@ A hygiene session also surfaces stalled work. `uv run devkit rules check -p hygi
 resume command. List them for the user with the two ways on, resume or discard, per §4 of the `spec` skill's
 `references/branches.md`, and do neither unasked: the warning never cleans anything up.
 
+## Step 6: Rejected proposals
+
+The same run lists each rejected proposal still in the base (`SPEC_PROPOSAL_REJECTED_PENDING`). Its cleanup is
+Host work, done here once the user agrees: find the rejection commit and the user's reason
+(`git log -1 --format='%H %B' -S'status: rejected' -- <proposal.md>`), write a rejection ADR under `docs/decisions/`
+that references the proposal and that commit, and delete the proposal in the same commit. Nothing is rewritten from
+the reason; quote it.
+
 ## Completion conditions
 
 - Every resolved item selected in Step 1 has `status` `promoted`, `dismissed` or `forwarded` and one disposition line;
   `uv run devkit spec list feedback --status open --all-namespaces -n 0` lists none of the resolved items. Report items still open because ownership or external submission is pending.
 - Every promotion's draft exists and was reviewed by the user; nothing was promoted without approval.
+- Every rejected proposal the run listed is cleaned up (rejection ADR and deletion in one commit) or reported as left
+  for later.
 - `uv run devkit rules check` exits `0`; the status updates and drafts are proposed as one commit.

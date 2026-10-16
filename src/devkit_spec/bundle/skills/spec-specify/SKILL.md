@@ -17,7 +17,7 @@ Use this skill when a spec bundle `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` needs its
 ## 2. Create or open the bundle
 
 - **Handed-off bundle** (`devkit spec proposal handoff`): it already exists and is bound; `spec.md`, `plan.md` and `tasks.md` carry the skeleton marker. Rewrite `spec.md` in place, keeping the carried content that still holds.
-- **New bundle**: `devkit spec new <slug> --title "<Title>" --summary "<English sentence>"` for a feature (workflow `sdd-spec-feature`), `devkit spec new <slug> --title "<Title>" --workflow sdd-spec-bugfix` for a defect. It creates `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` with skeleton `spec.md`, `plan.md` and `tasks.md`, sets the ID `SPEC-<slug>` and binds the bundle. In a monorepo the bundle takes the namespace of the current directory (`namespace=` in the output); create a package's bundle from the package directory or pass `--namespace <name>`. Never hand-make the bundle or its binding. The slug is kebab-case, has no date or sequence number and is unique among specs (`RULE-id-convention`).
+- **New bundle**: `devkit spec new <slug> --title "<Title>" --summary "<English sentence>"` for a feature (workflow `sdd-spec-feature`), `devkit spec new <slug> --title "<Title>" --workflow sdd-spec-bugfix` for a defect. Run it on the slug's `dev-<slug>` branch (elsewhere it is refused, `SPEC_WRONG_BRANCH`). It creates `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` with skeleton `spec.md`, `plan.md` and `tasks.md` (a bugfix bundle gets `spec.md` only; its `plan-tasks` stage writes the other two), sets the ID `SPEC-<slug>` and binds the bundle. In a monorepo the bundle takes the namespace of the current directory (`namespace=` in the output); create a package's bundle from the package directory or pass `--namespace <name>`. Never hand-make the bundle or its binding. The slug is kebab-case, has no date or sequence number and is unique among specs (`RULE-id-convention`).
 - Read the workflow the bundle follows: `devkit workflow show --unit <dir>`; `devkit workflow next --unit <dir>` names the current stage and what is unmet.
 
 ## 3. Choose the reference
@@ -36,13 +36,13 @@ Read one reference, not both. A defect the session can reproduce and fix without
 - **Measurable Then**: no "fast", "robust", "properly"; use verifiable bounds (exit code, status code, exact output line, count).
 - **References**: cite capabilities, stories and ADRs by full ID in backticks (`` `CAP-<AREA>-<slug>` ``), never by Markdown path or a date- or number-based ID. Write example or fixture IDs in a scenario as plain text: in backticks or brackets they are references and must resolve; `related_capabilities` and `related_stories` hold bare `CAP` and `US` IDs that resolve (`RULE-document-reference`).
 - **Invariants**: review `docs/architecture/` and the affected capabilities. If a `MUST` has to change, say that an ADR is required before implementation.
-- **Clarification**: ask at most 3 questions per batch, each with 2 to 3 options and a recommended default; mark unresolved points `[NEEDS CLARIFICATION]`.
+- **No questions during Development**: the intent, its scope and the expected behavior were agreed at `plan-intent` (and, for a proposal, settled in Planning). Resolve what is unclear from them, the issue, the proposal and the code: decide with the recommended option and record each inference in `spec.md` as an assumption. A point you cannot settle without changing the agreed goal, scope or contract is a problem for the Host (a worker records it and ends), never a question to the user and never a `[NEEDS CLARIFICATION]` marker left in the spec.
 - **Only what the change needs**: drop an optional output section that does not apply instead of writing "N/A".
 - **Self-validation** before finishing: completeness (personas, inputs, outputs, edge cases), clarity (every AC measurable), consistency (non-goals and invariants respected), scenario IDs unique.
 
 ## 5. Definition of Done
 
-- [ ] User and agent agree on the boundary (feature) or on current, expected and preserved behavior (bugfix).
+- [ ] The boundary (feature) or the current, expected and preserved behavior (bugfix) follows the agreed intent, and the choices made inside it are recorded as assumptions.
 - [ ] Every non-goal states what is excluded; every AC is mechanically checkable.
 - [ ] `spec.md` written in the reference's output standard, keeping the `id`, `workflow` and `workflow_hash` frontmatter the bundle was created with, and an English `summary` of what the spec changes (`RULE-document-summary`).
 - [ ] The skeleton marker line `<!-- devkit:skeleton -->` is removed from `spec.md`; until then `not-skeleton(spec.md)` keeps the `specify` (feature) or `characterize` (bugfix) stage open. The markers in `plan.md` and `tasks.md` are removed by `spec-plan` and `spec-tasks`.

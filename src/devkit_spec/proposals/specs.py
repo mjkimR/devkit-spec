@@ -28,8 +28,16 @@ from devkit.core import remove_empty_tree
 from devkit.core.frontmatter import locate
 from devkit.workflow import Binding, write_binding
 
+from devkit_spec.branches import require_development_branch
 from devkit_spec.documents import DocumentIndex
-from devkit_spec.errors import SpecExistsError, SpecSlugError, SpecUnboundNotice, SpecWorkflowError, SpecWriteError
+from devkit_spec.errors import (
+    SpecExistsError,
+    SpecSlugError,
+    SpecUnboundNotice,
+    SpecWorkflowError,
+    SpecWriteError,
+    SpecWrongBranchError,
+)
 from devkit_spec.proposals.binding import BUGFIX_WORKFLOW, DEFAULT_WORKFLOW, resolve_binding
 from devkit_spec.proposals.body import CarriedProposal, ensure_ac_ids
 from devkit_spec.proposals.scaffold import (
@@ -337,7 +345,7 @@ def create_spec(
     tasks.
     ``summary`` is written to ``spec.md`` only when given; ``namespace`` when given, else the namespace ``cwd`` lies
     in (``bundle_namespace``, reported on the result). Raises before writing:
-    ``SpecSlugError``, ``ArgumentError`` (a ``namespace`` that is neither ``global`` nor registered, a ``summary``
+    ``SpecSlugError``, ``SpecWrongBranchError`` (in Git, a checkout not on ``dev-<slug>``), ``ArgumentError`` (a ``namespace`` that is neither ``global`` nor registered, a ``summary``
     that is empty or not English), ``SpecExistsError``
     (``SPEC-<slug>`` or ``PROP-<slug>`` is declared, a proposal of the slug exists, or the directory exists),
     ``SpecWorkflowError`` (an explicit workflow that does not resolve or validate). A failure while writing removes
@@ -347,6 +355,7 @@ def create_spec(
     """
     root = root.resolve()
     slug = new_slug(slug.strip().removeprefix("SPEC-"), error=SpecSlugError)
+    require_development_branch(root, slug, "devkit spec new", SpecWrongBranchError)
     namespace, reported = bundle_namespace(root, namespace, cwd)
     summary = require_summary(summary)
     day = day or date.today()

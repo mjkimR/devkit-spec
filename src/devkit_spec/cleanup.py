@@ -1,14 +1,16 @@
 """``devkit.post_finish`` extension: the spec cleanup after ``devkit worktree finish`` succeeded.
 
 devkit calls ``after_finish(base, result)`` in the base checkout once the task's branch is merged and its worktree
-removed. The result names the activity branch (``branch``: ``plan-<slug>`` or ``dev-<slug>``) and its ``slug``
+removed, or once ``finish --discard`` dropped it unmerged (``discarded``) at a close. The result names the activity branch (``branch``: ``plan-<slug>`` or ``dev-<slug>``) and its ``slug``
 without the prefix, which names the proposal. A project that deploys the ``spec`` bundle then needs two cleanups the merge cannot do:
 
 - ``docs/proposals/PROP-<slug>/``: a handoff deleted the proposal in the worktree; the merge removed its tracked
   files here but leaves the empty directories (``prune_proposals``);
 - the task's work scope record: its worktree is gone, so the record is stale (``CAP-COLL-work-scope-registry``).
   Only the records of the finished worktree are removed, at the revision read here, as ``scope sweep --apply``
-  would remove them; other stale records stay for an explicit sweep.
+  would remove them; other stale records stay for an explicit sweep. A ``--no-worktree`` task ran in the base
+  checkout itself (the result's ``path``), which is still there, so a sweep would keep its record: the base
+  checkout's own record is released instead, as ``scope release`` would.
 
 Each cleanup returns one notice line per change, and neither failure stops the other: a prune that fails (a
 directory that cannot be listed or removed) is a ``SPEC_PROPOSAL_CLEANUP_FAILED`` warning whose fix is
@@ -27,7 +29,7 @@ from devkit.advisory import AdvisoryError
 
 from devkit_spec.errors import ProposalCleanupWarning, SpecError
 from devkit_spec.proposals.prune import prune_proposals
-from devkit_spec.scope.flow import journal, open_session, sweep_events
+from devkit_spec.scope.flow import journal, open_session, release, sweep_events
 from devkit_spec.scope.model import Verdict
 
 SOURCE = "post-finish"
@@ -65,6 +67,10 @@ def after_finish(base: Path, result: dict[str, Any]) -> list[str | AdvisoryError
 
 def _sweep(base: Path, worktree: Path) -> list[str | AdvisoryError]:
     session = open_session(base)
+    if worktree.resolve() == base.resolve():  # a --no-worktree task: the base checkout's own record
+        released = release(session, source=SOURCE)
+        done = [f"released the scope record of {released.task}"] if released.task and not released.already else []
+        return [*done, *released.notices]
     namespace = session.location.namespace
     records, _ = session.registry.query(namespace, session.deadline)
     finished = worktree.resolve()

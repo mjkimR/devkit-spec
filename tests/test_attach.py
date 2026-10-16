@@ -51,6 +51,16 @@ def test_a_plan_branch_carries_its_proposal_bound_to_sdd_proposal(tmp_path: Path
     assert "not a proposal bundle" in attach_check(root, "plan-login", SPEC, tip)[0]
 
 
+def test_a_plan_branch_refuses_a_rejected_or_undecomposed_proposal(tmp_path: Path) -> None:
+    root = _repo(tmp_path)
+    rejected = _commit(root, "plan-login", {f"{PROPOSAL}/proposal.md": _anchor("sdd-proposal", "rejected")})
+    assert any("is rejected" in reason for reason in attach_check(root, "plan-login", PROPOSAL, rejected))
+    split = _anchor("sdd-proposal").replace("status: draft\n", "status: draft\nneeds_decompose: true\n")
+    marked = _commit(root, "plan-split", {"docs/proposals/PROP-split/proposal.md": split})
+    reasons = attach_check(root, "plan-split", "docs/proposals/PROP-split", marked)
+    assert any("needs_decompose" in reason for reason in reasons)
+
+
 def test_a_dev_branch_carries_its_spec_or_the_accepted_proposal_before_the_handoff(tmp_path: Path) -> None:
     root = _repo(tmp_path)
     tip = _commit(

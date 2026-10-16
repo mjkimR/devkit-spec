@@ -23,7 +23,7 @@ devkit already models stays in devkit's tables
 (`[workflow.approvals]`, `[workflow.stages]`, `[worktree]`); devkit-spec adds only what is specific to spec-driven
 development, under the `[tool.spec]` extension table that devkit passes through unread. Agents read the effective
 policy with one command, `devkit spec policy`, before routing, gate and Git decisions. Rationale:
-`ADR-policy-in-the-tool-spec-table`; the Git policy levels: `ADR-worktree-and-pull-request-levels`.
+`ADR-policy-in-the-tool-spec-table`; the Git policy levels: `ADR-worktree-and-pull-request-levels`, refined by `ADR-branch-guards-and-close-discard`.
 
 ## 2. Scope & Boundary
 
@@ -61,13 +61,14 @@ policy with one command, `devkit spec policy`, before routing, gate and Git deci
    same way, `WORKTREE_CONFIG_INVALID`).
 6. **Git policy levels**: `[tool.spec] worktree` applies to `direct` mode only (`local-orchestrated` always runs each
    worker in a worktree, `cloud-pr` uses the runner's checkout): `"required"` runs every `spec` and `proposal`
-   activity on its activity branch in a separate worktree; `session` depth is never required to. `"auto"` leaves the choice to the agent: a worktree when the task
-   integrates through a pull request, another task is in flight in the checkout, the user's uncommitted changes must
-   stay put, the work is an isolated experiment, or the user asks; otherwise the current checkout.
+   activity on its activity branch in a separate worktree; `session` depth is never required to. `"auto"` leaves the choice to the agent: a worktree when the
+   checkout holds changes unrelated to the task (the user's uncommitted work must stay put), another task is in flight
+   in the checkout, or the user asks; otherwise the current checkout, on the activity branch started with
+   `devkit worktree start <branch> --no-worktree`.
    `pull_request = "required"` integrates every task, `session` depth included, through a pull request (`devkit worktree
    finish --merge` is refused); `"auto"` uses one when the task needs platform review or CI, the base branch refuses
-   direct pushes, or the user asks, otherwise a local merge. A task that integrates through a pull request runs in a
-   worktree at either worktree level. Each `auto` choice and its reason are reported in the final change report's
+   direct pushes, or the user asks, otherwise a local merge. The integration path does not choose the worktree: a task integrating
+   through a pull request may run on its branch in the current checkout. Each `auto` choice and its reason are reported in the final change report's
    assumptions; an explicit user request naming the checkout or the integration path overrides the policy for that
    task only, recorded there too.
 7. **Template at the defaults**: `template()` MUST describe every `[tool.spec]` key at the default

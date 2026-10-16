@@ -13,7 +13,7 @@ Write `spec.md` with these sections (the bound workflow `sdd-spec-bugfix` is the
 - **Scope**: what is excluded from this fix (unrelated cleanup, a contract or structure change that would need the delivery workflow). Non-goals state what is excluded, with a rationale or reopen trigger when it helps.
 - **Acceptance criteria**: at least one `[AC-NN]` scenario for the resolved behavior and one for each preserved behavior, written so the Green envelope can cite them.
 
-The `characterize` exit also runs `lint-clean`, which checks `spec.md` against the skeleton `tasks.md` beside it (`RULE-task-coverage`): until `spec-tasks` writes the real tasks, keep the skeleton task's `_Requirements:` line listing exactly the spec's AC IDs.
+The `characterize` exit also runs `lint-clean` over `spec.md`. A bugfix bundle has no `plan.md` or `tasks.md` yet (`devkit spec new` writes `spec.md` only), so `RULE-task-coverage` has nothing to match until the `plan-tasks` stage writes them (`spec-plan`, `spec-tasks`).
 
 ## Step 2: Reproduce before fixing (stage `reproduce`)
 

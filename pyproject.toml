@@ -30,6 +30,10 @@ spec = "devkit_spec.cleanup:after_finish"
 [project.entry-points."devkit.attach_check"]
 spec = "devkit_spec.attach:attach_check"
 
+# Hygiene extension: `devkit rules check -p hygiene` warns about rejected proposals still waiting for their cleanup.
+[project.entry-points."devkit.hygiene"]
+spec-rejected-proposals = "devkit_spec.hygiene:rejected_proposals"
+
 # Config template extension: `devkit config template` writes the commented [tool.spec] tables into .devkit/config.toml.
 [project.entry-points."devkit.config_template"]
 spec = "devkit_spec.config:template"

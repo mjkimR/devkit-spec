@@ -1,6 +1,6 @@
 # Delegation Input and Return Envelope
 
-Read this when delegating to a support role (`scout`, `challenger`, `reviewer`, `reconciler`, `worker`), writing a review, presenting the final change report before `dev-integration`, or reporting the integration result. Role contracts ship with the spec bundle and are projected into each agent's native agent directory by `devkit sync`; the stage definition is rendered by `devkit workflow show --unit <dir>`. Envelope files follow devkit's envelope contract; this reference says how spec-driven delivery uses it.
+Read this when delegating to a support role (`scout`, `challenger`, `reviewer`, `reconciler`), writing a review, presenting the final change report before `dev-integration`, or reporting the integration result. Role contracts ship with the spec bundle and are projected into each agent's native agent directory by `devkit sync`; the stage definition is rendered by `devkit workflow show --unit <dir>`. Envelope files follow devkit's envelope contract; this reference says how spec-driven delivery uses it. A `planning-worker` or `development-worker` run writes its own records instead ([worker records](worker-records.md)).
 
 ## 1. Input payload
 
@@ -27,7 +27,7 @@ diff_scope: { base: "<ref>", head: "<sha>" }
 - `completed` with an empty `findings` list is a valid pass (zero findings allowed; no filler objections).
 - `needs_input` names the missing input or the decision only the human can make.
 - `failed` covers timeout, cancellation, tool failure, unsupported host feature, or a stale `diff_scope`. A failed or stale result is never completion evidence.
-- Docs impact has no envelope key: the reconciler writes it into the draft `reconcile.md` (targets, or the no-impact reasoning in its body).
+- Docs impact has no envelope key: the implementer writes it into `reconcile.md` (targets, or the no-impact reasoning in its body). The reconciler, at `high` effort, only verifies that record and returns its findings.
 - Re-invocation or a stronger model is decided from the failure reason and changed input, not by repeating the same call.
 
 ## 3. Final change report (before `dev-integration`)
@@ -54,10 +54,11 @@ Integration writes no envelope. After the commit the Developer still runs `devki
 
 ## 6. Where reports live
 
-A spec Unit (`spec` and `proposal` depth): every envelope is a file under the feature's spec directory, readable by the session router, host subagents and an external runner alike:
+A Unit (`spec` and `proposal` depth): every envelope is a file under the Unit's directory (the proposal's is dropped at handoff):
 
 ```
 specs/<YYYY-MM>/<YYYYMMDD>-<slug>/envelopes/<kind>-<NN>.yaml
+docs/proposals/PROP-<slug>/envelopes/<kind>-<NN>.yaml
 ```
 
 - `kind`: `scout | challenger | review | reverify | reconciler | worker | answer | resolution | final-report` (a run's records: [worker records](worker-records.md)), or any kind matching `[a-z][a-z0-9-]*` that a workflow check names (`envelope-completed(<kind>)`, `envelope-check-pass(<kind> <key>)`, `revision-ancestor(<kind> <kind>)`). Workflow `sdd-spec-bugfix` uses `red` (`checks.reproduced`) and `green` (`checks.resolved`, `checks.preserved`), see the `spec-specify` skill's bugfix reference; the `collect-feedback` stage uses `feedback` (`checks.swept`), see the `spec-feedback` skill. `NN` is a sequence per kind; the highest is current and earlier files are history. Never overwrite; `envelope new` writes the next number.

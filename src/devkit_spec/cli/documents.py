@@ -39,6 +39,7 @@ from devkit.core.cli import (
 )
 from devkit.core.errors import ArgumentError
 
+from devkit_spec.branches import planning_branches
 from devkit_spec.cli.output import echo_page, page, sentinel
 from devkit_spec.config import Namespace, read_spec_config
 from devkit_spec.documents import Document, DocumentIndex, Kind, Reference
@@ -348,12 +349,13 @@ def list_cmd(
     )
     statuses = set(requested)
     wanted = {Kind(kind) for kind in kinds}
+    planning = _planning(index)
     selected = [
         document
         for document in index.documents
         if (not wanted or document.kind in wanted)
         and (history or not index.is_historical(document))
-        and (not statuses or document.status.lower() in statuses)
+        and (not statuses or _shown_status(document, planning).lower() in statuses)
         and (not area or area.lower() in document.area.lower())
         and (not query or query.lower() in document.id.lower() or query.lower() in document.title.lower())
         and _matches(document, where)
@@ -375,6 +377,7 @@ def list_cmd(
                 "namespace": scope.selection.name,
                 "documents": [
                     document.to_dict()
+                    | _planning_fields(document, planning)
                     | {
                         "namespace": scope.namespace_of(document),
                         "historical": index.is_historical(document),
@@ -393,8 +396,9 @@ def list_cmd(
                     "DOCUMENT",
                     document.id,
                     kind=document.kind,
-                    status=document.status,
+                    status=_shown_status(document, planning),
                     path=document.path,
+                    **{key: value for key, value in _planning_fields(document, planning).items() if key != "status"},
                     tasks=tasks[document.path],
                     **_feedback_fields(document),
                     **scope.fields(document),
@@ -411,6 +415,27 @@ def list_cmd(
         args += scope.args(namespace, all_namespaces)
         echo_page(len(selected), offset, limit, len(shown), [*args, *_paging_args(workspace_root, limit)])
     _finish(notices)
+
+
+def _planning(index: DocumentIndex) -> dict[str, str]:
+    """``slug -> plan-<slug> ref`` of the proposals whose Planning branch exists (``planning_branches``)."""
+    return planning_branches(index.root)
+
+
+def _shown_status(document: Document, planning: dict[str, str]) -> str:
+    """The status ``list`` shows: a draft proposal whose ``plan-<slug>`` exists is ``reviewing`` (01 §5.1). Only the
+    display changes; the base's ``status`` is not written."""
+    if document.kind == Kind.PROPOSAL and document.status == "draft" and document.id.removeprefix("PROP-") in planning:
+        return "reviewing"
+    return document.status
+
+
+def _planning_fields(document: Document, planning: dict[str, str]) -> dict[str, object]:
+    """``status`` and ``planning_branch`` of a draft proposal shown as ``reviewing``; nothing for any other."""
+    shown = _shown_status(document, planning)
+    if shown == document.status:
+        return {}
+    return {"status": shown, "planning_branch": planning[document.id.removeprefix("PROP-")]}
 
 
 def _unknown_statuses(index: DocumentIndex, wanted: set[Kind], requested: list[str]) -> list[AdvisoryError]:

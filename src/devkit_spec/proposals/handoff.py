@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Any
 
 from devkit.advisory import AdvisoryError
-from devkit.core import FrontmatterError, GitError, run_git
+from devkit.core import FrontmatterError
 from devkit.core.frontmatter import parse
 from devkit.workflow import (
     Binding,
@@ -53,6 +53,7 @@ from devkit.workflow import (
     write_decision,
 )
 
+from devkit_spec.branches import require_development_branch
 from devkit_spec.config import GLOBAL
 from devkit_spec.documents import DocumentIndex, parse_document
 from devkit_spec.errors import (
@@ -128,7 +129,6 @@ ACCEPT_GATE = "gate:plan-accept"
 # The proposal's approvals the spec carries by name, in this order (handoff never re-labels them).
 CARRIED_GATES = (INTENT_GATE, ACCEPT_GATE)
 RETURN_PREFIX = "return:"
-DEVELOPMENT_PREFIX = "dev-"  # the handoff is the first step of Development, on its activity branch dev-<slug>
 
 # Files an operating system leaves behind; never carried, they are deleted with the proposal.
 JUNK_FILES = frozenset({".DS_Store", "Thumbs.db", "desktop.ini"})
@@ -419,37 +419,9 @@ def handoff_proposal(root: Path, slug: str, *, today: date | None = None) -> Han
 
 
 def _check_worktree(root: Path, slug: str) -> None:
-    """Refuse a handoff in a linked worktree on another branch than ``dev-<slug>``, Development's activity branch, at
-    either ``[tool.spec] worktree`` level.
-
-    Outside Git and in the base checkout nothing is checked; a detached HEAD counts as another branch. A ``GitError``
-    without an exit status (Git missing, a timeout) propagates.
-    """
-    try:
-        dirs = run_git(root, "rev-parse", "--path-format=absolute", "--git-common-dir", "--git-dir").splitlines()
-    except GitError as exc:
-        if exc.returncode is None:
-            raise
-        return
-    common, git_dir = (Path(line.decode()).resolve() for line in dirs[:2])
-    if common == git_dir:
-        return
-    try:
-        branch = run_git(root, "symbolic-ref", "--quiet", "--short", "HEAD").decode().strip()
-    except GitError as exc:
-        if exc.returncode is None:
-            raise
-        branch = ""
-    expected = f"{DEVELOPMENT_PREFIX}{slug}"
-    if branch == expected:
-        return
-    raise ProposalWrongWorktreeError(
-        f"handoff of PROP-{slug} in the worktree of branch {branch or '- (detached HEAD)'}; it runs in the worktree "
-        f"of branch {expected}",
-        target_files=[str(root)],
-        fix=f"Run devkit worktree start {expected} in the base checkout, cd to the path it prints, then rerun "
-        f"devkit spec proposal handoff {slug} there",
-    )
+    """Refuse a handoff on another branch than ``dev-<slug>``, Development's activity branch, in a linked worktree
+    and in the base checkout alike (``require_development_branch``); outside Git nothing is checked."""
+    require_development_branch(root, slug, "handoff of the proposal", ProposalWrongWorktreeError)
 
 
 def _namespace(root: Path, meta: dict[str, Any], proposal_rel: str) -> str | None:

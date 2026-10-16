@@ -191,6 +191,7 @@ def test_a_new_bundle_passes_the_rules_and_starts_its_workflow(tmp_path: Path) -
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     assert _devkit(tmp_path, "sync").returncode == 0
     for args in (("demo",), ("crash", "--workflow", "sdd-spec-bugfix")):
+        subprocess.run(["git", "-C", str(tmp_path), "symbolic-ref", "HEAD", f"refs/heads/dev-{args[0]}"], check=True)
         result = _devkit(tmp_path, "spec", "new", *args, "--format", "json")
         assert result.returncode == 0, result.stdout + result.stderr
         unit = json.loads(result.stdout)["dir"]
@@ -205,7 +206,7 @@ def test_a_new_bundle_passes_the_rules_and_starts_its_workflow(tmp_path: Path) -
 
 def test_a_characterized_bugfix_bundle_passes_the_rules(tmp_path: Path) -> None:
     """A bugfix bundle has no tasks.md until plan-tasks, so its characterized spec.md alone is lint-clean."""
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "init", "-q", "-b", "dev-x", str(tmp_path)], check=True)
     assert _devkit(tmp_path, "sync").returncode == 0
     result = _devkit(
         tmp_path,
@@ -228,3 +229,20 @@ def test_a_characterized_bugfix_bundle_passes_the_rules(tmp_path: Path) -> None:
     spec.write_text(text, encoding="utf-8")
     result = _devkit(tmp_path, "rules", "check", str(unit))
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_spec_new_runs_on_the_slugs_development_branch(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q", "-b", "main", str(tmp_path)], check=True)
+    refused = _devkit(tmp_path, "spec", "new", "demo", "--format", "json")
+    assert refused.returncode == 2 and json.loads(refused.stdout)["error"]["code"] == "SPEC_WRONG_BRANCH"
+    assert "devkit worktree start dev-demo" in json.loads(refused.stdout)["error"]["advisory"]["fix"]
+    assert not (tmp_path / "specs").exists()
+
+
+def test_a_slug_fits_its_activity_branches() -> None:
+    from devkit_spec.errors import SpecSlugError
+    from devkit_spec.proposals.scaffold import new_slug
+
+    assert new_slug("a" * 59, error=SpecSlugError) == "a" * 59  # plan-<slug> and dev-<slug> fit 64 characters
+    with pytest.raises(SpecSlugError, match="at most 59"):
+        new_slug("a" * 60, error=SpecSlugError)

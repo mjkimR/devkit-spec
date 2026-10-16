@@ -239,6 +239,7 @@ def test_handoff_registers_inside_a_linked_worktree(repo: Path, tmp_path: Path) 
 def test_handoff_in_the_base_checkout_does_not_register(repo: Path) -> None:
     created = create_proposal(repo, "demo")
     accept(repo / created.path)
+    git(repo, "checkout", "-q", "-b", "dev-demo")  # a --no-worktree Development: the base checkout on its branch
     result = CliRunner().invoke(
         devkit_cli, ["spec", "proposal", "handoff", "demo", "-w", str(repo), "--format", "json"]
     )
