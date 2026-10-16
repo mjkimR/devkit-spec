@@ -1,0 +1,47 @@
+kind: review
+stage: review-refine
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-16T08:25:17.513210Z'
+status: completed
+summary: 'REVISE: AC-05 and AC-06 met; AC-01..AC-04 met with gaps; 5 findings (2 medium, 3 low)'
+findings:
+- issue: '(medium) sdd-proposal.md keeps wording that makes the challenger optional at medium: the spike bullet runs only ''when the direction needs evidence'', and the Gate rules close with ''Scout and Challenger are optional support roles'''
+  evidence: src/devkit_spec/bundle/workflows/sdd-proposal.md:98, :107
+  failure_condition: Medium Planning whose author sees no need for evidence skips the challenger under a literal reading
+  suggested_action: Challenger optional only at low; the spike runs when evidence is needed or the effort requires a challenger
+  resolution: open
+- issue: (medium) The planning-worker contract puts nested role results only in materials/, so the plan-accept effort record finds no challenger envelope in local-orchestrated mode
+  evidence: src/devkit_spec/bundle/subagents/planning-worker.md:40; sdd-proposal.md:105; workbench 01-master-flow.md:178
+  failure_condition: A worker's challenger run shows as 'none' and a false gap at plan-accept
+  suggested_action: The worker records each nested scout or challenger return as an envelope
+  resolution: open
+- issue: (low) Two diagrams in strategy 01 §6.2 still show scout and challenger as 'when needed'
+  evidence: workbench docs/strategy-layer/01-master-flow.md:371, :427
+  failure_condition: The diagrams contradict the §2.3 table and Q60
+  suggested_action: Label them by effort
+  resolution: open
+- issue: (low) classification §1 omits the reason of the proposed Planning effort
+  evidence: src/devkit_spec/bundle/skills/spec/references/classification.md:15
+  failure_condition: A Host following the Backlog bullet proposes an effort without a reason
+  suggested_action: Say 'with its proposed Planning effort and the reason'
+  resolution: open
+- issue: (low) spec-delegate Step 1 omits the high options comparison and the low 'questions only' of proposal Planning
+  evidence: src/devkit_spec/bundle/skills/spec-delegate/SKILL.md:33
+  failure_condition: AC-02 read literally; no behavioral conflict
+  suggested_action: 'Add the full row or waive: spec-delegate states only the delegation part'
+  resolution: open
+assumptions:
+- Native Claude Code reviewer subagent with the reviewer contract, payload only
+- Workbench strategy-layer diff reviewed uncommitted
+unverified_areas:
+- just ci taken from the author's run
+checks:
+  ac02_rg: PASS
+  ac05_no_drift: PASS
+  rules: PASS
+  scope: PASS
+diff_scope:
+  base: 66b6f6db750b967d646df3286c9005eaa1f1d55c
+  head: 397fd02c6b69ff5789235434fccf2368c5dce07d
+activity_effort: medium

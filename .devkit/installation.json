@@ -568,7 +568,7 @@
     },
     ".agents/agents/planning-worker.md": {
       "mode": 420,
-      "sha256": "8d0fae641db7203fc3f7dd258fcc5607af9563cb910812707d568f3beca7d628"
+      "sha256": "68cc42cf17b4d028948e8c48b898eb619e0f89fc3fa3c1edc40b4a8a5cf9ae05"
     },
     ".agents/agents/reconciler.md": {
       "mode": 420,
@@ -704,7 +704,7 @@
     },
     ".agents/skills/spec/references/classification.md": {
       "mode": 420,
-      "sha256": "2146c3fb78b6854d660550af10aa82104bd0ea535fcd4968252461ce676af3a5"
+      "sha256": "737d1a5fe3605d8eed8b7737488c0af3eb0a7fc678211cc86fe990a1cf6efcbb"
     },
     ".agents/skills/spec/references/completion.md": {
       "mode": 420,
@@ -744,7 +744,7 @@
     },
     ".claude/agents/planning-worker.md": {
       "mode": 420,
-      "sha256": "63bad10c287b2f60dab4467f6302324b602e795c4ee717c32751e8340469fabe"
+      "sha256": "4b382eefcb337024da4f2537ea3833a65c75dd6bedb3dd917d5874f75dc6a8a5"
     },
     ".claude/agents/reconciler.md": {
       "mode": 420,
@@ -868,7 +868,7 @@
     },
     ".claude/skills/spec/references/classification.md": {
       "mode": 420,
-      "sha256": "2146c3fb78b6854d660550af10aa82104bd0ea535fcd4968252461ce676af3a5"
+      "sha256": "737d1a5fe3605d8eed8b7737488c0af3eb0a7fc678211cc86fe990a1cf6efcbb"
     },
     ".claude/skills/spec/references/completion.md": {
       "mode": 420,
@@ -1236,7 +1236,7 @@
     },
     ".devkit/managed/spec/skills/spec/references/classification.md": {
       "mode": 420,
-      "sha256": "2146c3fb78b6854d660550af10aa82104bd0ea535fcd4968252461ce676af3a5"
+      "sha256": "737d1a5fe3605d8eed8b7737488c0af3eb0a7fc678211cc86fe990a1cf6efcbb"
     },
     ".devkit/managed/spec/skills/spec/references/completion.md": {
       "mode": 420,
@@ -1276,7 +1276,7 @@
     },
     ".devkit/managed/spec/subagents/planning-worker.md": {
       "mode": 420,
-      "sha256": "e2b5547996505808b2300a1cb500cedb466ed161001e6be2ecb7b49af97deba8"
+      "sha256": "95e9ac36185a6afef2eb43e5eef80176d0f7e228c189e8336c66c8521cf948a5"
     },
     ".devkit/managed/spec/subagents/reconciler.md": {
       "mode": 420,
@@ -1308,7 +1308,7 @@
     },
     ".devkit/managed/spec/workflows/sdd-proposal.md": {
       "mode": 420,
-      "sha256": "73793c424ab3a2de95d807fa36ef2de88f10899dc01d3c507b8cd0a58e0e866b"
+      "sha256": "e54758a71f7f09f9aabaea0504e110e405e41d797c74d26372ea4daa9bf1ef21"
     },
     ".devkit/managed/spec/workflows/sdd-session-bugfix.md": {
       "mode": 420,
