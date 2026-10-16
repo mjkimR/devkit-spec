@@ -2,7 +2,7 @@
 id: PROP-proposal-effort-hints
 title: Separate Planning and Development effort hints on proposals
 summary: Adds separate Planning and Development effort hint fields to proposal frontmatter so Backlog and Planning preserve recommended activity-effort values that Host sessions and autohub submission screens pre-fill and let the user override.
-status: draft                         # draft | reviewing | accepted | rejected
+status: accepted                      # draft | reviewing | accepted | rejected
 created_at: 2026-10-16
 target_area: capabilities/delivery/
 priority: medium                      # critical | high | medium | low
