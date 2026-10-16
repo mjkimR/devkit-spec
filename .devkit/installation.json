@@ -966,7 +966,7 @@
     },
     ".devkit/managed/authoring/playbooks/skill-authoring/SKILL.md": {
       "mode": 420,
-      "sha256": "cc86852d39608636a39b9dbe81e21e58af48af216789c57909142588f4d83234"
+      "sha256": "7f6a0b5e77e6a5ab0b95e935bf84e24eba84dc3c097baaed9600d3eb2b6d8621"
     },
     ".devkit/managed/authoring/playbooks/skill-authoring/references/scripts.md": {
       "mode": 420,
@@ -974,15 +974,15 @@
     },
     ".devkit/managed/authoring/rules/skill_document_size/guide.md": {
       "mode": 420,
-      "sha256": "f6c27f6b1b13864d966ad9d8f991236a70dc58a910e5c2f08869a66c810eacc1"
+      "sha256": "e087a5c4c3b46235318b78f5cc84b1f201089b27ab53af6725fd42fca285a7e0"
     },
     ".devkit/managed/authoring/rules/skill_document_size/rule.py": {
       "mode": 420,
-      "sha256": "adb874686e3e54eca74b2172b283235d74067edff48258b9eb427f5bb99c0dd6"
+      "sha256": "494cac5b6bcd781f42fe4f155bdb830563e656650b87e5e8cd2b64ff22792841"
     },
     ".devkit/managed/authoring/rules/skill_document_size/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "e565b0aba7c829a827f3280330c2115d544b5c63b5f48bf95db4cf4343d5ab10"
+      "sha256": "e81971f82c6b676cae8a8d7ed0a368961194ce0ee0801cbc833d9376e504600d"
     },
     ".devkit/managed/devkit/AGENTS.md": {
       "mode": 420,
