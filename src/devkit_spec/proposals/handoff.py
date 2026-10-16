@@ -128,6 +128,7 @@ ACCEPT_GATE = "gate:plan-accept"
 # The proposal's approvals the spec carries by name, in this order (handoff never re-labels them).
 CARRIED_GATES = (INTENT_GATE, ACCEPT_GATE)
 RETURN_PREFIX = "return:"
+DEVELOPMENT_PREFIX = "dev-"  # the handoff is the first step of Development, on its activity branch dev-<slug>
 
 # Files an operating system leaves behind; never carried, they are deleted with the proposal.
 JUNK_FILES = frozenset({".DS_Store", "Thumbs.db", "desktop.ini"})
@@ -418,7 +419,8 @@ def handoff_proposal(root: Path, slug: str, *, today: date | None = None) -> Han
 
 
 def _check_worktree(root: Path, slug: str) -> None:
-    """Refuse a handoff in a linked worktree on another branch than ``slug``, at either ``[tool.spec] worktree`` level.
+    """Refuse a handoff in a linked worktree on another branch than ``dev-<slug>``, Development's activity branch, at
+    either ``[tool.spec] worktree`` level.
 
     Outside Git and in the base checkout nothing is checked; a detached HEAD counts as another branch. A ``GitError``
     without an exit status (Git missing, a timeout) propagates.
@@ -438,13 +440,14 @@ def _check_worktree(root: Path, slug: str) -> None:
         if exc.returncode is None:
             raise
         branch = ""
-    if branch == slug:
+    expected = f"{DEVELOPMENT_PREFIX}{slug}"
+    if branch == expected:
         return
     raise ProposalWrongWorktreeError(
         f"handoff of PROP-{slug} in the worktree of branch {branch or '- (detached HEAD)'}; it runs in the worktree "
-        f"of branch {slug}",
+        f"of branch {expected}",
         target_files=[str(root)],
-        fix=f"Run devkit worktree start {slug} in the base checkout, cd to the path it prints, then rerun "
+        fix=f"Run devkit worktree start {expected} in the base checkout, cd to the path it prints, then rerun "
         f"devkit spec proposal handoff {slug} there",
     )
 

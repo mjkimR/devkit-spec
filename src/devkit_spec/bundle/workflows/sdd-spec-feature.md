@@ -151,7 +151,7 @@ The frontmatter is the only stage definition. Read it with `devkit workflow show
 
 ## Development runs on the agreed intent
 
-There is no Development direction gate. Within the agreed goal, scope and contract the executor decides implementation choices with its recommended option and records the reason (in `plan.md`, an envelope's assumptions or the final report). An improvement that does not block the current work is reported as feedback by default; a follow-up draft proposal (`devkit spec proposal new`) is also allowed. Only a problem that cannot be solved without changing the agreed goal, scope or contract stops the work: a worker records it as a problem and ends; the Host decides recovery, a revert, finishing it itself, or a close (depth escalation, supersede, abandon). There is no return from Development to Planning.
+There is no Development direction gate. Within the agreed goal, scope and contract the executor decides implementation choices with its recommended option and records the reason (in `plan.md`, an envelope's assumptions or the final report). An improvement that does not block the current work is reported as feedback by default; a follow-up draft proposal (`devkit spec proposal new`) is also allowed. Only a problem that cannot be solved without changing the agreed goal, scope or contract stops the work: a worker records it as the problem of its `worker` envelope and ends, and every gate is held until a `resolution` names it; the Host decides recovery, a revert, finishing it itself, or a close (depth escalation, supersede, abandon). There is no return from Development to Planning.
 
 ## Role invocation
 

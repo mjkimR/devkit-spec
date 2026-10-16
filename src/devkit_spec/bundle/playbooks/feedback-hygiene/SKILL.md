@@ -80,6 +80,14 @@ disposition line to its body so the destination is traceable:
 The destination is the spec, proposal, decision, rule or playbook ID that received the item, the changed file path
 for a `session` fix, or the report location for a forward. A dismissal states its reason in the same line.
 
+## Step 5: Stale activity branches
+
+A hygiene session also surfaces stalled work. `uv run devkit rules check -p hygiene` warns about each `plan-*` and
+`dev-*` branch idle longer than `[worktree] stale_after` (it needs `gh auth status`; otherwise it notes the skip);
+`uv run devkit worktree stale` prints the same as `[STALE_BRANCH: ...]` lines with the pull request state and the
+resume command. List them for the user with the two ways on, resume or discard, per §4 of the `spec` skill's
+`references/branches.md`, and do neither unasked: the warning never cleans anything up.
+
 ## Completion conditions
 
 - Every resolved item selected in Step 1 has `status` `promoted`, `dismissed` or `forwarded` and one disposition line;

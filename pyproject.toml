@@ -25,6 +25,11 @@ spec = "devkit_spec.cli:cli"
 [project.entry-points."devkit.post_finish"]
 spec = "devkit_spec.cleanup:after_finish"
 
+# Attach check: `devkit worktree start <branch> --existing-branch ... --unit <dir>` refuses a unit that is not the one of
+# the activity branch (plan-<slug>: the proposal; dev-<slug>: the spec, or the accepted proposal before its handoff).
+[project.entry-points."devkit.attach_check"]
+spec = "devkit_spec.attach:attach_check"
+
 # Config template extension: `devkit config template` writes the commented [tool.spec] tables into .devkit/config.toml.
 [project.entry-points."devkit.config_template"]
 spec = "devkit_spec.config:template"

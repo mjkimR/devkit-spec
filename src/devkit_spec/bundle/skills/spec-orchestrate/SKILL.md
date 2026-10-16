@@ -21,7 +21,7 @@ It changes no gate, policy or authority. `GATE_POLICY` and `GIT_POLICY` apply as
 
 ## 2. Units and what stays yours
 
-- One unit is one activity of one slug on its own branch (`plan-<slug>` for Planning, `dev-<slug>` for Development) in its own worktree from `devkit worktree start`. Never use a host-native worktree, and never start an activity whose branch already exists: continue it explicitly instead.
+- One unit is one activity of one slug on its own branch (`plan-<slug>` for Planning, `dev-<slug>` for Development) in its own worktree from `devkit worktree start <branch>`. Never use a host-native worktree, and never start an activity whose branch already exists: continue it explicitly with `devkit worktree start <branch> --existing-branch <branch> --unit <dir>` (the `spec` skill's `references/branches.md`), as you do when inline Planning hands its `dev-<slug>` to a worker.
 - A `session`-depth task never becomes a unit: handle it yourself in `direct`, while the other units keep their mode.
 - You keep only: splitting units, preparing each unit (worktree, the handoff or inline Planning), validating results, questions to the user, problems, `dev-integration` and integration. Workers do the rest.
 - After registering each unit, `devkit spec scope query` shows overlaps. Overlapping units run one after the other or become one unit; independent units run in parallel.
@@ -30,14 +30,14 @@ It changes no gate, policy or authority. `GATE_POLICY` and `GIT_POLICY` apply as
 
 1. **Prepare** (you, in the base): the worktree as the `spec` skill's `references/worktree.md` §1 describes, and the unit's input: an accepted proposal for handoff, a spec Unit whose `plan-intent` is recorded, or a `draft` proposal with `plan-intent` recorded for Planning. Keep the worktree's absolute path for every later command.
 2. **Run a turn** (worker): `spec-delegate` with role `planning-worker` or `development-worker`. The payload names the worktree's absolute path, the write scope, the `activity-effort` and, for a later turn, the rewritten answers or the recovery request. The worker runs from the stage `devkit workflow next` names, commits at every stage boundary through the commit gate, writes its own records and returns its head (`ADR-worker-delivers-committed-result`); it never leaves the finishing to you. Workers of independent units may run at the same time; never two workers, or a worker and you, in one worktree. Where the worker's host status is `unsupported`, run the unit yourself in `direct`.
-3. **Validate** (you): `spec-delegate` Steps 4 to 6 on the committed range from the last accepted head. A failing range is blocked, never discarded: a `failed` validation envelope, the commits kept (a pull request stays open and blocked), fixed with further commits by a new worker or by you; a blocked unit goes no further. Questions go to the user in one round and the answers to a new worker; a recorded problem is yours to decide (`spec-delegate`'s worker reference).
+3. **Validate** (you): `spec-delegate` Steps 4 to 6 on the committed range from the last accepted head. A failing range is blocked, never discarded: a problem in your own `worker` envelope, the commits kept (a pull request stays open and blocked), fixed with further commits and a resolution by a new worker or by you; a blocked unit goes no further. Questions (`[PENDING_QUESTION]`) go to the user in one round and the answers to a new worker, which records them first; a recorded problem is yours to decide (`spec-delegate`'s worker reference).
 4. **Accept** (Planning): when the worker returns with no question left, ask the user for `plan-accept` with the change summary and the decisions made in this Planning; record it with `status: accepted`, commit, merge the Planning branch and clean up its worktree. A rejection changes only the status, with the user's reason in the commit message; no worker runs for it.
 5. **Integrate** (Development): `dev-integration` per unit once the final change report holds, then `spec-integrate` and `devkit worktree finish` from the base, one unit at a time in the order the overlaps require. A unit integrated after another one first integrates the base (`spec-integrate` Step 1).
 
 ## 4. Keeping track
 
 - Keep one line per unit in the conversation: slug, activity, worktree, stage (`devkit workflow next --unit <dir>`), worker state.
-- After context loss, `devkit worktree status`, `devkit spec scope query` and `devkit workflow next --unit <dir>` per unit rebuild the picture; the latest `validation` envelope marks the range accepted (`completed`) or blocked (`failed`), and a worker's recorded problem without a resolution keeps the unit blocked.
+- After context loss, `devkit worktree status`, `devkit spec scope query` and `devkit workflow next --unit <dir>` per unit rebuild the picture: `[BLOCKED]` names each problem without a resolution, `[PENDING_QUESTION]` each unanswered question. A range you cannot account for is validated again from the branch's merge base.
 - Report each unit's completion, commit and integration as separate facts, as in `direct`.
 
 ## 5. Returning to direct mode

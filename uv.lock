@@ -135,12 +135,12 @@ wheels = [
 [[package]]
 name = "devkit-advisory"
 version = "0.1.1"
-source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit-advisory#bc1404618895a49a1c2ad8345bb28bd76318b973" }
+source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit-advisory#abe34ae2278e60605441f515d2c0ad3f0383659b" }
 
 [[package]]
 name = "devkit-agt"
 version = "0.1.1"
-source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit#bc1404618895a49a1c2ad8345bb28bd76318b973" }
+source = { git = "https://github.com/mjkimR/devkit.git?subdirectory=packages%2Fdevkit#abe34ae2278e60605441f515d2c0ad3f0383659b" }
 dependencies = [
     { name = "click" },
     { name = "devkit-advisory" },

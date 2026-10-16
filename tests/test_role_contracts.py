@@ -129,26 +129,24 @@ def test_tasks_name_the_docs_a_worker_must_write() -> None:
 def test_the_host_validates_the_committed_range_and_blocks_a_failure() -> None:
     delegate = DELEGATE.read_text(encoding="utf-8")
     assert "except a worker, which commits on its activity branch ([worker](references/worker.md))" in delegate
-    assert "your range check is a `validation` envelope" in delegate
+    assert "a range you block is a problem in your own `worker` envelope" in delegate
     text = " ".join(WORKER_RESULTS.read_text(encoding="utf-8").split())
     assert "From the last accepted head to the returned head" in text
     assert "merge-base --is-ancestor <accepted> <returned>" in text
     assert "diff --name-only <accepted> <returned>` is in the write scope" in text
     assert "`git -C <worktree> status --short` is empty" in text
-    assert "--status failed" in text and "never reset or amend" in text
+    assert "--problem" in text and "never reset or amend" in text
     assert "a pull request stays open and blocked" in text
     assert "A blocked unit goes to no review and no integration" in text
     assert "validate the cumulative range again from the same last accepted head" in text
     assert "the base checkout's status and HEAD are as recorded" in text
-    assert "except the validation envelopes you wrote under `<unit>/envelopes/` since `<accepted>`" in text
-    assert "A worker never writes a `validation` envelope" in text
+    assert "except the records you wrote under `<unit>/envelopes/` since `<accepted>`" in text
+    assert "`validation`" not in text and "--kind worker --stage <stage> --problem" in text
     assert "Never pass a blocked unit's current HEAD as the base" in text
     assert "`build-verify`, or `fix-verify` in `sdd-spec-bugfix`" in text
-    assert (
-        "A unit is blocked while its latest `validation` envelope is `failed`, whatever a worker returns afterwards"
-        in text
-    )
-    assert "a problem a worker recorded has no resolution that names it" in text
+    assert "A unit is blocked while any problem, a worker's or yours, has no resolution that names it" in text
+    assert "a later commit or a successful `worker` envelope clears nothing" in text
+    assert "validate the whole branch: from its merge base" in text
     assert "A comment or a rerun request alone resolves nothing" in text
 
 
@@ -162,3 +160,15 @@ def test_orchestration_follows_the_committed_result_contract() -> None:
     assert "a blocked unit goes no further" in text
     assert "A `session`-depth task never becomes a unit" in text
     assert "`local-orchestrated` is the user's choice, never yours" in text
+
+
+def test_a_run_records_its_questions_and_problem_in_one_worker_envelope() -> None:
+    records = " ".join((BUNDLE / "skills/spec/references/worker-records.md").read_text(encoding="utf-8").split())
+    assert "one run leaves one `worker` envelope" in records
+    assert "--answers-to worker-NN.yaml" in records and "--resolves worker-NN.yaml" in records
+    assert "There is no separate question or problem kind" in records
+    planning = _contract("planning-worker")[1]
+    assert "--questions-file" in planning and "--kind answer --answers-to <worker-NN.yaml>" in planning
+    assert "never into a file of their own" in planning
+    development = _contract("development-worker")[1]
+    assert "exactly one `worker` envelope" in development and "--kind resolution --resolves" in development

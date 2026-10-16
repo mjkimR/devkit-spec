@@ -125,8 +125,8 @@ class ProposalNeedsDecomposeError(SpecError):
 
 
 class ProposalWrongWorktreeError(SpecError):
-    """A handoff runs in a linked worktree whose branch is not the proposal's slug (``INPUT_ERROR``): the spec
-    bundle would land on another task's branch."""
+    """A handoff runs in a linked worktree whose branch is not ``dev-<slug>`` (``INPUT_ERROR``): the spec bundle
+    would land on another task's branch."""
 
     code = "SPEC_PROPOSAL_WRONG_WORKTREE"
     input_error = True

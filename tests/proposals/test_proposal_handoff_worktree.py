@@ -1,4 +1,4 @@
-"""The handoff branch guard: a linked worktree must be on the slug's branch, at either ``[tool.spec] worktree`` level."""
+"""The handoff branch guard: a linked worktree must be on ``dev-<slug>``, at either ``[tool.spec] worktree`` level."""
 
 from __future__ import annotations
 
@@ -43,8 +43,8 @@ def test_a_handoff_in_another_tasks_worktree_is_refused_before_writing(repo: Pat
     assert result.exit_code == 2 and result.stdout == ""
     assert "SPEC_PROPOSAL_WRONG_WORKTREE" in result.stderr
     branch = "- (detached HEAD)" if detached else "other-task"
-    assert f"in the worktree of branch {branch}; it runs in the worktree of branch {SLUG}" in result.stderr
-    assert f"devkit worktree start {SLUG}" in result.stderr
+    assert f"in the worktree of branch {branch}; it runs in the worktree of branch dev-{SLUG}" in result.stderr
+    assert f"devkit worktree start dev-{SLUG}" in result.stderr
     assert (linked / f"docs/proposals/PROP-{SLUG}/proposal.md").is_file() and not (linked / "specs").exists()
 
     result = CliRunner().invoke(
@@ -53,8 +53,11 @@ def test_a_handoff_in_another_tasks_worktree_is_refused_before_writing(repo: Pat
     assert json.loads(result.stdout)["error"]["code"] == "SPEC_PROPOSAL_WRONG_WORKTREE"
 
 
-def test_the_slugs_own_worktree_hands_off(repo: Path) -> None:
-    linked = _worktree(repo, SLUG, "-b", SLUG)
+def test_the_development_branch_of_the_slug_hands_off(repo: Path) -> None:
+    plain = _worktree(repo, SLUG, "-b", SLUG)  # the bare slug is not an activity branch
+    with pytest.raises(ProposalWrongWorktreeError):
+        handoff_proposal(plain, SLUG, today=TODAY)
+    linked = _worktree(repo, f"dev-{SLUG}", "-b", f"dev-{SLUG}")
     result = CliRunner().invoke(devkit_cli, ["spec", "proposal", "handoff", SLUG, "-w", str(linked)])
     assert result.exit_code == 0, result.output
     assert result.stdout.startswith(f"[HANDOFF: PROP-{SLUG} spec=SPEC-{SLUG} ")

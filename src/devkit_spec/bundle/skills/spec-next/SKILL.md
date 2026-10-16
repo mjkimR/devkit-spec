@@ -35,7 +35,7 @@ It evaluates the stage schema of the workflow the unit is bound to against the f
 Run `git status -s` to inspect uncommitted changes:
 - Are there uncommitted files or unstaged changes?
 - Are you on a feature branch, a task worktree or the base branch?
-- Report leftovers from `devkit worktree status` at any `GIT_POLICY` level, each as `devkit worktree finish <slug>` or user-authorized removal, per the Leftovers section of the `spec` skill's `references/worktree.md`; never remove any unasked.
+- Report leftovers from `devkit worktree status` at any `GIT_POLICY` level, each as `devkit worktree finish <branch>` or user-authorized removal, and stale activity branches from `devkit worktree stale` (also warned by `devkit rules check -p hygiene`), each with its resume or discard path, per §4 of the `spec` skill's `references/branches.md`; never remove or resume any unasked.
 
 ### Step 2: Check Active Change Specs (`specs/`)
 Run `devkit spec list spec` (completed bundles are left out unless `--history`; follow any `[NEXT_CMD]`), then inspect only the listed directories (`specs/<YYYY-MM>/<YYYYMMDD>-<slug>/`). Completed specs are work history: do not read them for orientation; pass `--history --status completed` only when a task explicitly needs one.

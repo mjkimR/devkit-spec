@@ -1,7 +1,8 @@
 """``devkit.post_finish`` extension: the spec cleanup after ``devkit worktree finish`` succeeded.
 
 devkit calls ``after_finish(base, result)`` in the base checkout once the task's branch is merged and its worktree
-removed. A project that deploys the ``spec`` bundle then needs two cleanups the merge cannot do:
+removed. The result names the activity branch (``branch``: ``plan-<slug>`` or ``dev-<slug>``) and its ``slug``
+without the prefix, which names the proposal. A project that deploys the ``spec`` bundle then needs two cleanups the merge cannot do:
 
 - ``docs/proposals/PROP-<slug>/``: a handoff deleted the proposal in the worktree; the merge removed its tracked
   files here but leaves the empty directories (``prune_proposals``);

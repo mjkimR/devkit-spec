@@ -224,7 +224,7 @@ def test_handoff_registers_inside_a_linked_worktree(repo: Path, tmp_path: Path) 
     git(repo, "add", ".")
     git(repo, "commit", "-q", "-m", "proposal")
     linked = tmp_path / "repo-wt-demo"
-    git(repo, "worktree", "add", "-q", "-b", "demo", str(linked))
+    git(repo, "worktree", "add", "-q", "-b", "dev-demo", str(linked))
     result = CliRunner().invoke(devkit_cli, ["spec", "proposal", "handoff", "demo", "-w", str(linked)])
     assert result.exit_code == 0, result.output
     scope_lines = [line for line in result.stdout.splitlines() if line.startswith("[SCOPE: ")]

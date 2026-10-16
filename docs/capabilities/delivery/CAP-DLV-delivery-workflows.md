@@ -230,8 +230,16 @@ Envelopes are devkit envelope files under a unit's `envelopes/`, written with
 | `feedback` | `envelopes/feedback-NN.yaml` (`checks.swept`) | the implementer |
 | `final-report` | `envelopes/final-report-NN.yaml` (`checks.tests`, `build`, `lint`) | the implementer |
 | `challenger`, `reconciler`, `scout` | role returns | the caller, from the role's fields |
-| `worker` | one turn's result of a worker, with the applied `activity-effort` | the worker itself |
-| `validation` | the Host's check of a worker's committed range (`completed` accepts, `failed` blocks) | the Host |
+| `worker` | one run's result, exactly one per run: the applied `activity-effort`, the run's `questions` (status `needs_input`) and its `problem` (`cause`, `attempts`, `recovery`; `failed` requires it) | the run itself: a worker, the Host in `direct`, or the Host for a range it blocks |
+| `answer` | the rewritten answers to a run's questions (`answers_to: worker-NN.yaml`), one decision per question | the run that processes them, first, in a commit of its own |
+| `resolution` | the fix of a run's problem (`resolves: worker-NN.yaml`, `summary`) | whoever actually fixed it, with the fix |
+
+A unit is held while a `worker` envelope's problem has no `resolution` naming it (blocked) or a question has no
+`answer` (waiting): devkit passes no gate, by any source, and `devkit worktree finish --merge` refuses the branch
+(`WORKTREE_BLOCKED`); a pull request merges only while `devkit workflow envelope check --format json` reports
+`"blocked": false` and no `pending_questions`. Unanswered questions are `choose` requests
+(`question:worker-NN.<id>`, `answer=envelope`) that `devkit workflow answer` refuses. Formats and roles:
+`ADR-run-records-and-activity-branches`.
 
 A role returns `status` (`completed`, `needs_input`, `failed`), `summary`, `findings` (`issue`, `evidence`,
 `failure_condition`, `suggested_action`), `assumptions`, `unverified_areas`, `checks` and `diff_scope`. Docs impact
@@ -268,8 +276,9 @@ when it stops on questions or a problem, makes an emergency commit of the unfini
 It never reverts, closes, raises the depth or narrows the scope. The `development-worker` runs from the stage
 `devkit workflow next` names up to the final change report; the `planning-worker` takes a draft proposal toward
 `plan-accept`, collecting its questions in one round. The Host validates the cumulative committed range from the
-unit's last accepted head and records it as a `validation` envelope; a failed validation blocks the unit from review
-and integration without discarding anything (`ADR-worker-delivers-committed-result`). Host statuses: Claude Code
+unit's last accepted head; a range it rejects is a problem in the Host's own `worker` envelope, which blocks the unit
+from review and integration without discarding anything until a resolution names it
+(`ADR-worker-delivers-committed-result`, `ADR-run-records-and-activity-branches`). Host statuses: Claude Code
 `native`, Codex `unsupported` (the Host runs the unit itself in `direct`), Antigravity `unverified`.
 
 Stages delegate to `reviewer` (`review-refine`), `reconciler` (`living-spec-draft`, as verifier) and `scout`
@@ -290,3 +299,7 @@ prompt.
 | `devkit workflow bind --unit <dir> --workflow <id>` | Bind an unbound unit, or rebind after `WORKFLOW_DRIFT`. |
 | `devkit workflow validate` | Validate definitions; `SHARED_STAGE_MISMATCH` across definitions. |
 | `devkit workflow list` | List units of every layout. |
+| `devkit workflow envelope new --unit <dir> --kind worker\|answer\|resolution ...` | A run's record (`--questions-file`, `--problem`, `--tried`, `--recovery`, `--effort`), its answers (`--answers-to`, `--answers-file`) or a fix (`--resolves`). |
+| `devkit workflow envelope check --unit <dir> [--format json]` | Malformed envelopes and the hold: `[BLOCKED]`, `[PENDING_QUESTION]`; `blocked`, `problems`, `pending_questions` in JSON. |
+| `devkit worktree start <branch> [--no-worktree \| --existing-branch <branch> --unit <dir>]` | Start `plan-<slug>` or `dev-<slug>` in a worktree or the current checkout, or continue an existing branch after devkit-spec's attach check. |
+| `devkit worktree stale` | Activity branches idle beyond `[worktree] stale_after`; also warned by `devkit rules check -p hygiene`. |

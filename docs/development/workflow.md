@@ -13,7 +13,7 @@ the same constitution, skills, workflows and rules it ships.
    no `[workflow.approvals]`, so `dev-integration` is `ask` (`plan-intent` and `plan-accept` always are). It sets
    `[tool.spec] worktree = "required"`, so every `spec` and `proposal` activity in `direct` mode runs in a task
    worktree, and `[worktree] pull_request = "auto"`: after `dev-integration` a task that needs no pull request
-   integrates locally with `devkit worktree finish <slug> --merge`, which fast-forwards `main` and pushes it.
+   integrates locally with `devkit worktree finish dev-<slug> --merge`, which fast-forwards `main` and pushes it.
 4. `spec` and `proposal` depths write `spec.md`, `plan.md` and `tasks.md` (`devkit spec new <slug>`, or the handoff)
    before production code, and reconcile into `docs/` before completion.
 

@@ -71,7 +71,9 @@ term's contract, the last column names it. Search synonyms for these terms live 
 | **Scope registry** | One JSON record per running task under `<git-common-dir>/devkit-spec-scope/<namespace>/`, shared by every worktree, with an append-only journal. Detection only; never exclusive ownership. | `CAP-COLL-work-scope-registry` |
 | **Owner token** | The secret a registration returns once and saves in the worktree's Git directory; the record stores only its hash. | `CAP-COLL-work-scope-registry` |
 | **Overlap** | Two scope sets naming the same document path, or code paths where one equals or contains the other. Evidence for scheduling, not a proof of conflict. | `CAP-COLL-work-scope-registry` |
-| **Task worktree** | A linked Git worktree for one activity (`devkit worktree start <slug>`): every worker in `local-orchestrated` mode, and in `direct` mode every `spec` or `proposal` activity under `[tool.spec] worktree = "required"` and one that needs it under `"auto"`. | `CAP-DLV-project-policy` |
+| **Task worktree** | A linked Git worktree for one activity on its activity branch (`devkit worktree start plan-<slug>` or `dev-<slug>`): every worker in `local-orchestrated` mode, and in `direct` mode every `spec` or `proposal` activity under `[tool.spec] worktree = "required"` and one that needs it under `"auto"`; otherwise the branch is started without one (`--no-worktree`). | `CAP-DLV-project-policy` |
+| **Activity branch** | `plan-<slug>` for a proposal's Planning, `dev-<slug>` for Development; one per activity, continued only through `--existing-branch <branch> --unit <dir>`, which devkit-spec's attach check verifies. | `ADR-run-records-and-activity-branches` |
+| **Hold** | A unit with a problem no resolution names (blocked) or a question no answer answers (waiting): no gate passes and the branch is not merged. | `ADR-run-records-and-activity-branches` |
 
 ## 5. Packaging and Harness
 

@@ -166,8 +166,8 @@ sequenceDiagram
     participant Spec as devkit spec
     participant Reg as Registry (<git-common-dir>/devkit-spec-scope/)
 
-    Agent->>WT: worktree start <slug> (in the base)
-    WT-->>Agent: [NEXT_CMD: cd <base>-wt-<slug>] (setup + devkit sync ran there)
+    Agent->>WT: worktree start dev-<slug> (in the base)
+    WT-->>Agent: [NEXT_CMD: cd <base>-wt-dev-<slug>] (setup + devkit sync ran there)
     Agent->>Spec: spec new <slug> (spec depth) or proposal handoff <slug> (proposal depth)
     Agent->>Spec: scope register --spec <dir> (handoff registers itself)
     Spec->>Reg: record + owner token (token saved in the worktree's git dir)
@@ -177,8 +177,8 @@ sequenceDiagram
         Spec-->>Agent: pairs + [SCOPE_ACK: status=applied overlaps=...]
     end
     Note over Agent: dev-integration approval
-    Agent->>WT: worktree finish <slug> [--merge] (in the base)
-    WT-->>Agent: [WORKTREE_FINISHED: ...] or a refusal (task stays registered, no extension)
+    Agent->>WT: worktree finish dev-<slug> [--merge] (in the base)
+    WT-->>Agent: [WORKTREE_FINISHED: ...] or a refusal, e.g. WORKTREE_BLOCKED (task stays registered, no extension)
     WT->>Spec: post-finish extension (devkit.post_finish)
     Spec->>Reg: remove the finished worktree's records (revision unchanged)
     Spec-->>Agent: [NOTICE] removed scope record / empty proposal directory

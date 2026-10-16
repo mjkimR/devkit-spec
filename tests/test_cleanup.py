@@ -40,7 +40,7 @@ def test_finish_prunes_the_proposal_and_removes_only_the_finished_worktree_recor
     git(repo, "worktree", "remove", "--force", str(finished))
     git(repo, "worktree", "remove", "--force", str(other))
 
-    lines = after_finish(repo, {"slug": "s", "path": str(finished)})
+    lines = after_finish(repo, {"branch": "dev-s", "slug": "s", "path": str(finished)})
     assert lines == ["removed empty proposal directory docs/proposals/PROP-s", "removed the scope record of SPEC-s"]
     assert not (repo / "docs/proposals/PROP-s").exists() and (repo / "docs/proposals/PROP-kept").is_dir()
     # The other stale record waits for an explicit sweep.
@@ -90,7 +90,7 @@ def test_a_failed_prune_is_a_warning_and_the_sweep_still_runs(tmp_path: Path) ->
     git(repo, "worktree", "remove", "--force", str(finished))
     locked.chmod(0)  # a directory that cannot be listed
     try:
-        lines = after_finish(repo, {"slug": "s", "path": str(finished)})
+        lines = after_finish(repo, {"branch": "dev-s", "slug": "s", "path": str(finished)})
     finally:
         locked.chmod(0o755)
     assert lines is not None and len(lines) == 2
