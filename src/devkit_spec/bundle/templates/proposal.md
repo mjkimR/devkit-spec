@@ -8,6 +8,8 @@ target_area: capabilities/<area>/      # Target capability area on graduation (e
 priority: high                        # critical | high | medium | low (estimated priority)
 size: M                               # S | M | L | XL (estimated scope: S=single fix, M=1-2 sessions, L=complex module, XL=major overhaul)
 task_kind: feature                    # feature | bugfix: the spec follows sdd-spec-<task_kind>
+planning_effort: medium               # low | medium | high: Planning activity-effort hint
+dev_effort: medium                    # low | medium | high: Development activity-effort hint
 # supersedes: PROP-<old-slug>         # close by supersede: the accepted proposal this draft replaces
 # needs_decompose: true               # Backlog splits this draft before Planning starts
 ---

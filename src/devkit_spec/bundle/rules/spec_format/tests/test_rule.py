@@ -252,3 +252,23 @@ def test_new_proposal_feedback_defaults_to_open(tmp_path: Path) -> None:
     check(RULE, tmp_path, fix=True)
     fixed = (tmp_path / name).read_text()
     assert "id: FB-observed" in fixed and "status: open" in fixed
+
+
+def test_proposal_effort_hints_are_validated(tmp_path: Path) -> None:
+    files = {
+        "docs/proposals/PROP-ok/proposal.md": _anchor("PROP-ok", "planning_effort: low\ndev_effort: high\n"),
+        "docs/proposals/PROP-omitted/proposal.md": _anchor("PROP-omitted"),
+        "docs/proposals/PROP-bad/proposal.md": _anchor("PROP-bad", "planning_effort: extreme\ndev_effort: 3\n"),
+        "docs/proposals/PROP-single.md": _anchor("PROP-single", "dev_effort: ''\n"),
+        "docs/proposals/PROP-ok/target-docs.md": _anchor("PROP-ok-target", "planning_effort: extreme\n"),
+        "specs/2026-10/20261013-e/spec.md": _anchor("SPEC-e", "dev_effort: extreme\n"),
+    }
+    violations = check(RULE, tmp_path, files, fix=True)
+    assert _found(violations) == [
+        ("docs/proposals/PROP-bad/proposal.md", 5, "frontmatter planning_effort 'extreme' is not one of low | medium | high"),
+        ("docs/proposals/PROP-bad/proposal.md", 6, "frontmatter field 'dev_effort' must be a string (low | medium | high)"),
+        ("docs/proposals/PROP-single.md", 5, "frontmatter dev_effort '' is not one of low | medium | high"),
+    ]
+    assert not any(v.fixable for v in violations)
+    assert violations[0].remediation == "Set planning_effort to one of low | medium | high, or remove the field"
+

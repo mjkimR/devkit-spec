@@ -333,3 +333,46 @@ def test_feedback_with_unknown_owner_remains_discoverable(feedback: Path, write:
         _spec("list", "feedback", "--where", "scope=unknown", "--format", "json", workspace=feedback).stdout
     )
     assert payload["documents"][0]["target"] == "devkit workflow next"
+
+
+def test_proposal_lines_and_records_carry_task_kind_and_effort_hints(workspace: Path, write: Write) -> None:
+    write(
+        "docs/proposals/PROP-a/proposal.md",
+        _doc(
+            "PROP-a",
+            status="draft",
+            title="Alpha",
+            task_kind="feature",
+            planning_effort="low",
+            dev_effort="high",
+        ),
+    )
+    write(
+        "docs/proposals/PROP-b/proposal.md",
+        _doc("PROP-b", status="accepted", title="Beta"),
+    )
+    write("docs/capabilities/core/CAP-CORE-a.md", _doc("CAP-CORE-a", status="active", title="Cap"))
+
+    lines = _spec("list", "proposal", workspace=workspace).stdout.splitlines()
+    assert lines[:2] == [
+        "[DOCUMENT: PROP-a kind=proposal status=draft path=docs/proposals/PROP-a/proposal.md tasks=- "
+        "task_kind=feature planning_effort=low dev_effort=high title=Alpha]",
+        "[DOCUMENT: PROP-b kind=proposal status=accepted path=docs/proposals/PROP-b/proposal.md tasks=- "
+        "task_kind=- planning_effort=- dev_effort=- title=Beta]",
+    ]
+    records = {
+        d["id"]: d for d in json.loads(_spec("list", "--format", "json", workspace=workspace).stdout)["documents"]
+    }
+    assert (
+        records["PROP-a"]["task_kind"],
+        records["PROP-a"]["planning_effort"],
+        records["PROP-a"]["dev_effort"],
+    ) == ("feature", "low", "high")
+    assert (
+        records["PROP-b"]["task_kind"],
+        records["PROP-b"]["planning_effort"],
+        records["PROP-b"]["dev_effort"],
+    ) == (None, None, None)
+    assert "planning_effort" not in records["CAP-CORE-a"] and "dev_effort" not in records["CAP-CORE-a"]
+    assert _ids(workspace, "proposal", "--where", "planning_effort=low", "--where", "dev_effort=high") == ["PROP-a"]
+

@@ -7,7 +7,8 @@ Text output (paths are relative to the workspace root):
 - ``refs``: ``[REF: <id> path= status= fields= count=]`` per referenced (``--direction out``) or referencing
   (``--direction in``) document, in ID order; ``path=-`` is a reference to an ID no document declares.
 - ``list``: ``[DOCUMENT: <id> kind= status= path= tasks= title=]`` per document in kind, then ID order (feedback by
-  severity first); ``tasks`` is ``<checked>/<total>`` of a spec's ``tasks.md``. Feedback lines add ``severity=``,
+  severity first); ``tasks`` is ``<checked>/<total>`` of a spec's ``tasks.md``. Proposal lines add ``task_kind=``,
+  ``planning_effort=`` and ``dev_effort=`` after ``tasks=``; feedback lines add ``severity=``,
   ``scope=`` and ``target=`` after ``tasks=``. ``--where FIELD=A,B`` keeps documents whose frontmatter ``FIELD``
   is one of the values.
 
@@ -53,6 +54,8 @@ OFFSET = click.option("--offset", type=int, default=0, show_default=True, help="
 _KIND_ORDER = {kind: position for position, kind in enumerate(Kind)}
 # Feedback ``severity`` values from the most to the least urgent; any other value, or none, ranks after them.
 SEVERITY_ORDER = ("critical", "blocked", "workaround", "noise")
+# The proposal frontmatter fields ``list`` prints on proposal lines and records.
+PROPOSAL_FIELDS = ("task_kind", "planning_effort", "dev_effort")
 # The feedback frontmatter fields ``list`` prints on feedback lines and records.
 FEEDBACK_FIELDS = ("severity", "scope", "target")
 
@@ -154,6 +157,14 @@ def _severity_rank(document: Document) -> int:
         return 0
     severity = _text(document.frontmatter.get("severity")).lower()
     return SEVERITY_ORDER.index(severity) if severity in SEVERITY_ORDER else len(SEVERITY_ORDER)
+
+
+def _proposal_fields(document: Document) -> dict[str, str | None]:
+    """``task_kind``, ``planning_effort`` and ``dev_effort`` of a proposal document (``None`` when absent); empty for
+    other kinds."""
+    if document.kind is not Kind.PROPOSAL:
+        return {}
+    return {name: _text(document.frontmatter.get(name)) or None for name in PROPOSAL_FIELDS}
 
 
 def _feedback_fields(document: Document) -> dict[str, str | None]:
@@ -383,6 +394,7 @@ def list_cmd(
                         "historical": index.is_historical(document),
                         "tasks": tasks[document.path],
                     }
+                    | _proposal_fields(document)
                     | _feedback_fields(document)
                     for document in shown
                 ],
@@ -400,6 +412,7 @@ def list_cmd(
                     path=document.path,
                     **{key: value for key, value in _planning_fields(document, planning).items() if key != "status"},
                     tasks=tasks[document.path],
+                    **_proposal_fields(document),
                     **_feedback_fields(document),
                     **scope.fields(document),
                     title=document.title,

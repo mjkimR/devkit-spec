@@ -50,14 +50,12 @@ removes it.
    `plan-accept`. Anything else is `SPEC_PROPOSAL_NOT_APPROVED` (`INTERACTION`: stop and ask the user). A proposal
    marked `needs_decompose: true` is split in Backlog, never handed off (`SPEC_PROPOSAL_NEEDS_DECOMPOSE`), and one
    proposal hands off to exactly one spec.
-3. **The follow-up workflow comes from `task_kind`**: `workflow` and `workflow_hash` in `proposal.md` are devkit's
-   binding of the proposal unit itself; `task_kind` (`feature` or `bugfix`, confirmed at `plan-accept`) is the only
-   axis value stored as a field, because the proposal is not yet bound to its spec workflow. The spec follows
-   `sdd-spec-<task_kind>`; any other value is `SPEC_PROPOSAL_INVALID`. After handoff the bound workflow carries the
-   `task-kind` and `spec.md` has no `kind` field (`ADR-task-kind-and-planning-depth`).
+3. **The follow-up workflow comes from `task_kind`; effort hints stay on the proposal**: `workflow` and `workflow_hash` in `proposal.md` are devkit's
+   binding of the proposal unit itself; `task_kind` (`feature` or `bugfix`, confirmed at `plan-accept`) selects the follow-up workflow `sdd-spec-<task_kind>` (any other value is `SPEC_PROPOSAL_INVALID`), while `planning_effort` and `dev_effort` (`low` | `medium` | `high`, scaffolded default `medium`) are non-authoritative activity-effort hints on `proposal.md`. `planning_effort` guides Planning and `dev_effort` is refined before `plan-accept` to guide Development (`[HANDOFF]` and `HandoffResult.dev_effort` expose it). After handoff the bound workflow carries the
+   `task-kind` and `spec.md` has neither a `kind` field (`ADR-task-kind-and-planning-depth`) nor `planning_effort`/`dev_effort` fields (confirmed run effort is recorded on `worker-NN.yaml` envelopes).
 4. **Validate everything before writing**: handoff checks the slug, the proposal file and its frontmatter, the
    approval, `namespace` (`global` or registered, else `SPEC_PROPOSAL_INVALID`), `summary` (a string, else
-   `SPEC_PROPOSAL_INVALID`), the slug conflict, the workflow binding and every path it would create before its first
+   `SPEC_PROPOSAL_INVALID`), `planning_effort` and `dev_effort` (`low` | `medium` | `high` when present, else `SPEC_PROPOSAL_INVALID`), the slug conflict, the workflow binding and every path it would create before its first
    write. A path that already exists, two PADRs that would become the same ADR, an ADR ID another document already
    declares, a carried bundle file whose path under the materials directory a file or symbolic link of `materials/`
    takes too (or lies below; a `materials/` that is itself a symbolic link takes every such path), or a path it would
@@ -191,6 +189,8 @@ legacy proposal or PADR whose slug starts that way, before writing anything, wit
 | `milestone` | Optional (`--milestone`): milestone, phase or release; carried to `spec.md`. |
 | `boundaries` | `owns` (scaffolded: the target area) and `excludes` (scaffolded: `docs/decisions/`); carried to `plan.md` and `tasks.md`. |
 | `task_kind` | `feature` (scaffolded default) or `bugfix` (`--task-kind`): the provisional `task-kind`, confirmed at `plan-accept`; the spec follows `sdd-spec-<task_kind>`. |
+| `planning_effort` | `low`, `medium` (scaffolded default) or `high` (`--planning-effort`): non-authoritative Planning `activity-effort` hint, confirmed at `plan-intent`; not carried to `spec.md`. |
+| `dev_effort` | `low`, `medium` (scaffolded default) or `high` (`--dev-effort`): non-authoritative Development `activity-effort` hint, provisional in Backlog and refined during Planning before `plan-accept`; returned by `handoff` (`dev_effort`) and not carried to `spec.md`. |
 | `supersedes` | Optional (`--supersedes PROP-<old>`): the accepted proposal a close by supersede replaces; it must exist (`SPEC_PROPOSAL_NOT_FOUND`) and be `accepted` (`SPEC_PROPOSAL_NOT_APPROVED`). |
 | `needs_decompose` | Optional (`--needs-decompose`): `true` marks a draft Backlog splits before Planning starts. |
 | `workflow`, `workflow_hash` | devkit's binding of the proposal unit (`sdd-proposal`). |
@@ -323,7 +323,7 @@ Every command takes `-w/--workspace-root`, `--format text|json`, `-q`, `-v` and 
 ```bash
 uv run devkit spec proposal new fast-engine --title "Fast Engine" --target-area capabilities/governance/
 uv run devkit spec proposal new fast-engine --milestone "Phase 1" --with-target-docs
-uv run devkit spec proposal new rate-limits --namespace api --task-kind bugfix
+uv run devkit spec proposal new rate-limits --namespace api --task-kind bugfix --planning-effort low --dev-effort high
 uv run devkit spec proposal new fast-engine-v2 --supersedes PROP-fast-engine        # close by supersede
 uv run devkit spec proposal new fast-engine --summary "Replaces the regex rule engine with an AST parser."
 uv run devkit spec proposal padr fast-engine "Use AST parser"        # decisions/PADR-use-ast-parser.md
@@ -339,6 +339,8 @@ uv run devkit spec proposal check fast-engine                        # before an
 | `--target-area/-a` | `new` | Capability area the proposal targets (default `capabilities/<area>/`); also the owned boundary. |
 | `--milestone/-m` | `new` | Milestone, phase or release; carried to `spec.md`. |
 | `--task-kind` | `new` | Write `task_kind: feature\|bugfix` (default `feature`); anything else is `ARGUMENT_INVALID`. |
+| `--planning-effort` | `new` | Write `planning_effort: low\|medium\|high` (default `medium`); anything else is `ARGUMENT_INVALID`. |
+| `--dev-effort` | `new` | Write `dev_effort: low\|medium\|high` (default `medium`); anything else is `ARGUMENT_INVALID`. |
 | `--supersedes` | `new` | Write `supersedes: PROP-<old>`; a value that is not another proposal's ID is `ARGUMENT_INVALID`, a proposal that does not exist `SPEC_PROPOSAL_NOT_FOUND`, one that is not `accepted` `SPEC_PROPOSAL_NOT_APPROVED`; nothing written. |
 | `--needs-decompose` | `new` | Write `needs_decompose: true`. |
 | `--namespace` | `new` | Write `namespace: <name>`: `global` or registered in `[[tool.spec.namespaces]]`, else `ARGUMENT_INVALID` with the valid names in `[FIX]`. Omitted: the namespace the current directory lies in (`CAP-DOCS-namespaces`), else no field and the bundle is global. |
@@ -349,11 +351,11 @@ uv run devkit spec proposal check fast-engine                        # before an
 ### 4.10 Output
 
 ```text
-[PROPOSAL: PROP-fast-engine path=docs/proposals/PROP-fast-engine/proposal.md dir=docs/proposals/PROP-fast-engine target_docs=- workflow=sdd-proposal]
+[PROPOSAL: PROP-fast-engine path=docs/proposals/PROP-fast-engine/proposal.md dir=docs/proposals/PROP-fast-engine target_docs=- workflow=sdd-proposal planning_effort=medium dev_effort=medium]
 [NEXT_CMD: devkit workflow next --unit docs/proposals/PROP-fast-engine]
 [PADR: PADR-use-ast-parser path=docs/proposals/PROP-fast-engine/decisions/PADR-use-ast-parser.md proposal=PROP-fast-engine]
 [PROPOSAL: PROP-fast-engine path=docs/proposals/PROP-fast-engine/proposal.md status=draft editable=yes]
-[HANDOFF: PROP-fast-engine spec=SPEC-fast-engine dir=specs/2026-10/20261013-fast-engine workflow=sdd-spec-feature]
+[HANDOFF: PROP-fast-engine spec=SPEC-fast-engine dir=specs/2026-10/20261013-fast-engine workflow=sdd-spec-feature dev_effort=medium]
 [TARGET_DOCS: specs/2026-10/20261013-fast-engine/target-docs.md]
 [MATERIALS: docs/materials/2026-10/20261013-fast-engine]
 [PROMOTED_ADR: ADR-use-ast-parser path=docs/decisions/2026-10/20261013-use-ast-parser.md padr=PADR-use-ast-parser]
@@ -370,19 +372,19 @@ uv run devkit spec proposal check fast-engine                        # before an
 [OK: nothing to prune]
 ```
 
-- `new`: one `[PROPOSAL: ...]` line (`target_docs=-` without `--with-target-docs`, `workflow=-` when unbound), ending
+- `new`: one `[PROPOSAL: ...]` line (`target_docs=-` without `--with-target-docs`, `workflow=-` when unbound, `planning_effort=<effort>`, `dev_effort=<effort>`), ending
   with `namespace=<name>` when the bundle reports a namespace: the field written, else `global` in a workspace that
   registers namespaces (none for a global bundle in a workspace without them); then `[NEXT_CMD: ...]` when
-  `proposal.md` is bound to `sdd-proposal`. JSON: `id`, `dir`, `path`, `target_docs`, `workflow`, `namespace`
+  `proposal.md` is bound to `sdd-proposal`. JSON: `id`, `dir`, `path`, `target_docs`, `workflow`, `planning_effort`, `dev_effort`, `namespace`
   (`null` when none is reported), `next_command`, `notices`.
 - `padr`: one `[PADR: ...]` line. JSON: `id`, `path`, `proposal`.
-- `handoff`: `[HANDOFF: ...]` (`workflow=-`: unbound), `[TARGET_DOCS: ...]` and `[MATERIALS: ...]` when the bundle had
+- `handoff`: `[HANDOFF: ...]` (`workflow=-`: unbound; `dev_effort=<effort>` when the proposal declared `dev_effort`), `[TARGET_DOCS: ...]` and `[MATERIALS: ...]` when the bundle had
   them, one `[PROMOTED_ADR: ...]` per PADR, one `[DROPPED_RECORD: <path>]` per workflow record of the proposal
   unit, one `[CARRIED_GATE: <request> decision=<path>]` per approval carried by name (rule 12),
   one `[REWRITTEN: <path>:<line> kind=link|id from= to=]` per rewrite, one
   `[UNRESOLVED_LINK: <path>:<line> kind= target= reason=]` per link or reference left as it was, `[SCOPE: ...]` when
   it registered the bundle, and `[NEXT_CMD: ...]` when `spec.md` is bound. JSON: `proposal`, `spec`, `dir`,
-  `workflow`, `target_docs`, `materials`, `decisions` (`id`, `path`, `padr`), `dropped_records` (paths),
+  `workflow`, `dev_effort` (`null` when absent), `target_docs`, `materials`, `decisions` (`id`, `path`, `padr`), `dropped_records` (paths),
   `carried_gates` (`request`, `decision`), `rewritten_files`, `rewritten`
   (`path`, `line`, `kind`, `from`, `to`), `unresolved` (`path`, `line`, `kind`, `target`, `reason`), `next_command`,
   `notices`, `scope` (`record`, `token`, `namespace`, `shared_path`, or `null`).
@@ -397,11 +399,11 @@ created = create_proposal(root, "fast-engine", title="Fast Engine", with_target_
 create_padr(root, "fast-engine", "Use AST parser", summary="Parses rules with an AST.")  # CreatedDecision
 create_padr(root, "fast-engine", "2024 roadmap", padr_slug="roadmap-2024")  # PADR-roadmap-2024
 result = handoff_proposal(root, "fast-engine")  # HandoffResult
-result.dir, result.workflow, result.decisions, result.rewritten, result.unresolved, result.notices
+result.dir, result.workflow, result.dev_effort, result.decisions, result.rewritten, result.unresolved, result.notices
 prune_proposals(root, "fast-engine")  # list of removed dirs
 ```
 
-`create_proposal` also takes `target_area`, `milestone`, `task_kind`, `namespace`, `summary`, `supersedes`,
+`create_proposal` also takes `target_area`, `milestone`, `task_kind`, `planning_effort`, `dev_effort`, `namespace`, `summary`, `supersedes`,
 `needs_decompose` and `cwd` (the
 directory whose namespace applies when `namespace` is omitted);
 `carry_proposal_body` and `ensure_ac_ids` implement 4.6, `RelocationPlan`, `Rewritten` and `Unresolved` 4.7.
@@ -418,7 +420,7 @@ directory whose namespace applies when `namespace` is omitted);
 | `SPEC_PROPOSAL_NOT_FOUND` | `ERROR` (`INPUT_ERROR`) | `ProposalNotFoundError` | No bundle or single-file proposal has the slug (`padr`: no bundle); `new`: `--supersedes` names a proposal that does not exist. |
 | `SPEC_PROPOSAL_REJECTED_PENDING` | `WARNING` | `ProposalRejectedPendingWarning` | `rules check -p hygiene` (whole workspace): a rejected proposal is still in the base; `[FIX]` finds the rejection commit, writes the rejection ADR and deletes the proposal in one commit (rule 9). |
 | `SPEC_PROPOSAL_IN_PLANNING` | `ERROR` (`INPUT_ERROR`) | `ProposalInPlanningError` | `check`: Backlog may not change the proposal, because its `plan-<slug>` exists (locally or fetched; rule 13) or it is no longer `draft`. `padr`: `plan-<slug>` exists and the checkout is not on it. |
-| `SPEC_PROPOSAL_INVALID` | `ERROR` (`MAINTENANCE`) | `ProposalInvalidError` | The proposal, its blueprint or a PADR cannot be read or its frontmatter does not parse; or, at handoff, `namespace` is not a string naming `global` or a registered namespace, `summary` is not a string, or `task_kind` is not `feature` or `bugfix`. |
+| `SPEC_PROPOSAL_INVALID` | `ERROR` (`MAINTENANCE`) | `ProposalInvalidError` | The proposal, its blueprint or a PADR cannot be read or its frontmatter does not parse; or, at handoff, `namespace` is not a string naming `global` or a registered namespace, `summary` is not a string, `task_kind` is not `feature` or `bugfix`, or `planning_effort`/`dev_effort` is present and not `low`, `medium` or `high`. |
 | `SPEC_PROPOSAL_NOT_APPROVED` | `ERROR` (`INTERACTION`) | `ProposalNotApprovedError` | `handoff`: status is not `accepted`, `plan-accept` was not given. `new`: the proposal `--supersedes` names is not `accepted`; a supersede replaces an accepted proposal only. |
 | `SPEC_PROPOSAL_NEEDS_DECOMPOSE` | `ERROR` (`INTERACTION`) | `ProposalNeedsDecomposeError` | The proposal carries `needs_decompose: true`; Backlog splits it into new drafts. |
 | `SPEC_PROPOSAL_WRONG_WORKTREE` | `ERROR` (`INPUT_ERROR`) | `ProposalWrongWorktreeError` | `handoff` in a checkout, linked or base, on another branch than `dev-<slug>`, at either `[tool.spec] worktree` level (rule 11); `[FIX]` starts or continues `dev-<slug>` and reruns the handoff there. |
@@ -429,6 +431,6 @@ directory whose namespace applies when `namespace` is omitted);
 | `SPEC_PROPOSAL_LINK_UNRESOLVED` | `WARNING` | `ProposalLinkUnresolvedWarning` | Links or references into the proposal were left as they were; the `[UNRESOLVED_LINK]` lines list them. |
 | `SPEC_PROPOSAL_REFS_REWRITTEN` | `NOTICE` | `ProposalReferencesRewrittenNotice` | ID references now name the spec or the ADRs; reread each `[REWRITTEN ... kind=id]` sentence. |
 | `SPEC_PROPOSAL_UNBOUND` | `NOTICE` | `ProposalUnboundNotice` | `new`: `sdd-proposal` is not available, `proposal.md` is unbound. `handoff`: `task_kind` is `feature` (or absent) and `sdd-spec-feature` is not available, `spec.md` is unbound. The `[FIX]` is `devkit workflow bind --unit <dir> --workflow <id>`. |
-| `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | devkit's `ArgumentError` | `new`: `--namespace` is neither `global` nor registered, `--task-kind` is not `feature` or `bugfix`, `--supersedes` names no other proposal. `new`, `padr`: `--summary` is empty or not English. |
+| `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | devkit's `ArgumentError` | `new`: `--namespace` is neither `global` nor registered, `--task-kind` is not `feature` or `bugfix`, `--planning-effort` or `--dev-effort` is not `low`, `medium` or `high`, `--supersedes` names no other proposal. `new`, `padr`: `--summary` is empty or not English. |
 | `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecConfigError` | `[tool.spec]` is malformed and it must be read: `new` without `--namespace global`, a proposal's `namespace` other than `global` at handoff, or a handoff in a linked worktree. |
 | `SPEC_SCOPE_REGISTER_FAILED` | `WARNING` | `ScopeRegisterFailedWarning` | A handoff in a task worktree could not register its bundle (`CAP-COLL-work-scope-registry`). |

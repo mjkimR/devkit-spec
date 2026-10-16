@@ -24,6 +24,9 @@ The ``namespace`` field of a bundle anchor (a ``proposal.md`` under ``docs/propo
 ``specs/``), when present, must be a string naming ``global`` or a registered namespace; it is not fixable. Anchors are
 reported as the other rules report documents (a completed spec only when explicitly targeted), except that a run
 targeting ``.devkit/config.toml`` checks every current anchor, because a change to the registry can invalidate them.
+On a proposal anchor (``docs/proposals/PROP-<slug>/proposal.md`` or ``docs/proposals/PROP-<slug>.md``), the optional
+``planning_effort`` and ``dev_effort`` hint fields, when present, must each be a string in ``low | medium | high``
+(not fixable).
 """
 
 from __future__ import annotations
@@ -54,6 +57,8 @@ TARGET_DOCS = "target-docs.md"
 SCOPE = ("docs/capabilities", "docs/stories", PROPOSALS)
 NAMESPACE_SCOPE = ("capabilities", "stories")
 NAMESPACE_FIELD = "namespace"
+EFFORT_FIELDS = ("planning_effort", "dev_effort")
+EFFORTS = ("low", "medium", "high")
 REQUIRED = ("id", "title", "status")
 CREATED_FIELDS = ("created_at", "created", "date")
 DEFAULT_STATUS = "draft"
@@ -75,6 +80,7 @@ class _Problem:
     message: str
     remediation: str
     fixable: bool = False
+    line: int = 1
 
 
 def _blank(value: Any) -> bool:
@@ -129,6 +135,25 @@ def _problems(ctx: RuleContext, path: str) -> list[_Problem]:
             )
         elif not isinstance(value, str):
             problems.append(_Problem(f"frontmatter field '{name}' must be a string", REMEDIATION[name]))
+    if _is_proposal_anchor(path):
+        for field in EFFORT_FIELDS:
+            if field not in data:
+                continue
+            value = data[field]
+            if isinstance(value, str) and value.strip() in EFFORTS:
+                continue
+            message = (
+                f"frontmatter {field} {value!r} is not one of {' | '.join(EFFORTS)}"
+                if isinstance(value, str)
+                else f"frontmatter field '{field}' must be a string ({' | '.join(EFFORTS)})"
+            )
+            problems.append(
+                _Problem(
+                    message,
+                    f"Set {field} to one of {' | '.join(EFFORTS)}, or remove the field",
+                    line=_field_line(ctx.cache.read_text(path), field),
+                )
+            )
     return problems
 
 
@@ -172,7 +197,7 @@ class SpecFormatRule(BaseRule):
             Violation(
                 rule_id=self.id,
                 file=path,
-                line=1,
+                line=problem.line,
                 message=problem.message,
                 remediation=problem.remediation,
                 fixable=problem.fixable,
@@ -230,17 +255,22 @@ class SpecFormatRule(BaseRule):
         return changed
 
 
+def _is_proposal_anchor(path: str) -> bool:
+    """Whether ``path`` is a proposal anchor: ``docs/proposals/PROP-<slug>/proposal.md`` or a single-file proposal
+    ``docs/proposals/PROP-<slug>.md``."""
+    if not path.startswith(f"{PROPOSALS}/"):
+        return False
+    parts = path.removeprefix(f"{PROPOSALS}/").split("/")
+    if len(parts) == 1:
+        return parts[0].startswith("PROP-")
+    return len(parts) == 2 and parts[0].startswith("PROP-") and parts[1] == PROPOSAL_FILE
+
+
 def _is_anchor(path: str) -> bool:
     """Whether ``path`` is a bundle anchor that may declare a ``namespace``: a proposal's ``proposal.md`` under
     ``docs/proposals/``, a single-file proposal ``docs/proposals/<file>.md`` or a spec bundle's ``spec.md`` under
     ``specs/``."""
-    name = path.rsplit("/", 1)[-1]
-    single_file = path.count("/") == 2 and path.startswith(f"{PROPOSALS}/") and name.startswith("PROP-")
-    return (
-        single_file
-        or (path.startswith(f"{PROPOSALS}/") and name == PROPOSAL_FILE)
-        or (path.startswith("specs/") and name == "spec.md")
-    )
+    return _is_proposal_anchor(path) or (path.startswith("specs/") and path.rsplit("/", 1)[-1] == "spec.md")
 
 
 def _namespace_checked(ctx: RuleContext, index: DocumentIndex, document: Document) -> bool:

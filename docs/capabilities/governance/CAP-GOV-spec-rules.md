@@ -48,7 +48,7 @@ Every rule is phase `linter` and is deployed by the `core` preset; every rule is
 | --- | --- | --- |
 | `RULE-document-reference` | Relation fields hold full IDs of the right kind; every reference resolves to exactly one document; prose uses the code-span form; no relative links to ID-bearing documents; no duplicate IDs; no proposal sharing its slug with a spec. | Bracket form to code-span form; a handed-off `PROP-<slug>` to its `SPEC-<slug>`. |
 | `RULE-id-convention` | Dated partitions and path-derived IDs; Living Spec stems; `area` matching the directory; the first H1's ID token; duplicate path-derived IDs; no date- or number-based references. | `id`, `reconcile_id`, `area` and the H1 token aligned to the path. |
-| `RULE-spec-format` | Capabilities, stories and proposals have a frontmatter block with string `id`, `title`, `status`; a proposal's or spec's `namespace` is `global` or registered. | Adds a missing block or missing fields. |
+| `RULE-spec-format` | Capabilities, stories and proposals have a frontmatter block with string `id`, `title`, `status`; a proposal's `planning_effort` and `dev_effort` are `low`, `medium` or `high`; a proposal's or spec's `namespace` is `global` or registered. | Adds a missing block or missing fields. |
 | `RULE-traceability-link` | A story's `capabilities` and a capability's `stories` link both ways. | Appends the missing reverse ID. |
 | `RULE-task-coverage` | Acceptance-criterion IDs of a spec and the task references of its `tasks.md` cover each other. | none |
 | `RULE-spec-lifecycle` | A spec's `status`, its task checklist and its `reconcile.md` status agree. | Sets `status: completed` on a stale `spec.md`. |
@@ -143,9 +143,11 @@ non-blank strings.
   `materials/`. Unlike the index, a file is checked even when it declares no ID.
 - MUST report: no block (`---` on the first line, closed by `---`); a malformed block (unclosed, invalid YAML,
   duplicate keys, not a mapping; fixed by hand); a missing, blank or non-string `id`, `title` or `status`; a
-  `namespace` in `proposal.md` (under `docs/proposals/`) or `spec.md` that is not a string naming `global` or a
-  registered namespace (not fixable). The `namespace` field is checked in current proposals and specs, and in every
-  one of them when the run targets `.devkit/config.toml`.
+  `planning_effort` or `dev_effort` in a proposal anchor (`docs/proposals/PROP-<slug>/proposal.md` or
+  `docs/proposals/PROP-<slug>.md`) that is present and not a string naming `low`, `medium` or `high` (not fixable;
+  omission is allowed for legacy proposals); a `namespace` in `proposal.md` (under `docs/proposals/`) or `spec.md`
+  that is not a string naming `global` or a registered namespace (not fixable). The `namespace` field is checked in
+  current proposals and specs, and in every one of them when the run targets `.devkit/config.toml`.
 - **Fix**: fills what is missing and leaves present values alone: `id` the ID the path derives, `title` the first
   `# ` heading (a leading ID token dropped) else the file stem, `status: draft` (`open` for proposal feedback), and `created_at` today when none of
   `created_at`, `created`, `date` is set. The path derives the file stem for a capability, story, single-file

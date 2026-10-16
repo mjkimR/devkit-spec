@@ -43,7 +43,14 @@ from devkit_spec.errors import (
     SpecError,
 )
 from devkit_spec.namespaces import detect, require
-from devkit_spec.proposals.binding import DEFAULT_TASK_KIND, PROPOSAL_WORKFLOW, TASK_KINDS, resolve_binding
+from devkit_spec.proposals.binding import (
+    DEFAULT_EFFORT,
+    DEFAULT_TASK_KIND,
+    EFFORTS,
+    PROPOSAL_WORKFLOW,
+    TASK_KINDS,
+    resolve_binding,
+)
 from devkit_spec.rules.document_summary import foreign_letters
 
 PROPOSALS = "docs/proposals"
@@ -121,6 +128,18 @@ def require_task_kind(value: str | None) -> str:
         f"--task-kind {value!r} is not one of {' | '.join(TASK_KINDS)}",
         target_files=["--task-kind"],
         fix=f"Pass --task-kind {' or '.join(TASK_KINDS)}",
+    )
+
+
+def require_effort(value: str | None, option: str = "--planning-effort") -> str:
+    """``value`` (default ``medium``) when it is one of ``EFFORTS``; ``ArgumentError`` (``option``) otherwise."""
+    effort = (value or "").strip() or DEFAULT_EFFORT
+    if effort in EFFORTS:
+        return effort
+    raise ArgumentError(
+        f"{option} {value!r} is not one of {' | '.join(EFFORTS)}",
+        target_files=[option],
+        fix=f"Pass {option} {' | '.join(EFFORTS)}",
     )
 
 
@@ -238,7 +257,8 @@ def check_spec_conflict(index: DocumentIndex, slug: str) -> None:
 @dataclass
 class CreatedProposal:
     """A scaffolded bundle: its ``id``, directory and ``proposal.md`` (workspace-relative), ``target-docs.md``
-    when it was requested, and the ``workflow`` ``proposal.md`` is bound to (``None``: unbound)."""
+    when it was requested, the ``workflow`` ``proposal.md`` is bound to (``None``: unbound), and the scaffolded
+    ``planning_effort`` and ``dev_effort`` hints."""
 
     id: str
     dir: str
@@ -246,6 +266,8 @@ class CreatedProposal:
     target_docs: str | None
     workflow: str | None = None
     namespace: str | None = None
+    planning_effort: str = DEFAULT_EFFORT
+    dev_effort: str = DEFAULT_EFFORT
     notices: list[AdvisoryError] = field(default_factory=list)
 
     @property
@@ -260,6 +282,8 @@ class CreatedProposal:
             "target_docs": self.target_docs,
             "workflow": self.workflow,
             "namespace": self.namespace,
+            "planning_effort": self.planning_effort,
+            "dev_effort": self.dev_effort,
             "next_command": self.next_command,
             "notices": [notice.to_dict() for notice in self.notices],
         }
@@ -273,6 +297,8 @@ def create_proposal(
     target_area: str | None = None,
     milestone: str | None = None,
     task_kind: str | None = None,
+    planning_effort: str | None = None,
+    dev_effort: str | None = None,
     namespace: str | None = None,
     summary: str | None = None,
     supersedes: str | None = None,
@@ -283,15 +309,17 @@ def create_proposal(
 ) -> CreatedProposal:
     """Scaffold ``docs/proposals/PROP-<slug>/`` under the workspace ``root`` and bind ``proposal.md``.
 
-    ``task_kind`` is always written (default ``feature``); ``summary`` only when given (without it, a commented
-    placeholder line); ``supersedes`` (a ``PROP-<slug>`` ID) and ``needs_decompose`` only when given; ``namespace``
-    when given, else the namespace ``cwd`` lies in (``bundle_namespace``, reported on the result). Handoff resolves
-    ``sdd-spec-<task_kind>`` and carries the namespace and summary. ``proposal.md`` is bound to ``sdd-proposal`` when it
-    resolves and validates, else left unbound with a ``SPEC_PROPOSAL_UNBOUND`` notice. Raises ``ProposalSlugError``
-    for a slug without letters or digits, ``ArgumentError`` for a ``task_kind`` outside ``TASK_KINDS``, a
-    ``supersedes`` that is not a proposal ID, a ``namespace`` that is neither ``global`` nor registered or a
-    ``summary`` that is empty or not English, ``ProposalNotFoundError`` for a ``supersedes`` naming no proposal and
-    ``ProposalNotApprovedError`` for one that is not ``accepted``, ``ProposalExistsError`` when the
+    ``task_kind`` (default ``feature``), ``planning_effort`` (default ``medium``) and ``dev_effort`` (default
+    ``medium``) are always written; ``summary`` only when given (without it, a commented placeholder line);
+    ``supersedes`` (a ``PROP-<slug>`` ID) and ``needs_decompose`` only when given; ``namespace`` when given, else the
+    namespace ``cwd`` lies in (``bundle_namespace``, reported on the result). Handoff resolves
+    ``sdd-spec-<task_kind>``, carries the namespace and summary, and returns ``dev_effort`` without writing the effort
+    hints to ``spec.md``. ``proposal.md`` is bound to ``sdd-proposal`` when it resolves and validates, else left
+    unbound with a ``SPEC_PROPOSAL_UNBOUND`` notice. Raises ``ProposalSlugError`` for a slug without letters or
+    digits, ``ArgumentError`` for a ``task_kind`` outside ``TASK_KINDS``, a ``planning_effort`` or ``dev_effort``
+    outside ``EFFORTS``, a ``supersedes`` that is not a proposal ID, a ``namespace`` that is neither ``global`` nor
+    registered or a ``summary`` that is empty or not English, ``ProposalNotFoundError`` for a ``supersedes`` naming no
+    proposal and ``ProposalNotApprovedError`` for one that is not ``accepted``, ``ProposalExistsError`` when the
     bundle or a single-file proposal of the slug exists, ``ProposalSlugConflictError`` when ``SPEC-<slug>`` exists.
     """
     root = root.resolve()
@@ -299,6 +327,8 @@ def create_proposal(
     namespace, reported = bundle_namespace(root, namespace, cwd)
     summary = require_summary(summary)
     kind = require_task_kind(task_kind)
+    planning = require_effort(planning_effort, "--planning-effort")
+    dev = require_effort(dev_effort, "--dev-effort")
     replaced = _supersedes(supersedes, slug)
     _check_superseded(root, replaced)
     title = (title or "").strip() or slug
@@ -327,6 +357,8 @@ def create_proposal(
         namespace or "",
         summary or "",
         created,
+        planning_effort=planning,
+        dev_effort=dev,
         supersedes=replaced,
         needs_decompose=needs_decompose,
     )
@@ -344,6 +376,8 @@ def create_proposal(
         target_docs=target_docs.relative_to(root).as_posix() if target_docs else None,
         workflow=binding.workflow if binding else None,
         namespace=reported,
+        planning_effort=planning,
+        dev_effort=dev,
     )
     if unbound is not None:
         result.notices.append(
@@ -366,6 +400,8 @@ def _proposal(
     summary: str,
     created: str,
     *,
+    planning_effort: str = DEFAULT_EFFORT,
+    dev_effort: str = DEFAULT_EFFORT,
     supersedes: str | None = None,
     needs_decompose: bool = False,
 ) -> str:
@@ -376,6 +412,8 @@ def _proposal(
     )
     namespace_line = f"namespace: {yaml_scalar(namespace)}\n" if namespace else ""
     milestone_line = f"milestone: {yaml_scalar(milestone)}\n" if milestone else ""
+    planning_effort_line = f"planning_effort: {planning_effort:<20} # low | medium | high (hint for Planning)"
+    dev_effort_line = f"dev_effort: {dev_effort:<25} # low | medium | high (hint for Development)"
     task_kind_line = f"task_kind: {task_kind:<26} # feature | bugfix: the spec follows sdd-spec-<task_kind>"
     supersedes_line = f"supersedes: {supersedes}\n" if supersedes else ""
     decompose_line = (
@@ -390,6 +428,8 @@ created_at: {created}
 target_area: {yaml_scalar(area)}
 {namespace_line}priority: high                        # critical | high | medium | low
 size: M                               # S | M | L | XL
+{planning_effort_line}
+{dev_effort_line}
 {milestone_line}boundaries:
   owns:
     - {yaml_scalar(area)}

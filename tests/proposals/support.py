@@ -121,8 +121,9 @@ def write_workflow(root: Path, workflow_id: str, text: str | None = None) -> Pat
 def accept(proposal: Path, extra: str = "") -> None:
     """Set the proposal's status to accepted, adding ``extra`` frontmatter lines after it."""
     text = proposal.read_text(encoding="utf-8")
-    if "\ntask_kind:" in extra:  # replace the scaffolded task_kind line instead of duplicating the key
-        text = re.sub(r"(?m)^task_kind:.*\n", "", text, count=1)
+    for field in ("task_kind", "planning_effort", "dev_effort"):
+        if f"\n{field}:" in extra:  # replace the scaffolded line instead of duplicating the key
+            text = re.sub(rf"(?m)^{field}:.*\n", "", text, count=1)
     proposal.write_text(text.replace("status: draft", "status: accepted" + extra, 1), encoding="utf-8")
 
 

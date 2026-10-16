@@ -18,7 +18,8 @@ def test_new_and_padr(workspace: Path) -> None:
     assert result.exit_code == 0, result.output
     assert result.stdout.splitlines() == [
         "[PROPOSAL: PROP-fast-engine path=docs/proposals/PROP-fast-engine/proposal.md "
-        "dir=docs/proposals/PROP-fast-engine target_docs=docs/proposals/PROP-fast-engine/target-docs.md workflow=-]"
+        "dir=docs/proposals/PROP-fast-engine target_docs=docs/proposals/PROP-fast-engine/target-docs.md "
+        "workflow=- planning_effort=medium dev_effort=medium]"
     ]
     assert "(SPEC_PROPOSAL_UNBOUND)" in result.stderr
     result = _proposal(workspace, "padr", "fast-engine", "Use AST parser")
@@ -42,15 +43,31 @@ def test_padr_slug_option(workspace: Path) -> None:
 
 
 def test_new_json(workspace: Path) -> None:
-    result = _proposal(workspace, "new", "lean", "--format", "json")
+    result = _proposal(
+        workspace, "new", "lean", "--planning-effort", "low", "--dev-effort", "high", "--format", "json"
+    )
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
-    assert {key: payload[key] for key in ("id", "dir", "path", "target_docs", "workflow", "next_command")} == {
+    assert {
+        key: payload[key]
+        for key in (
+            "id",
+            "dir",
+            "path",
+            "target_docs",
+            "workflow",
+            "planning_effort",
+            "dev_effort",
+            "next_command",
+        )
+    } == {
         "id": "PROP-lean",
         "dir": "docs/proposals/PROP-lean",
         "path": "docs/proposals/PROP-lean/proposal.md",
         "target_docs": None,
         "workflow": None,
+        "planning_effort": "low",
+        "dev_effort": "high",
         "next_command": None,
     }
     assert [notice["code"] for notice in payload["notices"]] == ["SPEC_PROPOSAL_UNBOUND"]
@@ -62,7 +79,7 @@ def test_new_binds_the_proposal_and_workflow_next_runs(workspace: Path) -> None:
     assert result.exit_code == 0, result.output
     assert result.stdout.splitlines() == [
         "[PROPOSAL: PROP-bound path=docs/proposals/PROP-bound/proposal.md dir=docs/proposals/PROP-bound "
-        "target_docs=- workflow=sdd-proposal]",
+        "target_docs=- workflow=sdd-proposal planning_effort=medium dev_effort=medium]",
         "[NEXT_CMD: devkit workflow next --unit docs/proposals/PROP-bound]",
     ]
     assert result.stderr == ""
@@ -98,7 +115,7 @@ def test_handoff_text(workspace: Path, write: Write) -> None:
     lines = result.stdout.splitlines()
     head = lines[0]
     assert head.startswith("[HANDOFF: PROP-shipit spec=SPEC-shipit dir=specs/") and head.endswith(
-        " workflow=sdd-spec-feature]"
+        " workflow=sdd-spec-feature dev_effort=medium]"
     )
     spec_dir = head.split(" dir=")[1].split(" ")[0]
     month, bundle = spec_dir.split("/")[1:]

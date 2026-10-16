@@ -95,7 +95,8 @@ resolve` maps IDs to paths, `devkit spec refs` follows the references of one doc
 3. **Order**: kind order (the table of `CAP-DOCS-document-model`), then, for feedback, `severity` (`critical`,
    `blocked`, `workaround`, `noise`, then any other or missing value, case-insensitive), then ID, then path.
 4. **Line fields**: `kind`, `status`, `path`, `tasks` (`<checked>/<total>` of the `tasks.md` beside a spec, counted
-   as devkit counts checklist items; `-` for other kinds or without `tasks.md`), on feedback lines only `severity`,
+   as devkit counts checklist items; `-` for other kinds or without `tasks.md`), on proposal lines only `task_kind`,
+   `planning_effort` and `dev_effort` (`-` when absent), on feedback lines only `severity`,
    `scope` and `target` (`-` when absent), `namespace` (only in a workspace that registers namespaces), `title`.
 
 ### 3.5 Paging (`refs`, `list`)
@@ -128,13 +129,14 @@ devkit spec list feedback --status open --where severity=critical -n 0   # open 
 [REF: US-find-docs path=docs/stories/core/US-find-docs.md status=active fields=body,stories count=2]
 [REF: US-removed path=- status=- fields=body count=1]
 [DOCUMENT: SPEC-search kind=spec status=draft path=specs/2026-10/20261002-search/spec.md tasks=1/2 title="Search"]
+[DOCUMENT: PROP-search kind=proposal status=draft path=docs/proposals/PROP-search/proposal.md tasks=- task_kind=feature planning_effort=medium dev_effort=medium title="Search"]
 [DOCUMENT: FB-slow-sync kind=feedback status=open path=specs/2026-10/feedback/20261013-slow-sync.md tasks=- severity=critical scope=upstream target="devkit sync" title="Sync blocks"]
 [PAGE: total=42 offset=0 limit=20 count=20 next=20]
 [NEXT_CMD: devkit spec list spec --limit 20 --offset 20]
 ```
 
 `resolve` prints `[DOCUMENT: <id> kind= status= path=]`; `list` prints
-`[DOCUMENT: <id> kind= status= path= tasks= severity= scope= target= namespace= title=]`, `severity=`, `scope=` and
+`[DOCUMENT: <id> kind= status= path= tasks= task_kind= planning_effort= dev_effort= severity= scope= target= namespace= title=]`, `task_kind=`, `planning_effort=` and `dev_effort=` only on proposal lines, `severity=`, `scope=` and
 `target=` only on feedback lines, `namespace=` only with registered namespaces. Values follow devkit's sentinel conventions: `-` for empty, `yes`/`no` for booleans, a JSON
 string when the value holds spaces, quotes or brackets.
 
@@ -144,7 +146,7 @@ string when the value holds spaces, quotes or brackets.
 | --- | --- |
 | `resolve` | `documents` (document records: `id`, `kind`, `path`, `status`, `title`, `area`, `summary`), `errors` (advisory objects), `notices` |
 | `refs` | `id`, `direction`, `total`, `offset`, `limit`, `items` (`id`, `path`, `status`, `references`: `target`, `source`, `path`, `field`, `line`, `column`, `bracket`), `notices`; `path` and `status` are `null` for an ID no single document declares |
-| `list` | `total`, `offset`, `limit`, `namespace` (the selection, `null` for every namespace), `documents` (document records plus `namespace`, `historical`, `tasks`; feedback records also `severity`, `scope`, `target`, `null` when absent; a draft proposal whose `plan-<slug>` exists, locally or fetched, is shown with `status: reviewing` and its `planning_branch`, `CAP-DLV-proposal-incubation` rule 10), `notices` |
+| `list` | `total`, `offset`, `limit`, `namespace` (the selection, `null` for every namespace), `documents` (document records plus `namespace`, `historical`, `tasks`; proposal records also `task_kind`, `planning_effort`, `dev_effort`, `null` when absent; feedback records also `severity`, `scope`, `target`, `null` when absent; a draft proposal whose `plan-<slug>` exists, locally or fetched, is shown with `status: reviewing` and its `planning_branch`, `CAP-DLV-proposal-incubation` rule 10), `notices` |
 
 ### 4.4 Exit Codes
 

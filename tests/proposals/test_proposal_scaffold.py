@@ -77,6 +77,7 @@ def test_create_proposal_bundle(workspace: Path) -> None:
     assert meta["milestone"] == "Phase 1: Foundation"
     assert meta["boundaries"] == {"owns": ["capabilities/governance/"], "excludes": ["docs/decisions/"]}
     assert "workflow" not in meta and meta["task_kind"] == "feature"
+    assert meta["planning_effort"] == "medium" and meta["dev_effort"] == "medium"
     assert "supersedes" not in meta and "needs_decompose" not in meta
     target = (bundle / "target-docs.md").read_text(encoding="utf-8")
     assert "id: PROP-fast-engine-target\n" in target
@@ -84,12 +85,22 @@ def test_create_proposal_bundle(workspace: Path) -> None:
     assert "## 5. System Before & After Comparison (Before & After)" in target
 
 
-def test_create_proposal_writes_the_task_kind_and_close_fields_when_given(workspace: Path) -> None:
+def test_create_proposal_writes_the_task_kind_effort_and_close_fields_when_given(workspace: Path) -> None:
     accept(workspace / create_proposal(workspace, "old-fix").path)
-    created = create_proposal(workspace, "fix", task_kind="bugfix", supersedes="PROP-old-fix", needs_decompose=True)
+    created = create_proposal(
+        workspace,
+        "fix",
+        task_kind="bugfix",
+        planning_effort="low",
+        dev_effort="high",
+        supersedes="PROP-old-fix",
+        needs_decompose=True,
+    )
     meta = parse((workspace / created.path).read_text(encoding="utf-8")).data
     assert meta is not None and "workflow" not in meta
     assert meta["task_kind"] == "bugfix" and meta["supersedes"] == "PROP-old-fix" and meta["needs_decompose"] is True
+    assert meta["planning_effort"] == "low" and meta["dev_effort"] == "high"
+    assert created.planning_effort == "low" and created.dev_effort == "high"
 
 
 def test_create_proposal_supersedes_an_accepted_proposal_only(workspace: Path) -> None:
@@ -108,6 +119,8 @@ def test_create_proposal_supersedes_an_accepted_proposal_only(workspace: Path) -
     ("fields", "flag"),
     [
         ({"task_kind": "refactor"}, "--task-kind"),
+        ({"planning_effort": "extreme"}, "--planning-effort"),
+        ({"dev_effort": "tiny"}, "--dev-effort"),
         ({"supersedes": "old-fix"}, "--supersedes"),
         ({"supersedes": "PROP-fix"}, "--supersedes"),
     ],

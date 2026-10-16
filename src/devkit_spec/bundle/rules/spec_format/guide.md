@@ -16,6 +16,8 @@ non-blank strings; their values are checked by the other spec rules (`RULE-id-co
   spec's `spec.md` under `specs/`, when they set it. Current anchors are checked when targeted, a completed spec only
   when named as an explicit target; a run that targets `.devkit/config.toml` checks every current anchor not matched
   by `[rules] exclude`, since a change to the registry can invalidate them.
+- **The `planning_effort` and `dev_effort` fields**: checked in proposal anchors (`docs/proposals/PROP-<slug>/proposal.md`
+  and `docs/proposals/PROP-<slug>.md`) when present; each must be one of `low`, `medium` or `high`.
 
 ## 2. Cause of Violation
 
@@ -29,6 +31,9 @@ non-blank strings; their values are checked by the other spec rules (`RULE-id-co
 - A `namespace` in a bundle anchor that is not a string: `frontmatter field 'namespace' must be a string`; or that
   names neither `global` nor a registered namespace: `frontmatter namespace '<value>' is not global or a registered
   namespace`. Reported at the `namespace` line.
+- A `planning_effort` or `dev_effort` in a proposal anchor that is not a string in `low` | `medium` | `high`:
+  `frontmatter <field> '<value>' is not one of low | medium | high` (or `frontmatter field '<field>' must be a string
+  (low | medium | high)`). Reported at the field's line.
 
 ## 3. Remediation
 
@@ -48,7 +53,8 @@ non-blank strings; their values are checked by the other spec rules (`RULE-id-co
   filled-in values: `status: draft` and a title taken from the heading are starting points, not decisions.
 - **By hand**: close the block with `---` and fix its YAML; quote a non-string value. For `namespace`, set a name
   registered in `[[tool.spec.namespaces]]` of `.devkit/config.toml`, or remove the field: a bundle without one is
-  global. The `namespace` field is not fixable.
+  global. For `planning_effort` and `dev_effort`, set `low`, `medium` or `high`, or remove the field. Neither
+  `namespace` nor the effort hint fields are fixable.
 
 ## 4. Configuration
 

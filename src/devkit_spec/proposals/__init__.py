@@ -8,8 +8,12 @@ the proposal. ``create_spec`` creates a spec bundle without a proposal. Contract
 
 from devkit_spec.proposals.binding import (
     BUGFIX_WORKFLOW,
+    DEFAULT_EFFORT,
     DEFAULT_TASK_KIND,
     DEFAULT_WORKFLOW,
+    DEV_EFFORT,
+    EFFORTS,
+    PLANNING_EFFORT,
     PROPOSAL_WORKFLOW,
     TASK_KINDS,
     resolve_binding,
@@ -40,8 +44,12 @@ from devkit_spec.proposals.specs import SKELETON_MARKER, CreatedSpec, create_spe
 __all__ = [
     "BUGFIX_WORKFLOW",
     "CARRIED_GATES",
+    "DEFAULT_EFFORT",
     "DEFAULT_TASK_KIND",
     "DEFAULT_WORKFLOW",
+    "DEV_EFFORT",
+    "EFFORTS",
+    "PLANNING_EFFORT",
     "PROPOSAL_WORKFLOW",
     "SKELETON_MARKER",
     "TARGET_DOCS",

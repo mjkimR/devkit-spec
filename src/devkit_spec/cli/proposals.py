@@ -3,14 +3,15 @@ it off, and guard Backlog changes.
 
 Text output (paths are relative to the workspace root):
 
-- ``new``: ``[PROPOSAL: <id> path= dir= target_docs= workflow=]``, with a trailing ``namespace=`` when the bundle
-  reports one (``CreatedProposal.namespace``), and, when ``proposal.md`` is bound to a workflow,
-  ``[NEXT_CMD: devkit workflow next --unit <dir>]``.
+- ``new``: ``[PROPOSAL: <id> path= dir= target_docs= workflow= planning_effort= dev_effort=]``, with a trailing
+  ``namespace=`` when the bundle reports one (``CreatedProposal.namespace``), and, when ``proposal.md`` is bound to a
+  workflow, ``[NEXT_CMD: devkit workflow next --unit <dir>]``.
 - ``padr``: ``[PADR: <id> path= proposal=]``.
 - ``prune``: ``[PRUNED: <dir>]`` per empty proposal directory removed, else ``[OK: nothing to prune]``.
 - ``check``: ``[PROPOSAL: <id> path= status=draft editable=yes]`` when Backlog may edit, split or delete the proposal;
   ``SPEC_PROPOSAL_IN_PLANNING`` while its ``plan-<slug>`` exists or once it left ``draft``.
-- ``handoff``: ``[HANDOFF: <proposal id> spec= dir= workflow=]``, then ``[TARGET_DOCS: <path>]``,
+- ``handoff``: ``[HANDOFF: <proposal id> spec= dir= workflow=]`` (with ``dev_effort=`` when the proposal declared it),
+  then ``[TARGET_DOCS: <path>]``,
   ``[MATERIALS: <dir>]``, one ``[PROMOTED_ADR: <id> path= padr=]`` per promoted decision, one
   ``[DROPPED_RECORD: <path>]`` per workflow record of the proposal unit removed with it, one
   ``[CARRIED_GATE: <request> decision=<path>]`` per approval of the proposal (``gate:plan-intent``,
@@ -71,6 +72,16 @@ def proposal_group() -> None:
     "[default: feature]",
 )
 @click.option(
+    "--planning-effort",
+    default=None,
+    help="Recommended activity-effort hint for Planning: low, medium or high [default: medium]",
+)
+@click.option(
+    "--dev-effort",
+    default=None,
+    help="Recommended activity-effort hint for Development: low, medium or high [default: medium]",
+)
+@click.option(
     "--namespace",
     default=None,
     help="Document namespace of the bundle: global or a registered package; carried to spec.md "
@@ -97,6 +108,8 @@ def new_cmd(
     target_area: str | None,
     milestone: str | None,
     task_kind: str | None,
+    planning_effort: str | None,
+    dev_effort: str | None,
     namespace: str | None,
     summary: str | None,
     supersedes: str | None,
@@ -113,6 +126,8 @@ def new_cmd(
         target_area=target_area,
         milestone=milestone,
         task_kind=task_kind,
+        planning_effort=planning_effort,
+        dev_effort=dev_effort,
         namespace=namespace,
         summary=summary,
         supersedes=supersedes,
@@ -131,6 +146,8 @@ def new_cmd(
                 dir=created.dir,
                 target_docs=created.target_docs,
                 workflow=created.workflow,
+                planning_effort=created.planning_effort,
+                dev_effort=created.dev_effort,
                 **({"namespace": created.namespace} if created.namespace else {}),
             )
         )
@@ -188,7 +205,16 @@ def handoff_cmd(slug: str, workspace_root: str | None, output_format: str) -> No
         scope = registered_dict(registered.location, registered.record, registered.token) if registered else None
         echo_json(result.to_dict() | {"scope": scope})
     else:
-        click.echo(sentinel("HANDOFF", result.proposal, spec=result.spec, dir=result.dir, workflow=result.workflow))
+        click.echo(
+            sentinel(
+                "HANDOFF",
+                result.proposal,
+                spec=result.spec,
+                dir=result.dir,
+                workflow=result.workflow,
+                **({"dev_effort": result.dev_effort} if result.dev_effort else {}),
+            )
+        )
         if result.target_docs:
             click.echo(sentinel("TARGET_DOCS", result.target_docs))
         if result.materials:

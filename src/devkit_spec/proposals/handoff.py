@@ -75,6 +75,9 @@ from devkit_spec.errors import (
 from devkit_spec.proposals.binding import (
     DEFAULT_TASK_KIND,
     DEFAULT_WORKFLOW,
+    DEV_EFFORT,
+    EFFORTS,
+    PLANNING_EFFORT,
     TASK_KINDS,
     resolve_binding,
     spec_workflow,
@@ -172,8 +175,10 @@ class CarriedGate:
 class HandoffResult:
     """What a handoff wrote, moved and rewrote; paths are workspace-relative.
 
-    ``workflow`` is the workflow ``spec.md`` is bound to (``None``: unbound), ``rewritten_files`` the files whose
-    links or references changed, ``unresolved`` what pointed into the proposal and could not be mapped.
+    ``workflow`` is the workflow ``spec.md`` is bound to (``None``: unbound), ``dev_effort`` the proposal's
+    non-authoritative Development effort hint (``None`` when the proposal omitted it; never written to ``spec.md``),
+    ``rewritten_files`` the files whose links or references changed, ``unresolved`` what pointed into the proposal and
+    could not be mapped.
     ``dropped_records`` are the proposal unit's workflow records removed with it, ``carried_gates`` the proposal's own
     approvals recorded in the spec under their names. ``notices`` are the warnings and notices the caller reports
     with the result.
@@ -183,6 +188,7 @@ class HandoffResult:
     spec: str
     dir: str
     workflow: str | None
+    dev_effort: str | None = None
     target_docs: str | None = None
     materials: str | None = None
     decisions: list[PromotedDecision] = field(default_factory=list)
@@ -203,6 +209,7 @@ class HandoffResult:
             "spec": self.spec,
             "dir": self.dir,
             "workflow": self.workflow,
+            "dev_effort": self.dev_effort,
             "target_docs": self.target_docs,
             "materials": self.materials,
             "decisions": [decision.to_dict() for decision in self.decisions],
@@ -240,7 +247,8 @@ def handoff_proposal(root: Path, slug: str, *, today: date | None = None) -> Han
     the proposal's own ``gate:plan-intent`` and ``gate:plan-accept`` records under their names; a failure there is a
     ``ProposalGateNotCarriedWarning``. Raises, before writing anything: ``ProposalSlugError`` (also for a
     proposal or PADR slug whose first segment has no letter), ``ProposalNotFoundError``, ``ProposalInvalidError``
-    (also a ``task_kind`` outside ``TASK_KINDS``), ``ProposalNotApprovedError``, ``ProposalNeedsDecomposeError``,
+    (also a ``task_kind`` outside ``TASK_KINDS`` or a ``planning_effort``/``dev_effort`` outside ``EFFORTS``),
+    ``ProposalNotApprovedError``, ``ProposalNeedsDecomposeError``,
     ``ProposalSlugConflictError``, ``ProposalWorkflowError``,
     ``ProposalTargetExistsError``, ``ProposalWrongWorktreeError`` (``_check_worktree``). A failure while writing
     removes what was written, moves the materials and carried files back and keeps the proposal, then raises
@@ -279,6 +287,8 @@ def handoff_proposal(root: Path, slug: str, *, today: date | None = None) -> Han
     namespace = _namespace(root, meta, proposal_rel)
     summary = _summary(meta, proposal_rel)
     kind = _task_kind(meta, proposal_rel)
+    _effort(meta, PLANNING_EFFORT, proposal_rel)
+    dev_effort = _effort(meta, DEV_EFFORT, proposal_rel)
     index = DocumentIndex.load(root)
     check_spec_conflict(index, slug)
     # The default task-kind binds like no field: a project without its workflow gets an unbound spec and a notice.
@@ -420,6 +430,7 @@ def handoff_proposal(root: Path, slug: str, *, today: date | None = None) -> Han
     result = _result(
         root, slug, target_dir, binding, unbound, target_docs_text, materials_target, decisions, report, notices
     )
+    result.dev_effort = dev_effort
     result.dropped_records = [path.relative_to(root).as_posix() for path in records]
     result.carried_gates = carried
     return result
@@ -573,6 +584,23 @@ def _task_kind(meta: dict[str, Any], proposal_rel: str) -> str | None:
         target_files=[proposal_rel],
         fix=f"Set the proposal's {TASK_KIND} to the task-kind confirmed at plan-accept ({' or '.join(TASK_KINDS)}),"
         " then rerun the handoff",
+    )
+
+
+def _effort(meta: dict[str, Any], field: str, proposal_rel: str) -> str | None:
+    """The proposal's ``planning_effort`` or ``dev_effort`` hint; ``None`` when omitted.
+
+    Raises ``ProposalInvalidError`` when it is present and not one of ``EFFORTS``.
+    """
+    if field not in meta:
+        return None
+    value = meta[field]
+    if isinstance(value, str) and value.strip() in EFFORTS:
+        return value.strip()
+    raise ProposalInvalidError(
+        f"{proposal_rel}: {field} {value!r} is not one of {' | '.join(EFFORTS)}",
+        target_files=[proposal_rel],
+        fix=f"Set the proposal's {field} to one of {' | '.join(EFFORTS)}, or remove the field, then rerun the handoff",
     )
 
 

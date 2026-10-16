@@ -58,8 +58,11 @@ directories and writes the guidance pointer into the root `AGENTS.md` block.
    project changes go through `devkit override` or the project's own bundle.
 4. **Classification**: the `spec` skill MUST classify work on `task-kind`, then `planning-depth`, then per activity
    the mode and `activity-effort`, after reading `devkit spec policy`, propose the classification for the user to
-   confirm at `plan-intent`, and drive the one workflow `sdd-<planning-depth>[-<task-kind>]`
-   (`CAP-DLV-delivery-workflows`). `planning-depth` follows what must be settled before implementation, not size.
+   confirm at `plan-intent` (for `proposal` depth, scaffolding `planning_effort` and provisional `dev_effort` hints on
+   `proposal.md`, refining `dev_effort` before `plan-accept`, and using `dev_effort` from `handoff` as the default
+   Development start hint while recording confirmed run effort only on `worker-NN.yaml` envelopes), and drive the one
+   workflow `sdd-<planning-depth>[-<task-kind>]` (`CAP-DLV-delivery-workflows`). `planning-depth` follows what must be
+   settled before implementation, not size.
    Unit depths write `spec.md`, `plan.md` and `tasks.md` before production code; a `session` task writes no Unit,
    envelope, gate record file or reconcile document. The Host raises the depth on its own judgment (`[tool.spec]
    depth_escalation = "ask"`: after the user's confirmation), never lowers it, and a `session` → `spec` raise keeps

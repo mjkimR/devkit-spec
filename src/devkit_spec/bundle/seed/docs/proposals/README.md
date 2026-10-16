@@ -41,6 +41,8 @@ docs/proposals/PROP-{slug}/
     excludes:
       - template/
   task_kind: feature                    # feature | bugfix: the spec follows sdd-spec-<task_kind>
+  planning_effort: medium               # low | medium | high: Planning activity-effort hint
+  dev_effort: medium                    # low | medium | high: Development activity-effort hint
   # supersedes: PROP-<old-slug>         # close by supersede: the accepted proposal this draft replaces
   # needs_decompose: true               # Backlog splits this draft before Planning starts
   ---
@@ -49,6 +51,7 @@ docs/proposals/PROP-{slug}/
   - **`size`**: Estimated implementation scope (S=single fix, M=1-2 sessions, L=complex module, XL=major overhaul).
   - **`milestone`**: (Optional) Target milestone or phase name; carried over to `spec.md` on handoff.
   - **`boundaries`**: Declared scope impact (`owns`) and excluded scope (`excludes`).
+  - **`planning_effort` / `dev_effort`**: Non-authoritative `activity-effort` hints (`low` | `medium` | `high`, default `medium`) for Planning and Development; `dev_effort` is refined during Planning before `plan-accept` and returned by `handoff`, while confirmed run effort is recorded on `worker-NN.yaml` envelopes (never copied to `spec.md`).
 - **`materials/` Markdown**: follow the material convention: file `{YYYYMMDD}-{slug}.md`, `id: MAT-<slug>`, `created_at`, H1 `# [MAT-<slug>] <title>`. `RULE-spec-format` skips `materials/` directories, so the frontmatter is recommended, not checked. Non-Markdown files need no metadata. After handoff the files move to `docs/materials/`.
 - **`target-docs.md` (Recommended)**: Focuses on "What docs/ changes will look like once accepted", while `proposal.md` focuses on "Why". Covers capability ledger, user stories, architecture & decisions, conventions & governance, and before/after comparisons. Recommended for `size: M/L/XL` or when Living Spec structural changes are expected.
 
@@ -63,6 +66,7 @@ devkit spec proposal new <slug>                        # Scaffold proposal bundl
 devkit spec proposal new <slug> --milestone "Phase 1"   # Scaffold with target milestone
 devkit spec proposal new <slug> --with-target-docs      # Scaffold with Living Spec target blueprint
 devkit spec proposal new <slug> --task-kind bugfix     # A defect: the spec follows sdd-spec-bugfix
+devkit spec proposal new <slug> --planning-effort low --dev-effort high  # Scaffold with explicit effort hints
 devkit spec proposal new <slug> --needs-decompose      # Split in Backlog before Planning
 devkit spec proposal padr <slug> <title> --summary <text>  # Scaffold preliminary decision (PADR); the summary is kept by the promoted ADR
 devkit spec list proposal                               # List proposals

@@ -125,9 +125,13 @@ sequence.
     are fixed in the reconcile and never reopen `review-refine`. A session
     reviews at the same levels but its reviewer returns a message and nothing is written. Proposal Planning runs
     questions only at `low`, one `challenger` pass at `medium` (a `scout` when the direction needs evidence) and, at
-    `high`, two or more options compared, a `challenger` and a re-review after changes. The effort is always
-    proposed with a reason when the activity starts (a proposal's with its `plan-intent`), and the `plan-accept`
-    request shows each Planning run's effort and the support-role envelopes present. Gates, exit checks and
+    `high`, two or more options compared, a `challenger` and a re-review after changes. A proposal scaffolds
+    non-authoritative `planning_effort` and `dev_effort` hints (`low` | `medium` | `high`, default `medium`) in
+    `proposal.md`: `planning_effort` is proposed with `plan-intent` and pre-fills Planning start, `dev_effort` is
+    refined during Planning before `plan-accept` and returned by `handoff` to pre-fill Development start, while the
+    confirmed `activity-effort` of each run is recorded only on its `worker-NN.yaml` envelope (with any override reason
+    in `summary`). The effort is always proposed with a reason when the activity starts, and the `plan-accept`
+    request shows each Planning run's effort, the refined `dev_effort` hint and the support-role envelopes present. Gates, exit checks and
     `required` policies hold at every effort.
 16. **Only the workers write to Git**: a read-only role never stages or commits (`x-git-actions: [read]`). The two
     workers (`[read, commit]`) commit on their activity branch, write their own records and never push, merge, rebase,

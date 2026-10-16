@@ -683,6 +683,37 @@ def test_a_task_kind_outside_the_axis_writes_nothing(workspace: Path, value: str
     assert proposal.is_file() and not (workspace / "specs").exists()
 
 
+@pytest.mark.parametrize("field", ["planning_effort", "dev_effort"])
+@pytest.mark.parametrize("value", ["extreme", "123", "[low]", "''"])
+def test_an_effort_hint_outside_the_axis_writes_nothing(workspace: Path, field: str, value: str) -> None:
+    write_workflow(workspace, "sdd-spec-feature")
+    proposal = _new(workspace, "bad-effort")
+    accept(proposal, f"\n{field}: {value}")
+    with pytest.raises(ProposalInvalidError) as raised:
+        handoff_proposal(workspace, "bad-effort", today=TODAY)
+    assert raised.value.code == "SPEC_PROPOSAL_INVALID"
+    assert field in raised.value.message and "low | medium | high" in raised.value.message
+    assert proposal.is_file() and not (workspace / "specs").exists()
+
+
+def test_handoff_returns_dev_effort_and_never_copies_effort_hints_to_spec(workspace: Path, write: Write) -> None:
+    proposal = create_proposal(workspace, "with-effort", planning_effort="low", dev_effort="high", today=TODAY)
+    accept(workspace / proposal.path)
+    result = handoff_proposal(workspace, "with-effort", today=TODAY)
+    assert result.dev_effort == "high"
+    assert result.to_dict()["dev_effort"] == "high"
+    spec_meta = parse((spec_dir(workspace, "with-effort") / "spec.md").read_text(encoding="utf-8")).data
+    assert spec_meta is not None
+    assert "planning_effort" not in spec_meta and "dev_effort" not in spec_meta
+
+    write(
+        "docs/proposals/PROP-legacy/proposal.md",
+        "---\nid: PROP-legacy\ntitle: Legacy\nstatus: accepted\n---\n# [PROP-legacy] Legacy\n",
+    )
+    legacy = handoff_proposal(workspace, "legacy", today=TODAY)
+    assert legacy.dev_effort is None and legacy.to_dict()["dev_effort"] is None
+
+
 def test_refuses_a_legacy_slug_that_starts_with_a_number(workspace: Path, write: Write) -> None:
     write(
         "docs/proposals/PROP-2024-budget.md",

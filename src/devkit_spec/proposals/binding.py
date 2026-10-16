@@ -18,6 +18,12 @@ from devkit_spec.errors import ProposalWorkflowError, SpecError
 TASK_KINDS = ("feature", "bugfix")
 """The values of the ``task-kind`` axis: what the work does. It is not stored on a spec; the bound workflow says it."""
 DEFAULT_TASK_KIND = "feature"
+EFFORTS = ("low", "medium", "high")
+"""The values of the ``activity-effort`` axis and of a proposal's non-authoritative ``planning_effort`` and
+``dev_effort`` hints."""
+DEFAULT_EFFORT = "medium"
+PLANNING_EFFORT = "planning_effort"
+DEV_EFFORT = "dev_effort"
 PROPOSAL_WORKFLOW = "sdd-proposal"
 """The workflow a proposal bundle follows until its handoff (``planning-depth`` ``proposal``)."""
 
