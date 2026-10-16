@@ -66,7 +66,7 @@ def test_a_worker_commits_its_result_and_records_in_its_worktree(role: str) -> N
     assert hosts["antigravity"]["status"] == "unverified"
     assert "git -C <worktree>" in body and "absolute" in body
     assert "Do not push, merge, rebase, reset, amend, stash or check out (`MUST NOT`)" in body
-    assert "devkit workflow envelope new" in body and "`worker` envelope" in body
+    assert "devkit workflow envelope worker" in body and "`worker` envelope" in body
     assert "`head` set to your last work commit" in body and "`final_head`" in body
     assert "do not write envelope files" not in body
 
@@ -150,7 +150,7 @@ def test_the_host_validates_the_committed_range_and_blocks_a_failure() -> None:
     assert "the base checkout's status and HEAD are as recorded" in text
     assert "except the records you wrote under `<unit>/envelopes/` since `<accepted>`" in text
     assert "`validation`" not in text
-    assert "--kind worker --stage <stage> --effort <activity-effort> --problem" in text
+    assert "envelope worker --unit <dir> --stage <stage> --effort <activity-effort> --problem" in text
     assert "Never pass a blocked unit's current HEAD as the base" in text
     assert "`build-verify`, or `fix-verify` in `sdd-spec-bugfix`" in text
     assert "A unit is blocked while any problem, a worker's or yours, has no resolution that names it" in text
@@ -177,7 +177,12 @@ def test_a_run_records_its_questions_and_problem_in_one_worker_envelope() -> Non
     assert "--answers-to worker-NN.yaml" in records and "--resolves worker-NN.yaml" in records
     assert "There is no separate question or problem kind" in records
     planning = _contract("planning-worker")[1]
-    assert "--questions-file" in planning and "--kind answer --answers-to <worker-NN.yaml>" in planning
+    assert (
+        "--questions-file" in planning
+        and "envelope answer --unit <proposal dir> --answers-to <worker-NN.yaml>" in planning
+    )
     assert "never into a file of their own" in planning
     development = _contract("development-worker")[1]
-    assert "exactly one `worker` envelope" in development and "--kind resolution --resolves" in development
+    assert (
+        "exactly one `worker` envelope" in development and "envelope resolution --unit <unit> --resolves" in development
+    )

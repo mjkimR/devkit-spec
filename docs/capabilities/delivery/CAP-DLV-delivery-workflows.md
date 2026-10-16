@@ -227,7 +227,8 @@ available to a project that wants stricter bugfix ordering.
 
 Envelopes are devkit envelope files under a unit's `envelopes/`, written with
 `devkit workflow envelope new --unit <dir> --kind <kind> [--stage <id>] --summary "..." [--check <key>="PASS ..."]
-[--base <ref>] [--head <sha>] [--assume ...] [--unverified ...]` and validated with
+[--base <ref>] [--head <sha>] [--assume ...] [--unverified ...]` (kinds `review`, `reverify`, `worker`, `answer` and
+`resolution` through `devkit workflow envelope <kind>` instead, which takes the same flags and those of the kind) and validated with
 `devkit workflow envelope check --unit <dir>`; a malformed envelope never satisfies a check. A session writes none.
 
 | Kind | File | Written by |
@@ -308,7 +309,7 @@ prompt.
 | `devkit workflow bind --unit <dir> --workflow <id>` | Bind an unbound unit, or rebind after `WORKFLOW_DRIFT`. |
 | `devkit workflow validate` | Validate definitions; `SHARED_STAGE_MISMATCH` across definitions. |
 | `devkit workflow list` | List units of every layout. |
-| `devkit workflow envelope new --unit <dir> --kind worker\|answer\|resolution ...` | A run's record (`--stage` and `--effort` always; `--questions-file`, `--problem`, `--tried`, `--recovery`), its answers (`--answers-to`, `--answers-file`) or a fix (`--resolves`). |
+| `devkit workflow envelope worker\|answer\|resolution --unit <dir> ...` | A run's record (`--stage` and `--effort` always; `--questions-file`, `--problem`, `--tried`, `--recovery`), its answers (`--answers-to`, `--answers-file`) or a fix (`--resolves`). |
 | `devkit workflow envelope check --unit <dir> [--format json]` | Malformed envelopes and the hold: `[BLOCKED]`, `[PENDING_QUESTION]`; `blocked`, `problems`, `pending_questions` in JSON. |
 | `devkit worktree start <branch> [--no-worktree \| --existing-branch <branch> --unit <dir>]` | Start `plan-<slug>` or `dev-<slug>` in a worktree or the current checkout, or continue an existing branch after devkit-spec's attach check. |
 | `devkit worktree stale` | Activity branches idle beyond `[worktree] stale_after`; also warned by `devkit rules check -p hygiene`. |

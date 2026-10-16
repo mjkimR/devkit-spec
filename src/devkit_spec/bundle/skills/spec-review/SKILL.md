@@ -69,7 +69,7 @@ After `review-refine` passes and before `living-spec-draft`, an executor may pau
 The review envelope is the report, for a direct run and a delegated Reviewer run alike. For a spec Unit (`spec` or `proposal` depth), record the findings as found (all open):
 
 ```bash
-devkit workflow envelope new --unit <dir> --kind review --stage review-refine \
+devkit workflow envelope review --unit <dir> --stage review-refine \
   --status completed --summary "<scenarios confirmed and by what>" \
   --check tests="PASS <command and count>" --check lint="PASS devkit rules check --staged" \
   --base <ref> --head $(git rev-parse HEAD) --findings-file - <<'EOF'
@@ -80,7 +80,7 @@ devkit workflow envelope new --unit <dir> --kind review --stage review-refine \
 EOF
 ```
 
-This writes the next `envelopes/review-NN.yaml`; omit `--findings-file` for a pass. After fixes, close the round with `devkit workflow envelope new --unit <dir> --kind reverify --stage review-refine --from latest --resolve <N> --waive <N>=<reason>` (`--resolve all` when every finding is fixed), which writes `reverify-NN.yaml`; `devkit workflow next --unit <dir>` reads it for `envelope-review-passed`. Do not record fixes inside the review file itself. A `session`-depth task (`sdd-session-*`) states the same content in the final response or PR body and writes no envelope; a reviewer subagent returns it as a message.
+This writes the next `envelopes/review-NN.yaml`; omit `--findings-file` for a pass. After fixes, close the round with `devkit workflow envelope reverify --unit <dir> --stage review-refine --from latest --resolve <N> --waive <N>=<reason>` (`--resolve all` when every finding is fixed), which writes `reverify-NN.yaml`; `devkit workflow next --unit <dir>` reads it for `envelope-review-passed`. Do not record fixes inside the review file itself. A `session`-depth task (`sdd-session-*`) states the same content in the final response or PR body and writes no envelope; a reviewer subagent returns it as a message.
 
 - Unexplained scope drift, stray files and unmet scenarios are findings, each with `evidence` and `failure_condition`.
 - Check results go in `checks`; the summary states which scenarios were confirmed and by what.

@@ -9,7 +9,7 @@ The rule: **one run leaves one `worker` envelope; what another actor does later 
 Every run of one activity's turn ends with exactly one `worker` envelope, not one per stage, committed with the run's last changes: completed, waiting for answers or stopped by a problem. A `planning-worker` or `development-worker` writes its own; in `direct` mode you write it for your run whenever you stop for the user or end the activity. It is the run's record (what it did, its effort, how it ended), which `cloud-pr` has nowhere else to keep.
 
 ```bash
-devkit workflow envelope new --unit <dir> --kind worker --stage <stage> --summary "<what this run did>" \
+devkit workflow envelope worker --unit <dir> --stage <stage> --summary "<what this run did>" \
   --effort <low|medium|high> --check tests="PASS 14/14" --head <last commit>
 ```
 
@@ -29,7 +29,7 @@ devkit shows every unanswered question as `[PENDING_QUESTION: <file> id=<q> ...]
 - The run that processes the answers records them first, in a commit of its own, then folds the decisions into the documents (proposal and PADRs, or `spec.md` and `plan.md`) in a separate commit. In `local-orchestrated` the new worker writes the record from your rewritten answers; in `direct` you write it:
 
 ```bash
-devkit workflow envelope new --unit <dir> --kind answer --stage <stage> --summary "q1, q2 decided" \
+devkit workflow envelope answer --unit <dir> --stage <stage> --summary "q1, q2 decided" \
   --answers-to worker-NN.yaml --answers-file -    # - { question: q1, choice: a, decision: "...", constraints: [...] }
 ```
 
@@ -43,7 +43,7 @@ devkit workflow envelope new --unit <dir> --kind answer --stage <stage> --summar
 - Whoever actually fixed it writes the resolution, in the same commit as the fix; one who could not fix it writes none and records what it tried in its own `worker` envelope:
 
 ```bash
-devkit workflow envelope new --unit <dir> --kind resolution --resolves worker-NN.yaml \
+devkit workflow envelope resolution --unit <dir> --resolves worker-NN.yaml \
   --summary "<what was done and why it resolves the problem>"
 ```
 
