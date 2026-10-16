@@ -696,7 +696,7 @@
     },
     ".agents/skills/spec/SKILL.md": {
       "mode": 420,
-      "sha256": "e6e385e51bb9dd81401acfe81a54988c2f87067e683470db8cfc91eae8449b70"
+      "sha256": "727c7adb02fd663a0ec4da4034c93fc5b8b96295928fd030ce647f7ebee4ceb1"
     },
     ".agents/skills/spec/references/branches.md": {
       "mode": 420,
@@ -860,7 +860,7 @@
     },
     ".claude/skills/spec/SKILL.md": {
       "mode": 420,
-      "sha256": "e6e385e51bb9dd81401acfe81a54988c2f87067e683470db8cfc91eae8449b70"
+      "sha256": "727c7adb02fd663a0ec4da4034c93fc5b8b96295928fd030ce647f7ebee4ceb1"
     },
     ".claude/skills/spec/references/branches.md": {
       "mode": 420,
@@ -1228,7 +1228,7 @@
     },
     ".devkit/managed/spec/skills/spec/SKILL.md": {
       "mode": 420,
-      "sha256": "e6e385e51bb9dd81401acfe81a54988c2f87067e683470db8cfc91eae8449b70"
+      "sha256": "727c7adb02fd663a0ec4da4034c93fc5b8b96295928fd030ce647f7ebee4ceb1"
     },
     ".devkit/managed/spec/skills/spec/references/branches.md": {
       "mode": 420,

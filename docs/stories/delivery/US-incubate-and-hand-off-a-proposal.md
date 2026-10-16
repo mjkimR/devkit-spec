@@ -27,11 +27,12 @@ capabilities:
 ## 2. Background & Context
 
 `proposal`-depth work starts in Backlog with `devkit spec proposal new <slug>`, which binds `proposal.md` to
-`sdd-proposal`; the user's confirmation of the draft is `plan-intent`. Planning runs on `plan-<slug>`: the optional
-`spike` stage gathers evidence through the `scout` and `challenger` roles, `devkit spec proposal padr` records
-preliminary decisions and the questions for the user are collected in one round. After `plan-accept`,
-`devkit workflow next` reports the proposal unit complete, and Development starts with
-`devkit spec proposal handoff <slug>`, which creates the spec bundle bound to `sdd-spec-<task_kind>`.
+`sdd-proposal`; the user's confirmation of the draft is `plan-intent`, which includes the Planning `activity-effort`
+the agent proposes. Planning runs on `plan-<slug>`: the `spike` stage gathers evidence through the `scout` role and
+criticism through the `challenger` role, which the effort requires from `medium` up, `devkit spec proposal padr`
+records preliminary decisions and the questions for the user are collected in one round. After `plan-accept`, `devkit
+workflow next` reports the proposal unit complete, and Development starts with `devkit spec proposal handoff <slug>`,
+which creates the spec bundle bound to `sdd-spec-<task_kind>`.
 
 ---
 
