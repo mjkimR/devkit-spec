@@ -1,6 +1,6 @@
 # Challenger finding disposition
 
-`PROP-planning-feedback-capture` received one independent Challenger pass at medium effort. The return is recorded in
+`SPEC-planning-feedback-capture` received one independent Challenger pass at medium effort. The return is recorded in
 `envelopes/challenger-01.yaml` with its original finding. The role ran read-only with emulated Codex isolation; the
 caller verified its HEAD and index were unchanged and that only the pre-existing proposal draft paths were modified.
 

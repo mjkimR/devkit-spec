@@ -1,13 +1,13 @@
 ---
-id: PADR-planning-feedback-in-proposal
+id: ADR-planning-feedback-in-proposal
 title: Keep Planning feedback with its proposal
 summary: "Planning writes feedback inside its proposal boundary. Handoff carries open observations into the spec; deletion without handoff preserves open observations in the global backlog."
-proposal: PROP-planning-feedback-capture
-status: draft
+proposal: SPEC-planning-feedback-capture
+status: accepted
 created_at: 2026-10-16
 ---
 
-# [PADR-planning-feedback-in-proposal] Keep Planning feedback with its proposal
+# [ADR-planning-feedback-in-proposal] Keep Planning feedback with its proposal
 
 ## 1. Context
 
@@ -45,4 +45,4 @@ validation, rewrite and rollback guarantees.
 - Path validation and relevant guides expand; no new document kind, status, general storage root or permission is added.
 - Feedback IDs, statuses and observation dates survive moves. Names are selected unused across the repository.
 - Strategy 01 §6.2 is updated after acceptance and before handoff. Capture/sweep timing is specified by
-  `PROP-planning-feedback-capture`; this PADR decides storage and retirement only.
+  `SPEC-planning-feedback-capture`; this PADR decides storage and retirement only.

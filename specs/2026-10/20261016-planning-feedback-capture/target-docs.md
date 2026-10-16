@@ -2,7 +2,7 @@
 id: PROP-planning-feedback-capture-target
 title: Target contracts for Planning feedback capture
 status: draft
-proposal: PROP-planning-feedback-capture
+proposal: SPEC-planning-feedback-capture
 created_at: 2026-10-16
 targets:
   - file: docs/capabilities/harness/CAP-HARN-agent-guidance.md
@@ -31,6 +31,6 @@ playbook's proposal-cleanup instructions as applicable, and `workflows/sdd-propo
 Tests extend the proposal handoff, lookup/namespace, rule and workflow suites. No CLI command or upstream private API
 is introduced. A needed upstream public primitive is reported as a dependency rather than implemented in this package.
 
-The new ADR is promoted from `PADR-planning-feedback-in-proposal`; no existing ADR is edited. Outside this repository,
+The new ADR is promoted from `ADR-planning-feedback-in-proposal`; no existing ADR is edited. Outside this repository,
 strategy 01 §6.2 must be updated first after acceptance and before Development handoff. The proposal's §3.4 supplies
 verification scenarios for the later spec and tasks; this blueprint is not a claim that the behavior already exists.

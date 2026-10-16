@@ -1,6 +1,6 @@
 # Planning feedback source evidence
 
-These observations support `PROP-planning-feedback-capture`; they describe current implementation, not shipped changes.
+These observations support `SPEC-planning-feedback-capture`; they describe current implementation, not shipped changes.
 
 | Source | Evidence | Design consequence |
 | --- | --- | --- |
