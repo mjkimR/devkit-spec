@@ -1,9 +1,0 @@
-request: gate:plan-intent
-kind: approve
-action: accept
-workflow: sdd-proposal
-stage: intent-proposal
-note: User approved PROP-proposal-effort-hints intent and design with planning_effort/dev_effort
-  hints
-by: user
-at: '2026-10-16T12:14:29.601266Z'

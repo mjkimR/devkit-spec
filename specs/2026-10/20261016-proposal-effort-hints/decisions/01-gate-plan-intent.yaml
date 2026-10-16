@@ -1,0 +1,8 @@
+request: gate:plan-intent
+kind: approve
+action: accept
+workflow: sdd-spec-feature
+stage: intent
+note: PROP-proposal-effort-hints
+by: user
+at: '2026-10-16T12:16:05.653033Z'

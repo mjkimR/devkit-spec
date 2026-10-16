@@ -1,8 +1,0 @@
-request: gate:plan-accept
-kind: approve
-action: accept
-workflow: sdd-proposal
-stage: direction-handoff
-note: User accepted PROP-proposal-effort-hints and requested Development
-by: user
-at: '2026-10-16T12:15:17.720257Z'
