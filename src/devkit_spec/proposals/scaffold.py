@@ -23,14 +23,18 @@ from pathlib import Path
 
 import yaml
 from devkit.advisory import AdvisoryError
+from devkit.core import FrontmatterError
 from devkit.core.errors import ArgumentError
+from devkit.core.frontmatter import parse
 from devkit.workflow import write_binding
 
-from devkit_spec.branches import SLUG_LIMIT
+from devkit_spec.branches import SLUG_LIMIT, planning_branch_elsewhere
 from devkit_spec.config import GLOBAL, read_spec_config
 from devkit_spec.documents import DocumentIndex
 from devkit_spec.errors import (
     ProposalExistsError,
+    ProposalInPlanningError,
+    ProposalNotApprovedError,
     ProposalNotFoundError,
     ProposalSlugConflictError,
     ProposalSlugError,
@@ -133,6 +137,38 @@ def _supersedes(value: str | None, slug: str) -> str | None:
         target_files=["--supersedes"],
         fix="Pass --supersedes PROP-<slug of the accepted proposal this draft replaces>; the new draft takes a new slug",
     )
+
+
+def _check_superseded(root: Path, proposal_id: str | None) -> None:
+    """The proposal ``proposal_id`` (``PROP-<slug>``) a draft supersedes must exist and be ``accepted``: a supersede
+    reverses its ``plan-accept`` (01 §7.4). ``ProposalNotFoundError`` without one, ``ProposalNotApprovedError`` for
+    any other status; nothing for ``None``."""
+    if proposal_id is None:
+        return
+    old = proposal_id.removeprefix("PROP-")
+    bundle, single = bundle_dir(root, old), single_file(root, old)
+    anchor = bundle / PROPOSAL_FILE if bundle.is_dir() else single
+    rel = anchor.relative_to(root).as_posix()
+    if not anchor.is_file():
+        raise ProposalNotFoundError(
+            f"--supersedes {proposal_id}: no proposal at {rel}",
+            target_files=["--supersedes"],
+            fix="Pass --supersedes PROP-<slug> of the accepted proposal this draft replaces (devkit spec list proposal"
+            " shows them)",
+        )
+    try:
+        status = str((parse(anchor.read_text("utf-8")).data or {}).get("status") or "")
+    except (FrontmatterError, OSError, UnicodeError):
+        status = ""
+    if status != "accepted":
+        raise ProposalNotApprovedError(
+            f"--supersedes {proposal_id} is {status or 'without a status'}, not accepted; a supersede replaces an"
+            " accepted proposal only",
+            target_files=[rel],
+            what_to_report="The status of the proposal --supersedes names; a supersede reverses an accepted direction",
+            fix="Pass --supersedes PROP-<slug> of an accepted proposal, or drop the option: a draft or reviewing"
+            " proposal is changed in Backlog or its Planning, a rejected one is cleaned up by hygiene",
+        )
 
 
 def known_namespaces(root: Path) -> list[str]:
@@ -254,7 +290,8 @@ def create_proposal(
     resolves and validates, else left unbound with a ``SPEC_PROPOSAL_UNBOUND`` notice. Raises ``ProposalSlugError``
     for a slug without letters or digits, ``ArgumentError`` for a ``task_kind`` outside ``TASK_KINDS``, a
     ``supersedes`` that is not a proposal ID, a ``namespace`` that is neither ``global`` nor registered or a
-    ``summary`` that is empty or not English, ``ProposalExistsError`` when the
+    ``summary`` that is empty or not English, ``ProposalNotFoundError`` for a ``supersedes`` naming no proposal and
+    ``ProposalNotApprovedError`` for one that is not ``accepted``, ``ProposalExistsError`` when the
     bundle or a single-file proposal of the slug exists, ``ProposalSlugConflictError`` when ``SPEC-<slug>`` exists.
     """
     root = root.resolve()
@@ -263,6 +300,7 @@ def create_proposal(
     summary = require_summary(summary)
     kind = require_task_kind(task_kind)
     replaced = _supersedes(supersedes, slug)
+    _check_superseded(root, replaced)
     title = (title or "").strip() or slug
     area = (target_area or "").strip() or DEFAULT_TARGET_AREA
     area = area if area.endswith("/") else area + "/"
@@ -460,8 +498,9 @@ def create_padr(
     title stays free text, so ``"2024 roadmap"`` works with ``padr_slug="roadmap-2024"``. ``summary`` is written only
     when given; the promoted ADR keeps it. Raises ``ProposalSlugError`` for a slug without letters or digits or a
     PADR slug whose first segment has no letter, ``ArgumentError`` for a ``summary`` that is empty or not English,
-    ``ProposalNotFoundError`` when the bundle does not exist, ``ProposalExistsError`` when any document already
-    declares the PADR ID.
+    ``ProposalNotFoundError`` when the bundle does not exist, ``ProposalInPlanningError`` when ``plan-<slug>`` exists
+    and the checkout is not on it (a proposal in Planning is changed on that branch only, 01 §4.7),
+    ``ProposalExistsError`` when any document already declares the PADR ID.
     """
     root = root.resolve()
     slug = require_slug(slug)
@@ -483,6 +522,15 @@ def create_padr(
             f"proposal bundle {rel} does not exist",
             target_files=[rel],
             fix=f"Create the bundle first with devkit spec proposal new {slug}",
+        )
+    branch = planning_branch_elsewhere(root, slug)
+    if branch is not None:
+        rel = (bundle / PROPOSAL_FILE).relative_to(root).as_posix()
+        raise ProposalInPlanningError(
+            f"PROP-{slug} is in Planning on {branch}; a PADR is written on that branch only",
+            target_files=[rel],
+            fix=f"Run it in the checkout of {branch} (devkit worktree start plan-{slug} --existing-branch {branch}"
+            f" --unit docs/proposals/PROP-{slug} attaches one), or wait until that branch is merged and removed",
         )
     path = bundle / DECISIONS / f"{padr_id}.md"
     existing = [document.path for document in DocumentIndex.load(root).by_id.get(padr_id, [])]

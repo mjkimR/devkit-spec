@@ -150,7 +150,7 @@ expects them and `devkit workflow list` finds both. `schema_version` is `1` in e
 - **`sdd-spec-bugfix`**: `intent` (`plan-intent`), `characterize`, `plan-tasks`, `reproduce`, `fix-verify`, then the
   stages of `sdd-spec-feature` from `review-refine` on.
 - **`sdd-proposal`**: `intent-proposal` (`plan-intent`), `spike` (optional; never current on its own),
-  `direction-handoff` (`plan-accept`), `handoff` (no exit check).
+  `direction-handoff` (`plan-accept`), `handoff` (no exit check, no return: Development never returns to Planning).
 
 Every workflow also has `exception`. Stage details of the spec-bundle workflows:
 

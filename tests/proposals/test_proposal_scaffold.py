@@ -7,10 +7,11 @@ from conftest import Write
 from devkit.advisory import AdvisoryError
 from devkit.core.errors import ArgumentError
 from devkit.core.frontmatter import parse
-from proposals.support import INCUBATED, TODAY, write_workflow
+from proposals.support import INCUBATED, TODAY, accept, write_workflow
 
 from devkit_spec.errors import (
     ProposalExistsError,
+    ProposalNotApprovedError,
     ProposalNotFoundError,
     ProposalSlugConflictError,
     ProposalSlugError,
@@ -84,10 +85,23 @@ def test_create_proposal_bundle(workspace: Path) -> None:
 
 
 def test_create_proposal_writes_the_task_kind_and_close_fields_when_given(workspace: Path) -> None:
+    accept(workspace / create_proposal(workspace, "old-fix").path)
     created = create_proposal(workspace, "fix", task_kind="bugfix", supersedes="PROP-old-fix", needs_decompose=True)
     meta = parse((workspace / created.path).read_text(encoding="utf-8")).data
     assert meta is not None and "workflow" not in meta
     assert meta["task_kind"] == "bugfix" and meta["supersedes"] == "PROP-old-fix" and meta["needs_decompose"] is True
+
+
+def test_create_proposal_supersedes_an_accepted_proposal_only(workspace: Path) -> None:
+    with pytest.raises(ProposalNotFoundError) as missing:
+        create_proposal(workspace, "fix", supersedes="PROP-old-fix")
+    assert missing.value.target_files == ("--supersedes",)
+    create_proposal(workspace, "old-fix")
+    with pytest.raises(ProposalNotApprovedError) as draft:
+        create_proposal(workspace, "fix", supersedes="PROP-old-fix")
+    assert draft.value.code == "SPEC_PROPOSAL_NOT_APPROVED" and "draft, not accepted" in str(draft.value)
+    assert draft.value.target_files == ("docs/proposals/PROP-old-fix/proposal.md",)
+    assert not (workspace / "docs/proposals/PROP-fix").exists()
 
 
 @pytest.mark.parametrize(

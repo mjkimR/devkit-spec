@@ -59,6 +59,18 @@ def require_development_branch(root: Path, slug: str, action: str, error: type[A
     )
 
 
+def planning_branch_elsewhere(root: Path, slug: str) -> str | None:
+    """The ``plan-<slug>`` ref of ``slug`` when it exists and the checkout at ``root`` is not on it; ``None`` when
+    there is none or the checkout is on it. A proposal in Planning is changed on that branch only (01 §4.7)."""
+    branch = planning_branches(root).get(slug)
+    if branch is None:
+        return None
+    found = checkout(root)
+    if found is not None and found[1] == f"{PLANNING_PREFIX}{slug}":
+        return None
+    return branch
+
+
 def planning_branches(root: Path) -> dict[str, str]:
     """``slug -> ref`` for every ``plan-<slug>`` branch, local or fetched from a remote (``refs/remotes/*/``); the
     local ref wins. Empty outside Git. Planning is running for such a slug (01 §4.7): devkit fetches nothing, so a

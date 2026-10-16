@@ -27,7 +27,7 @@ Read `devkit spec policy` before classifying work. Use the effective approval an
 When the user enters `/spec <intent>` or asks a general engineering question:
 
 ### Tier 1: Classification and Planning
-Classify the request on the three axes of the spec constitution (`devkit get-context spec`): `task-kind`, then `planning-depth`, then per activity the mode and `activity-effort`. Propose the classification against the criteria and let the user confirm it at `plan-intent`. Backlog work, inline Planning, depth changes and closes follow [classification](references/classification.md). Before any bundle or edit, settle the branch and worktree per `GIT_POLICY` ([worktree](references/worktree.md); a branch without a worktree, an existing branch: [branches](references/branches.md)):
+Classify the request on the three axes of the spec constitution (`devkit get-context spec`): `task-kind`, then `planning-depth`, then per activity the mode and `activity-effort` ([effort](references/effort.md)). Propose the classification against the criteria and let the user confirm it at `plan-intent`. Backlog work, inline Planning, depth changes and closes follow [classification](references/classification.md). Before any bundle or edit, settle the branch and worktree per `GIT_POLICY` ([worktree](references/worktree.md); a branch without a worktree, an existing branch: [branches](references/branches.md)):
 
 | Classification | Workflow | Planning and start |
 | :--- | :--- | :--- |

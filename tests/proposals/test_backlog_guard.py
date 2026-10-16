@@ -65,3 +65,19 @@ def test_backlog_changes_only_a_draft_without_a_planning_branch(tmp_path: Path) 
         assert refused.exit_code == 2 and error["code"] == "SPEC_PROPOSAL_IN_PLANNING" and reason in error["message"]
     missing = CliRunner().invoke(devkit_cli, ["spec", "proposal", "check", "nothing", "-w", str(root)])
     assert missing.exit_code == 2 and "SPEC_PROPOSAL_NOT_FOUND" in missing.stderr
+
+
+def test_a_padr_of_a_proposal_in_planning_is_written_on_its_branch_only(tmp_path: Path) -> None:
+    root = _repo(tmp_path)
+    for slug, branch in (("local", "plan-local"), ("remote", "origin/plan-remote")):
+        refused = CliRunner().invoke(
+            devkit_cli, ["spec", "proposal", "padr", slug, "Pick", "-w", str(root), "--format", "json"]
+        )
+        error = json.loads(refused.stdout)["error"]
+        assert refused.exit_code == 2 and error["code"] == "SPEC_PROPOSAL_IN_PLANNING" and branch in error["message"]
+        assert not (root / f"docs/proposals/PROP-{slug}/decisions/PADR-pick.md").exists()
+    idle = CliRunner().invoke(devkit_cli, ["spec", "proposal", "padr", "idle", "Keep", "-w", str(root)])
+    assert idle.exit_code == 0 and idle.stdout.startswith("[PADR: PADR-keep ")  # no Planning branch: Backlog may
+    git(root, "switch", "-q", "plan-local")
+    on_branch = CliRunner().invoke(devkit_cli, ["spec", "proposal", "padr", "local", "Pick", "-w", str(root)])
+    assert on_branch.exit_code == 0 and on_branch.stdout.startswith("[PADR: PADR-pick "), on_branch.output

@@ -116,6 +116,8 @@ removes it.
     (`SPEC_PROPOSAL_IN_PLANNING`) while `plan-<slug>` exists locally or as a fetched remote branch (Planning changes the
     proposal on that branch only), and for a proposal that is no longer `draft` (01 §5.1). Fetch first to see a
     branch made elsewhere. The list display of rule 10 is not the check: Planning may start right after a listing.
+    `padr` applies the branch half of the guard itself: while `plan-<slug>` exists it writes a PADR only from the
+    checkout of that branch (`SPEC_PROPOSAL_IN_PLANNING` elsewhere).
 
 ## 4. Interfaces & Data Contracts
 
@@ -164,7 +166,7 @@ legacy proposal or PADR whose slug starts that way, before writing anything, wit
 | `milestone` | Optional (`--milestone`): milestone, phase or release; carried to `spec.md`. |
 | `boundaries` | `owns` (scaffolded: the target area) and `excludes` (scaffolded: `docs/decisions/`); carried to `plan.md` and `tasks.md`. |
 | `task_kind` | `feature` (scaffolded default) or `bugfix` (`--task-kind`): the provisional `task-kind`, confirmed at `plan-accept`; the spec follows `sdd-spec-<task_kind>`. |
-| `supersedes` | Optional (`--supersedes PROP-<old>`): the accepted proposal a close by supersede replaces. |
+| `supersedes` | Optional (`--supersedes PROP-<old>`): the accepted proposal a close by supersede replaces; it must exist (`SPEC_PROPOSAL_NOT_FOUND`) and be `accepted` (`SPEC_PROPOSAL_NOT_APPROVED`). |
 | `needs_decompose` | Optional (`--needs-decompose`): `true` marks a draft Backlog splits before Planning starts. |
 | `workflow`, `workflow_hash` | devkit's binding of the proposal unit (`sdd-proposal`). |
 
@@ -311,7 +313,7 @@ uv run devkit spec proposal check fast-engine                        # before an
 | `--target-area/-a` | `new` | Capability area the proposal targets (default `capabilities/<area>/`); also the owned boundary. |
 | `--milestone/-m` | `new` | Milestone, phase or release; carried to `spec.md`. |
 | `--task-kind` | `new` | Write `task_kind: feature\|bugfix` (default `feature`); anything else is `ARGUMENT_INVALID`. |
-| `--supersedes` | `new` | Write `supersedes: PROP-<old>`; a value that is not another proposal's ID is `ARGUMENT_INVALID`. |
+| `--supersedes` | `new` | Write `supersedes: PROP-<old>`; a value that is not another proposal's ID is `ARGUMENT_INVALID`, a proposal that does not exist `SPEC_PROPOSAL_NOT_FOUND`, one that is not `accepted` `SPEC_PROPOSAL_NOT_APPROVED`; nothing written. |
 | `--needs-decompose` | `new` | Write `needs_decompose: true`. |
 | `--namespace` | `new` | Write `namespace: <name>`: `global` or registered in `[[tool.spec.namespaces]]`, else `ARGUMENT_INVALID` with the valid names in `[FIX]`. Omitted: the namespace the current directory lies in (`CAP-DOCS-namespaces`), else no field and the bundle is global. |
 | `--slug` | `padr` | The PADR slug for its ID and file name (default: the title's slug); refused when its first segment has no letter. |
@@ -387,11 +389,11 @@ directory whose namespace applies when `namespace` is omitted);
 | `SPEC_PROPOSAL_SLUG_INVALID` | `ERROR` (`INPUT_ERROR`) | `ProposalSlugError` | The slug, or a PADR title or `--slug`, keeps no letter or digit after normalization; a new proposal's or PADR's slug, or at handoff a legacy proposal's or PADR's, has no letter in its first segment (`[FIX]`: rename it, or pass `--slug` to `padr`). |
 | `SPEC_PROPOSAL_EXISTS` | `ERROR` (`INPUT_ERROR`) | `ProposalExistsError` | `new`: the bundle or `PROP-<slug>.md` exists. `padr`: a document already declares the PADR ID; `[TARGET]` lists it. |
 | `SPEC_PROPOSAL_SLUG_CONFLICT` | `ERROR` (`INTERACTION`) | `ProposalSlugConflictError` | `SPEC-<slug>` exists (`[TARGET]`); the user picks another slug or drops the duplicate. |
-| `SPEC_PROPOSAL_NOT_FOUND` | `ERROR` (`INPUT_ERROR`) | `ProposalNotFoundError` | No bundle or single-file proposal has the slug (`padr`: no bundle). |
+| `SPEC_PROPOSAL_NOT_FOUND` | `ERROR` (`INPUT_ERROR`) | `ProposalNotFoundError` | No bundle or single-file proposal has the slug (`padr`: no bundle); `new`: `--supersedes` names a proposal that does not exist. |
 | `SPEC_PROPOSAL_REJECTED_PENDING` | `WARNING` | `ProposalRejectedPendingWarning` | `rules check -p hygiene` (whole workspace): a rejected proposal is still in the base; `[FIX]` finds the rejection commit, writes the rejection ADR and deletes the proposal in one commit (rule 9). |
-| `SPEC_PROPOSAL_IN_PLANNING` | `ERROR` (`INPUT_ERROR`) | `ProposalInPlanningError` | `check`: Backlog may not change the proposal, because its `plan-<slug>` exists (locally or fetched; rule 13) or it is no longer `draft`. |
+| `SPEC_PROPOSAL_IN_PLANNING` | `ERROR` (`INPUT_ERROR`) | `ProposalInPlanningError` | `check`: Backlog may not change the proposal, because its `plan-<slug>` exists (locally or fetched; rule 13) or it is no longer `draft`. `padr`: `plan-<slug>` exists and the checkout is not on it. |
 | `SPEC_PROPOSAL_INVALID` | `ERROR` (`MAINTENANCE`) | `ProposalInvalidError` | The proposal, its blueprint or a PADR cannot be read or its frontmatter does not parse; or, at handoff, `namespace` is not a string naming `global` or a registered namespace, `summary` is not a string, or `task_kind` is not `feature` or `bugfix`. |
-| `SPEC_PROPOSAL_NOT_APPROVED` | `ERROR` (`INTERACTION`) | `ProposalNotApprovedError` | Status is not `accepted`: `plan-accept` was not given. |
+| `SPEC_PROPOSAL_NOT_APPROVED` | `ERROR` (`INTERACTION`) | `ProposalNotApprovedError` | `handoff`: status is not `accepted`, `plan-accept` was not given. `new`: the proposal `--supersedes` names is not `accepted`; a supersede replaces an accepted proposal only. |
 | `SPEC_PROPOSAL_NEEDS_DECOMPOSE` | `ERROR` (`INTERACTION`) | `ProposalNeedsDecomposeError` | The proposal carries `needs_decompose: true`; Backlog splits it into new drafts. |
 | `SPEC_PROPOSAL_WRONG_WORKTREE` | `ERROR` (`INPUT_ERROR`) | `ProposalWrongWorktreeError` | `handoff` in a checkout, linked or base, on another branch than `dev-<slug>`, at either `[tool.spec] worktree` level (rule 11); `[FIX]` starts or continues `dev-<slug>` and reruns the handoff there. |
 | `SPEC_PROPOSAL_WORKFLOW_INVALID` | `ERROR` (`MAINTENANCE`) | `ProposalWorkflowError` | `task_kind: bugfix` and `sdd-spec-bugfix` does not resolve or validate; `[DETAIL]` carries devkit's code. |

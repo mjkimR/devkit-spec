@@ -28,7 +28,7 @@ exclude = ["docs/decisions/**", "docs/proposals/**", "docs/materials/**", "specs
 
 ## [tool.spec]: the settings of devkit-spec; devkit passes [tool.*] tables through unread.
 [tool.spec]
-worktree = "required"  # Route 2 and above and bugfix always run in a task worktree (default "auto")
+worktree = "required"  # direct mode: every spec and proposal activity runs in a task worktree (default "auto")
 
 ## A package of a monorepo with its own Living Spec; one table per package. None by default; the values below are
 ## examples.

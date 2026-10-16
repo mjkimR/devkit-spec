@@ -62,8 +62,9 @@ stages:
     skills: [spec, spec-next]
     role: developer
     isolation: none
-    returns:
-      - { to: direction-handoff, when: the proposal must change before it can be handed off }
+    # No return to direction-handoff: Development never returns to Planning (01 §4.7). A premise of the accepted
+    # proposal that no longer holds is a problem, then a close (01 §7.3, §7.4), never a change of the proposal.
+    returns: []
   - id: exception
     name: Exception
     exception: true
