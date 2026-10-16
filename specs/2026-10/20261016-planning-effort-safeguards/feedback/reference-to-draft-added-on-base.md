@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-16
 ---
 
@@ -45,3 +45,5 @@ Branch timing, not a wrong ID: the cited draft existed, only on the base.
 ```text
 [VIOLATION: RULE-document-reference ... PADR-roadmap-in-repository.md line=86 message="no document has the ID PROP-draft-direct-acceptance"]
 ```
+
+- **Disposition**: `src/devkit_spec/bundle/skills/spec/references/branches.md` §3: a document added to the base after the branch started is cited by ID after merging the base, otherwise by slug in prose; the rule is unchanged.

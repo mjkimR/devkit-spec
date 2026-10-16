@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-16
 ---
 
@@ -50,3 +50,5 @@ FAILED tests/test_bundle_budgets.py::test_within_budget[skills/spec/references/c
 FAILED tests/test_bundle_budgets.py::test_restructured_skills_keep_headroom[spec-delegate]  (assert 7730 <= 7680)
 after trimming: classification.md 8181 bytes, spec-delegate/SKILL.md 7679 bytes
 ```
+
+- **Disposition**: `tests/test_bundle_budgets.py`: the budget follows devkit's raised `RULE-skill-document-size` default (12288 bytes, devkit 94085f4), the headroom is the budget minus 512, and a failure reports the size, the limit and the excess.

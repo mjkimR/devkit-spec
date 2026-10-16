@@ -227,3 +227,28 @@ def test_from_spec_reads_a_wrapped_boundary(repo: Path) -> None:
         "src/b",
         "src/shared.py",
     ]
+
+
+def test_from_spec_skips_skeleton_tasks(repo: Path) -> None:
+    for slug in ("alpha", "beta"):
+        base = f"specs/2026-10/20261015-{slug}"
+        write(repo, f"{base}/spec.md", f"---\nid: SPEC-{slug}\n---\n<!-- devkit:skeleton -->\n")
+        write(
+            repo,
+            f"{base}/tasks.md",
+            f"---\nid: TASKS-{slug}\n---\n<!-- devkit:skeleton -->\n- [ ] **Task 1.1**: Core\n  - **_Boundary**: <target area>\n",
+        )
+    a, b = from_spec(repo, "specs/2026-10/20261015-alpha"), from_spec(repo, "specs/2026-10/20261015-beta")
+    assert a.code == [] and b.code == []
+    assert _reasons(a) == {"reconcile.md": "missing-reconcile", "tasks.md": "missing-tasks"}
+    result = compare(a, b)
+    assert result.docs == () and result.code == ()
+
+    write(
+        repo,
+        "specs/2026-10/20261015-alpha/tasks.md",
+        "---\nid: TASKS-alpha\n---\n- [ ] **Task 1.1**: Core\n  - **_Boundary**: <target area>, `src/a`\n",
+    )
+    edited = from_spec(repo, "specs/2026-10/20261015-alpha")
+    assert [item.path for item in edited.code] == ["src/a"]
+    assert _reasons(edited)["<target area>"] == "not-a-path"

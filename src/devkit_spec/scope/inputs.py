@@ -30,6 +30,7 @@ from devkit_spec.errors import (
     ScopeSpecNotFoundError,
 )
 from devkit_spec.proposals.scaffold import PROPOSAL_FILE, PROPOSALS, TARGET_DOCS, clean_slug
+from devkit_spec.proposals.specs import SKELETON_MARKER
 from devkit_spec.scope.deadline import Deadline, git_lines
 from devkit_spec.scope.model import Diff, Granularity, ScopePath, ScopeSet, Source, Stage, Unresolved
 
@@ -37,6 +38,11 @@ RECONCILE = "reconcile.md"
 TASKS = "tasks.md"
 SPEC = "spec.md"
 WAIVED = "waived"
+
+
+def _is_placeholder(raw: str) -> bool:
+    stripped = raw.strip()
+    return len(stripped) >= 2 and stripped.startswith("<") and stripped.endswith(">")
 
 
 def kind_of(root: Path, path: str) -> Granularity:
@@ -208,15 +214,21 @@ def from_spec(root: Path, spec_dir: str) -> ScopeSet:
         except (OSError, UnicodeDecodeError) as exc:
             relative = f"{spec_dir}/{TASKS}"
             raise ScopeInputInvalidError(f"cannot read {relative}: {exc}", target_files=[relative]) from exc
-        seen: set[str] = set()
-        for task in parse_boundaries(text):
-            for raw in task.values:
-                code, reason = classify_boundary(raw)
-                if code is None:
-                    scope.unresolved.append(Unresolved(raw, str(reason), Source.DECLARED_CODE))
-                elif code not in seen:
-                    seen.add(code)
-                    scope.code.append(ScopePath(code, kind_of(root, code), Source.DECLARED_CODE, Stage.SPEC))
+        if SKELETON_MARKER in text:
+            scope.unresolved.append(Unresolved(TASKS, "missing-tasks", Source.DECLARED_CODE))
+        else:
+            seen: set[str] = set()
+            for task in parse_boundaries(text):
+                for raw in task.values:
+                    if _is_placeholder(raw):
+                        scope.unresolved.append(Unresolved(raw, "not-a-path", Source.DECLARED_CODE))
+                        continue
+                    code, reason = classify_boundary(raw)
+                    if code is None:
+                        scope.unresolved.append(Unresolved(raw, str(reason), Source.DECLARED_CODE))
+                    elif code not in seen:
+                        seen.add(code)
+                        scope.code.append(ScopePath(code, kind_of(root, code), Source.DECLARED_CODE, Stage.SPEC))
     reconcile = _targets(base / RECONCILE, f"{spec_dir}/{RECONCILE}")
     blueprint = _targets(base / TARGET_DOCS, f"{spec_dir}/{TARGET_DOCS}")
     if reconcile is not None:

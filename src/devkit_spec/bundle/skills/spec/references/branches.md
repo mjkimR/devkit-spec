@@ -27,6 +27,7 @@ devkit worktree start <branch> --existing-branch <branch|remote/branch> --unit <
 - Fetch first to see a branch made elsewhere. A local branch behind or diverged from the remote is `WORKTREE_BRANCH_OUT_OF_SYNC`: synchronize it with the user, never by reset. One ahead is attached with a `WORKTREE_BRANCH_AHEAD` notice: push it when the work is shared.
 - A base checkout on the branch is switched back to its recorded start branch first (clean only), else refused.
 - Continue a branch only once its earlier run ended. Before taking a cloud run's branch local, confirm the pull request has no active run.
+- A document added to the base after the branch started (a Backlog draft proposal, say) does not exist on the branch, so `RULE-document-reference` refuses its full ID there. To cite it by ID, merge the base into the branch first (`git merge <base>`); otherwise name its slug in prose, without the ID prefix.
 
 ## 4. Leftovers and stale branches
 

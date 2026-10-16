@@ -10,7 +10,7 @@ agent: codex
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-16
 ---
 
@@ -40,3 +40,5 @@ created_at: 2026-10-16
 classification.md Backlog records plan-intent but its proposal bullet has no commit step. The inline-spec bullet
 explicitly says record and commit. worktree.md states that a new worktree is created from the base HEAD.
 `SPEC-planning-feedback-capture` used a separate intent commit before its Planning branch.
+
+- **Disposition**: `src/devkit_spec/bundle/skills/spec/references/classification.md`: the proposal Backlog bullet commits the draft and its `plan-intent` record to the base, and only them, before `plan-<slug>` starts.

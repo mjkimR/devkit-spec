@@ -36,7 +36,7 @@ the same constitution, skills, workflows and rules it ships.
   in its owning capability with level and condition.
 - `src/devkit_spec/bundle/seed/docs/` is the skeleton consumers receive; `docs/` here is project-owned and describes
   devkit-spec itself. Changing one does not change the other.
-- Skill and playbook documents of the bundle stay within 8192 bytes (`tests/test_bundle_budgets.py`).
+- Skill and playbook documents of the bundle stay within 12288 bytes, devkit's `RULE-skill-document-size` default (`tests/test_bundle_budgets.py`).
 - All documentation, guide material and bundle assets are English.
 
 ## 4. Verification

@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: noise
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-15
 ---
 
@@ -50,3 +50,5 @@ created_at: 2026-10-15
 [SUMMARY: namespace=0c908353e6858b2b records=2 pairs=1 overlapping=1 problems=0]
 (after spec-tasks) [SUMMARY: namespace=0c908353e6858b2b records=2 pairs=1 overlapping=0 problems=0]
 ```
+
+- **Disposition**: `src/devkit_spec/scope/inputs.py`: `from_spec` treats a skeleton `tasks.md` (`<!-- devkit:skeleton -->`) as `missing-tasks` and angle-bracket placeholders (`<...>`) as `not-a-path` unresolved entries instead of declared code paths.

@@ -25,6 +25,7 @@ diff_scope: { base: "<ref>", head: "<sha>" }
 ```
 
 - `completed` with an empty `findings` list is a valid pass (zero findings allowed; no filler objections).
+- A finding carries only the keys above (devkit adds `resolution` and `waiver`) and refuses any other, `severity` included (`ENVELOPE_FINDINGS_INVALID`): never request a severity field from a role; a rank goes into `issue`, such as `(medium) ...`.
 - `needs_input` names the missing input or the decision only the human can make.
 - `failed` covers timeout, cancellation, tool failure, unsupported host feature, or a stale `diff_scope`. A failed or stale result is never completion evidence.
 - Docs impact has no envelope key: the implementer writes it into `reconcile.md` (targets, or the no-impact reasoning in its body). Its verification at every effort is a `reconcile-check` envelope ([completion](completion.md)).

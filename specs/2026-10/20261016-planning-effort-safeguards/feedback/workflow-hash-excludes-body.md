@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: noise
 recurring: false
-status: open
+status: promoted
 created_at: 2026-10-16
 ---
 
@@ -44,3 +44,5 @@ created_at: 2026-10-16
 [WORKFLOW: sdd-proposal ... hash=sha256:90918c63...] before and after the body edit and devkit sync
 devkit workflow next on all six PROP-* units: no WORKFLOW_DRIFT
 ```
+
+- **Disposition**: `src/devkit_spec/bundle/skills/spec/SKILL.md`: `WORKFLOW_DRIFT` names the `stages` list and states that a body, title or stage-name edit needs no rebind; devkit already documents the hash inputs (`docs/workflow/definition-and-checks.md`, Schema Hash), so nothing is forwarded.
