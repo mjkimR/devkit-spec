@@ -2,7 +2,7 @@
 id: PROP-backlog-roadmap-and-issues
 title: 'Backlog: goals, roadmap and issue tracking'
 summary: Gives Backlog a repository-owned roadmap of milestone documents ordered by depends_on, links Units to their milestone and optionally to an inbound GitHub issue, keeps every request not yet started as a draft, and lets spec-next recommend the next work.
-status: reviewing                     # draft | reviewing | accepted | rejected
+status: accepted                      # draft | reviewing | accepted | rejected
 created_at: 2026-10-16
 target_area: capabilities/delivery/
 priority: high                        # critical | high | medium | low

@@ -1,0 +1,9 @@
+request: gate:plan-accept
+kind: approve
+action: accept
+workflow: sdd-proposal
+stage: direction-handoff
+note: direction accepted with decisions D1-D8 of proposal section 2, including critical
+  drafts ranked before milestone rank
+by: user
+at: '2026-10-16T08:07:23.535635Z'
