@@ -1,0 +1,27 @@
+kind: reconcile-check
+stage: living-spec-draft
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-16T08:29:13.761685Z'
+status: completed
+summary: 'Reconcile passes with 2 minor wording findings: CAP-DLV §4.2 spike still called optional; glossary support-role entry now misstates workers'
+findings:
+- issue: CAP-DLV-delivery-workflows §4.2 still lists the spike stage as optional, without saying it runs whenever the Planning effort requires a challenger; the reconcile changed the same wording in the story but not here
+  evidence: docs/capabilities/delivery/CAP-DLV-delivery-workflows.md:156, :179, :299; src/devkit_spec/bundle/workflows/sdd-proposal.md:98
+  failure_condition: A reader of §4.2 concludes the spike, and its challenger, can be skipped at medium
+  suggested_action: 'Reword §4.2: optional in the schema, never current on its own, run whenever the effort requires a challenger (rule 15) or evidence is needed; challenger envelopes are recorded at spike'
+  resolution: open
+- issue: The glossary's support-role entry lists workers, which are not required by any effort but by the local-orchestrated mode
+  evidence: docs/glossary.md:60; CAP-DLV-delivery-workflows.md:284-288; spec-delegate/SKILL.md:34
+  failure_condition: A reader infers some effort requires a worker
+  suggested_action: Read-only roles follow the effort; workers run only in local-orchestrated mode
+  resolution: open
+assumptions:
+- Native Claude Code reviewer subagent, payload only
+checks:
+  rules_check: PASS
+  stale_wording_search: PASS
+diff_scope:
+  base: 66b6f6db750b967d646df3286c9005eaa1f1d55c
+  head: 15e3ae9
+activity_effort: medium

@@ -153,7 +153,8 @@ expects them and `devkit workflow list` finds both. `schema_version` is `1` in e
   `collect-feedback`, `final-change-report`, `integration-approval` (`dev-integration`), `integrate`, `merge`.
 - **`sdd-spec-bugfix`**: `intent` (`plan-intent`), `characterize`, `plan-tasks`, `reproduce`, `fix-verify`, then the
   stages of `sdd-spec-feature` from `review-refine` on.
-- **`sdd-proposal`**: `intent-proposal` (`plan-intent`), `spike` (optional; never current on its own),
+- **`sdd-proposal`**: `intent-proposal` (`plan-intent`), `spike` (optional in the schema and never current on
+  its own, but run whenever the Planning effort requires a `challenger`, rule 15, or the direction needs evidence),
   `direction-handoff` (`plan-accept`), `handoff` (no exit check, no return: Development never returns to Planning).
 
 Every workflow also has `exception`. Stage details of the spec-bundle workflows:
@@ -177,7 +178,7 @@ Every workflow also has `exception`. Stage details of the spec-bundle workflows:
 | `exception` | `exception-raised` | `exception-handled` | developer / none | `spec` |
 
 The `spike` stage of `sdd-proposal` delegates to the `scout` role (isolation `preferred`, skill `spec-delegate`) and
-writes into the proposal's `materials/`. The `report-session` stage of a session runs `spec-review` and, unless
+writes into the proposal's `materials/`; `scout` and `challenger` returns are recorded as envelopes at `spike`. The `report-session` stage of a session runs `spec-review` and, unless
 `collect-feedback` is switched off, `spec-feedback`; it runs no `spec-sync`, because a session has no reconcile record.
 
 ### 4.3 Gates
