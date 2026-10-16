@@ -2,7 +2,7 @@
 id: PROP-backlog-roadmap-and-issues
 title: 'Backlog: goals, roadmap and issue tracking'
 summary: Defines how Backlog keeps long-term goals and a roadmap of milestones, tracks requests as GitHub issues and links them to proposal and spec Units, so that the next work is chosen against goals rather than one Unit at a time.
-status: draft                         # draft | reviewing | accepted | rejected
+status: reviewing                     # draft | reviewing | accepted | rejected
 created_at: 2026-10-16
 target_area: capabilities/delivery/
 priority: high                        # critical | high | medium | low
