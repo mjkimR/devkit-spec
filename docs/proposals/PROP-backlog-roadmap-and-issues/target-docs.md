@@ -26,13 +26,15 @@ This document defines the target blueprint of how the docs/ backbone (Living Spe
 ## 1. System Capabilities Plan (docs/capabilities/)
 
 - **`CAP-DOCS-document-model`** (modify): kind `milestone` with prefix `MS` and location `docs/roadmap/`; `milestone`
-  joins the single-ID relation fields, `depends_on` the list relation fields.
-- **`CAP-DOCS-document-lookup`** (modify): `devkit spec list milestone`; sorting and grouping by frontmatter fields
-  (`priority`, `milestone`).
-- **`CAP-GOV-spec-rules`** (modify): `RULE-id-convention` knows the milestone location; a `depends_on` cycle is an
-  error; the format rule accepts `issue`; the milestone status warnings in the hygiene profile.
-- **`CAP-DLV-proposal-incubation`** (modify): `milestone` is an `MS-` ID; new optional `issue`; both carried on
-  handoff; `new` takes `--issue`.
+  joins the single-ID relation fields, `depends_on` a list field valid on milestones only; `done` and `dropped`
+  milestones are historical documents.
+- **`CAP-DOCS-document-lookup`** (modify): `devkit spec list milestone`, hiding historical milestones by default. No
+  sorting or grouping: the non-goal stays.
+- **`CAP-GOV-spec-rules`** (modify): `RULE-id-convention` knows the milestone location; `RULE-spec-format` and
+  `RULE-document-summary` cover milestones; a `depends_on` cycle is a `RULE-document-reference` error; `issue` is a
+  positive integer; the two milestone warnings in the hygiene profile.
+- **`CAP-DLV-proposal-incubation`** (modify): `milestone` is an `MS-` ID; new optional `issue` and
+  `decomposed_from`; `milestone` and `issue` carried on handoff; `new` takes `--issue` and `--decomposed-from`.
 - **`CAP-DLV-spec-bundles`** (modify): `spec.md` accepts `milestone` as an `MS-` ID and `issue`; `devkit spec new`
   takes `--milestone` and `--issue`.
 
@@ -56,11 +58,12 @@ This document defines the target blueprint of how the docs/ backbone (Living Spe
 
 ## 4. Development Conventions & Governance (docs/development/ & .devkit/)
 
-- **`CAP-HARN-agent-guidance`** (modify): the `spec` skill's classification reference gains the Backlog procedure;
-  `spec-next` gains the idle next-work row; `spec-integrate` writes `Closes #<n>`; a milestone template; the docs
-  skeleton gains `docs/roadmap/`.
-- **Outside this repository**: the strategy layer's 01 §1, §5 and glossary, and 02's responsibilities (workbench), are
-  updated first.
+- **`CAP-HARN-agent-guidance`** (modify): the `spec` skill's classification reference gains the Backlog procedure
+  (drain open issues, place work in a milestone, decompose into drafts, activate and close milestones after a branch
+  check); `spec-next` gains the idle next-work recommendation; `spec-integrate` writes `Closes` or `Refs`; a milestone
+  template; the docs skeleton gains `docs/roadmap/`.
+- **Outside this repository**: the strategy layer's 01 §1, §5, §5.1, §5.2, §7.4, §10 and glossary, and 02's
+  responsibilities (workbench), are updated before the handoff.
 
 ---
 
@@ -69,7 +72,7 @@ This document defines the target blueprint of how the docs/ backbone (Living Spe
 | Question | Before | After |
 | :--- | :--- | :--- |
 | Which goal does this proposal serve? | Not recorded | Its milestone, which cites the goal |
-| What should I work on next? | `spec-next` stops at "Idle" | `spec-next` recommends a draft by milestone, priority and size |
-| Which milestones come first? | Undefined | `depends_on` on each successor; ready when its dependencies are `done` |
-| Where is the original request of this spec? | Lost after handoff or decomposition | `issue` in `spec.md`; parent/child issues for splits |
+| What should I work on next? | `spec-next` stops at "Idle" | `spec-next` recommends a Planning-eligible draft by milestone, priority and size |
+| Which milestones come first? | Undefined | `depends_on` on each successor; ready when its dependencies are `done` or `dropped` |
+| Where is the original request of this spec? | Lost after handoff or decomposition | `decomposed_from` or `supersedes` to the original draft; `issue` for an inbound request |
 | What does milestone "Phase 1" mean? | Undefined free text | `MS-<slug>`, a validated document with an exit condition |

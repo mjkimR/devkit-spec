@@ -1,7 +1,7 @@
 ---
 id: PADR-milestone-documents
 title: Milestone documents ordered by depends_on
-summary: A milestone is an MS-<slug> document under docs/roadmap/ with a status lifecycle and a depends_on list declared by the successor as its start condition; Units join a milestone through a validated milestone ID reference, and hygiene warnings keep milestone status honest.
+summary: A milestone is an MS-<slug> document under docs/roadmap/ with a status lifecycle and a depends_on list declared by the successor as its start condition; Units join it by a validated ID, and spec-next recommends Planning-eligible drafts in a fully defined order.
 proposal: PROP-backlog-roadmap-and-issues
 status: draft
 created_at: 2026-10-16
@@ -20,7 +20,9 @@ created_at: 2026-10-16
 ## 1. Context & Problem Statement
 
 `PADR-roadmap-in-repository` puts the roadmap in the repository. It still has to choose the form: what a milestone is,
-how milestones are ordered, how a Unit joins one, and how the record stays true as work completes.
+how milestones are ordered, how a Unit joins one, how the next work is chosen, and how the record stays true as work
+completes, given that Units in progress live on `plan-` and `dev-` branches while the base shows only merged state
+(01 §4.7).
 
 ---
 
@@ -31,6 +33,8 @@ how milestones are ordered, how a Unit joins one, and how the record stays true 
 - Order expresses a real prerequisite, not a ranking that must be renumbered.
 - No temporary checklists in `docs/` (`living-spec-writing`).
 - The roadmap never blocks work: the user may deliberately start out of order.
+- Checks that read only the base never claim facts that live on branches.
+- Build for the use there is: no milestone exists yet.
 
 ---
 
@@ -44,7 +48,7 @@ how milestones are ordered, how a Unit joins one, and how the record stays true 
 ### Option 2: A milestone document kind, `MS-<slug>` (Selected)
 - **Pros**: references validated by the existing rule; membership through `devkit spec refs MS-<slug> --direction in`;
   listing and status through `devkit spec list milestone`; one file per milestone.
-- **Cons**: a new kind in the document model, its ID convention and a template.
+- **Cons**: a new kind in the document model, its ID convention, its format checks and a template.
 
 ### Option 3: Free-text `milestone` tags only
 - **Pros**: no new file.
@@ -57,34 +61,55 @@ how milestones are ordered, how a Unit joins one, and how the record stays true 
   unknown when the predecessor is written; the reverse direction is a query (`refs --direction in`). It matches
   proposal `supersedes` (the new side declares) and autohub Work Plan dependencies.
 
+### Next-work ordering: in the CLI or in the skill
+- `devkit spec list --sort`: reverses `CAP-DOCS-document-lookup`'s non-goal (priority and size are `--where` fields)
+  and would sort the enum values as text (`low` before `medium`, `L` before `M`).
+- **In `spec-next` over `--where` queries (Selected)**: no CLI change; the order is documented once in the skill.
+
 ---
 
 ## 4. Decision Outcome
 
-Option 2 with `depends_on`:
+Option 2 with `depends_on`, ordered by the skill:
 
-- **Document**: `docs/roadmap/MS-<slug>.md` (`docs/packages/<name>/roadmap/` in a namespace), kind `milestone`, ID
-  prefix `MS`. Frontmatter: `id`, `title`, English `summary`, `status`, `created_at`, optional `depends_on` (a list of
-  `MS-` IDs). Body: the goal it advances (citing `ARCH-01-introduction-and-goals`), the exit condition, out of scope.
-  The body lists no work items.
-- **Status**: `planned` → `active` → `done`, or `dropped` from `planned` or `active`. Several milestones may be
-  `active` at once. Status changes are Backlog commits; the user decides that an exit condition holds.
-- **`depends_on`** is a start condition: a milestone is *ready* when every milestone it depends on is `done`. It is
-  enforced by guidance and warnings, never by refusal.
-- **Membership**: `milestone` in `proposal.md` and `spec.md` changes from free text to one `MS-` ID, a relation field
-  validated by `RULE-document-reference` and carried on handoff. Units without a milestone stay valid.
-- **Checks**: a `depends_on` cycle is a rule error. Hygiene warnings: an `active` milestone with a dependency not
-  `done`; a `done` milestone with a member Unit not completed; an `active` milestone whose members are all completed
-  and with no draft left (a candidate to close).
-- **Next work**: when no Unit is in progress, `spec-next` recommends draft proposals from `active` milestones, then
-  from ready `planned` ones, each ordered by `priority`, then `size` (smaller first); drafts without a milestone come
-  last. `devkit spec list` gains the sorting and grouping this needs.
+- **Document**: `docs/roadmap/MS-<slug>.md`, kind `milestone`, ID prefix `MS`. Frontmatter: `id`, `title`, English
+  `summary`, `status`, `created_at`, optional `depends_on` (a list of `MS-` IDs). Body: the goal it advances (citing
+  `ARCH-01-introduction-and-goals`), the exit condition, out of scope; no work items. The slug starts with a word:
+  release-style names read `MS-release-1-0`, not `MS-1-0`. Milestones are global; per-namespace roadmaps are deferred
+  until a repository needs them.
+- **Status**: `planned` → `active` → `done`, or `dropped` from `planned` or `active`. The user activates and closes a
+  milestone through Backlog (base commits, like drafts). Several may be `active` at once. `done` and `dropped`
+  milestones stay as historical documents: `devkit spec list` hides them by default as it hides completed spec
+  bundles, and `refs --direction in` keeps their membership history.
+- **`depends_on`** is a start condition: a milestone is *ready* when every milestone it depends on is `done` or
+  `dropped`; a `dropped` dependency also raises a warning so the user can revisit the successor. Enforced by guidance
+  and warnings, never by refusal; `depends_on` is valid on milestones only.
+- **Membership**: `milestone` in `proposal.md` and `spec.md` changes from free text to one `MS-` ID, validated by
+  `RULE-document-reference` and carried on handoff. A member is *settled* when it is a completed spec; a rejected
+  proposal is not a member; `session` work has no Unit and is never a member. Units without a milestone stay valid.
+- **Checks**:
+  - Rules: `RULE-spec-format` covers `docs/roadmap/` (required keys, the status vocabulary); `RULE-document-summary`
+    requires a milestone `summary`; a `depends_on` cycle is a `RULE-document-reference` error.
+  - Hygiene warnings, which read the base only: an `active` milestone with a dependency neither `done` nor `dropped`;
+    a `done` milestone with a base member not settled.
+  - No "candidate to close" warning: membership on branches is invisible to the base. Closing a milestone is a
+    Backlog step that first checks the `plan-` and `dev-` branches of its members (as the proposal listing does).
+    Reconsider the warning once two or more milestones are `active` at once in practice.
+- **Next work**: when no Unit is in progress, `spec-next` considers drafts whose displayed status is `draft` (no
+  `plan-<slug>` branch) and that carry no `needs_decompose`. Order: drafts of `active` milestones, then of ready
+  `planned` milestones, then drafts without a milestone; milestones of one rank by `created_at`, then ID; drafts by
+  `priority` (`critical`, `high`, `medium`, `low`), then `size` (`S`, `M`, `L`, `XL`), then `created_at`, then ID.
+  A draft without `plan-intent` is recommended as "confirm the intent". Drafts in milestones that are not ready, and
+  `needs_decompose` drafts, are reported as Backlog actions. Open feedback adds a suggestion of a hygiene pass.
+- **Review**: when three milestones have closed or by 2027-01-31, whichever comes first, Backlog reviews whether
+  milestones were used and whether the warnings fired usefully; unused machinery is proposed for removal.
 
 ---
 
 ## 5. Consequences
 
-- `CAP-DOCS-document-model` adds the kind and the `milestone` relation field; `RULE-id-convention` adds its location;
+- `CAP-DOCS-document-model` adds the kind, the `milestone` relation field and the `depends_on` field (milestones only),
+  and extends the historical-document rule to `done` and `dropped` milestones; `RULE-id-convention` adds the location;
   a milestone template joins the bundle's templates; the docs skeleton gains `docs/roadmap/`.
 - `devkit spec proposal new --milestone` and `devkit spec new --milestone` take an `MS-` ID.
 - The existing free-text values need no migration: no current proposal or active spec sets `milestone`.
