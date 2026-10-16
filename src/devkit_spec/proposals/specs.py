@@ -2,8 +2,8 @@
 
 A spec bundle is ``specs/<YYYY-MM>/<YYYYMMDD>-<slug>/`` with ``SPEC-<slug>``, ``PLAN-<slug>`` and ``TASKS-<slug>``.
 Each file carries devkit's skeleton marker as its first body line, so a workflow's ``not-skeleton`` check keeps the
-stage open until the file is written for real. ``spec.md`` is the workflow anchor: it is bound to the workflow and,
-for ``bugfix``, carries ``kind: bugfix``.
+stage open until the file is written for real. ``spec.md`` is the workflow anchor: it is bound to the workflow, and
+the bound workflow is the only record of the work's ``task-kind`` (no ``kind`` field).
 
 ``create_spec`` creates a bundle without a proposal (``devkit spec new``): unlike ``devkit workflow new`` it writes
 the document IDs the rules expect. ``spec.md``'s ``namespace`` names the document namespace the bundle belongs to;
@@ -84,7 +84,6 @@ def spec_files(
     origin: str,
     carried: CarriedProposal | None = None,
     meta: dict[str, Any] | None = None,
-    kind: str | None = None,
     namespace: str | None = None,
     summary: str | None = None,
     target_docs_ref: str = "",
@@ -92,8 +91,8 @@ def spec_files(
     """``spec.md``, ``plan.md`` and ``tasks.md`` of a spec bundle, each marked as a skeleton.
 
     ``origin`` opens the problem statement; ``carried`` fills the sections from a proposal body; ``meta`` is the
-    proposal frontmatter (``milestone``, ``target_area``, ``boundaries``); ``kind``, ``namespace`` and ``summary``
-    become ``spec.md``'s ``kind``, ``namespace`` and ``summary`` (none written when ``None``).
+    proposal frontmatter (``milestone``, ``target_area``, ``boundaries``); ``namespace`` and ``summary`` become
+    ``spec.md``'s ``namespace`` and ``summary`` (none written when ``None``).
     """
     carried = carried or CarriedProposal()
     meta = meta or {}
@@ -109,12 +108,11 @@ def spec_files(
     milestone = text_value(meta.get("milestone"))
     extra = f"\nnamespace: {yaml_scalar(namespace)}" if namespace else ""
     extra += f"\nmilestone: {yaml_scalar(milestone)}" if milestone else ""
-    kind_line = f"\nkind: {yaml_scalar(kind)}" if kind else ""
     summary_line = f"\nsummary: {yaml_scalar(summary)}" if summary else ""
     spec = f"""---
 id: SPEC-{slug}
 title: {yaml_scalar(title)}{summary_line}
-status: planned{kind_line}
+status: planned
 created: {created}{extra}
 related_capabilities: []
 related_stories: []
@@ -179,9 +177,10 @@ plan: PLAN-{slug}
     }
 
 
-def spec_kind(binding: Binding | None) -> str | None:
-    """The ``kind`` ``spec.md`` carries for its workflow: ``bugfix`` for workflow ``bugfix``."""
-    return BUGFIX_WORKFLOW if binding is not None and binding.workflow == BUGFIX_WORKFLOW else None
+def spec_only(binding: Binding | None) -> bool:
+    """Whether a bundle bound to ``binding`` starts with ``spec.md`` alone: ``sdd-spec-bugfix`` writes the plan and
+    tasks in its ``plan-tasks`` stage, after the defect is characterized."""
+    return binding is not None and binding.workflow == BUGFIX_WORKFLOW
 
 
 def write_spec_bundle(directory: Path, files: dict[str, str], binding: Binding | None, written: list[Path]) -> None:
@@ -333,8 +332,9 @@ def create_spec(
 ) -> CreatedSpec:
     """Create ``specs/<YYYY-MM>/<YYYYMMDD>-<slug>/`` under the workspace ``root`` and bind ``spec.md``.
 
-    ``workflow`` defaults to ``direct-delivery`` (unbound, with a ``SPEC_UNBOUND`` notice, when the project does not
-    have it). A ``bugfix`` bundle gets only ``spec.md`` (``kind: bugfix``); its workflow writes the plan and tasks.
+    ``workflow`` defaults to ``sdd-spec-feature`` (unbound, with a ``SPEC_UNBOUND`` notice, when the project does not
+    have it). An ``sdd-spec-bugfix`` bundle gets only ``spec.md`` (``spec_only``); its workflow writes the plan and
+    tasks.
     ``summary`` is written to ``spec.md`` only when given; ``namespace`` when given, else the namespace ``cwd`` lies
     in (``bundle_namespace``, reported on the result). Raises before writing:
     ``SpecSlugError``, ``ArgumentError`` (a ``namespace`` that is neither ``global`` nor registered, a ``summary``
@@ -369,12 +369,11 @@ def create_spec(
         title,
         day.isoformat(),
         origin="<Describe the problem, who has it and why it matters now.>\n",
-        kind=spec_kind(binding),
         namespace=namespace,
         summary=summary,
     )
-    if spec_kind(binding) == BUGFIX_WORKFLOW:
-        # bugfix writes plan.md and tasks.md in its plan-tasks stage; a skeleton tasks.md would have to match the
+    if spec_only(binding):
+        # sdd-spec-bugfix writes plan.md and tasks.md in its plan-tasks stage; a skeleton tasks.md would have to match the
         # characterized spec's criteria for the characterize stage's lint-clean exit.
         files = {SPEC_FILE: files[SPEC_FILE]}
     written: list[Path] = []

@@ -11,7 +11,7 @@ Only an explicit user message requesting a session sweep selects the user branch
 
 Read `devkit spec policy` before the sweep. With `capture=requested-only`, an autonomous stage sweep records no
 observations: write its feedback envelope with `--check "swept=PASS skipped=capture.requested-only"` and a summary
-of the policy skip, then report it as skipped. S-Lane reports the skip without an envelope. A stage switched off
+of the policy skip, then report it as skipped. A `session` task reports the skip without an envelope. A stage switched off
 produces no sweep envelope. Explicit user requests follow the user branch regardless of these restrictions.
 
 Use observed command output, instructions or file state as evidence. Promotion, dismissal, forwarding and feedback `status` changes stay in a separate feedback-hygiene session.
@@ -39,4 +39,4 @@ Use observed command output, instructions or file state as evidence. Promotion, 
 
      `swept` is `FAIL <reason>` only when the session could not be covered; name the gap with `--unverified "<gap>"` and leave the stage open. Return one line: `> Feedback sweep: <n> recorded, <n> duplicates (envelopes/feedback-NN.yaml)`.
 
-For S-Lane's `report-session` stage (no spec bundle, no unit), apply the stage policy, do steps 1 to 3 against the month-level directory, and report in the session report without an envelope.
+For the `report-session` stage of a `session` task (no spec bundle, no unit), apply the stage policy, do steps 1 to 3 against the month-level directory, and report in the session report without an envelope.

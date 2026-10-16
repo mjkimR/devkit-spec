@@ -5,7 +5,7 @@ description: Map feature specification requirements to system architecture, revi
 
 # spec-plan: Technical Planning Workflow
 
-Use this skill after a specification (`specs/<YYYY-MM>/<YYYYMMDD>-<slug>/spec.md`) has been drafted and agreed upon: the `specify` stage of workflow `direct-delivery`, or the `plan-tasks` stage (fix design) of workflow `bugfix`. The goal is to design the technical solution, map changes to codebase architecture, identify data contracts, and establish technical boundaries before generating tasks.
+Use this skill after a specification (`specs/<YYYY-MM>/<YYYYMMDD>-<slug>/spec.md`) has been drafted and agreed upon: the `specify` stage of workflow `sdd-spec-feature`, or the `plan-tasks` stage (fix design) of workflow `sdd-spec-bugfix`. The goal is to design the technical solution, map changes to codebase architecture, identify data contracts, and establish technical boundaries before generating tasks.
 
 ---
 
@@ -27,7 +27,7 @@ Use this skill after a specification (`specs/<YYYY-MM>/<YYYYMMDD>-<slug>/spec.md
   - `docs/capabilities/`: Does this duplicate or break existing living capabilities? (`devkit spec refs <CAP-ID> --direction in` shows what depends on one.)
 - If an architectural rule MUST be modified or overridden:
   - Document the reason explicitly and propose drafting a new ADR at `docs/decisions/<YYYY-MM>/<YYYYMMDD>-<slug>.md` (ID `ADR-<slug>`, template `.devkit/managed/spec/templates/decision.md`).
-  - A new policy or design choice outside the approved scope returns to the `direction` gate (`devkit workflow return --unit <dir> --to direction --note "<choice>"`); a bugfix whose fix needs a different defect scope returns to `characterize`.
+  - A design choice inside the agreed intent is decided with the recommended option and its reason recorded here. One that cannot be made without changing the agreed goal, scope or contract is reported as a problem for the Host (no Development direction gate); a bugfix whose fix needs a different defect scope within the agreed expected behavior returns to `characterize`.
 
 ### Step 1: Component Breakdown & Interface Contracts
 - Identify which packages, modules, or services will be touched or introduced.

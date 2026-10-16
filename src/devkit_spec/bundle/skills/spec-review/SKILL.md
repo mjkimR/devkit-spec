@@ -22,7 +22,7 @@ Use this skill when all implementation tasks in `tasks.md` are marked complete (
 - **NEVER rewrite or delete original tests or acceptance criteria** in `spec.md` just to force a failing test to pass.
 - If an unforeseen technical limitation or architectural friction arises:
   - DO NOT silently weaken the assertions.
-  - Record it as a review finding. A contract change returns to the `direction` gate (G2) for the user's decision before any contract is edited (`devkit workflow return --unit <dir> --to direction`).
+  - Record it as a review finding. A contract change outside the agreed intent is not decided in review: the Development executor reports it as a problem (a worker records it and ends) and the Host decides recovery or a close; there is no Development direction gate.
 
 ### Principle 2: Baseline Trust & Mechanical Verification
 - Evaluate gates by the actual omissions they catch and their operating cost.
@@ -50,7 +50,7 @@ Use this skill when all implementation tasks in `tasks.md` are marked complete (
 
 ### Step 4: Capture Unstated Requirements & Drift
 - Did implementation reveal new requirements, API changes, or unexpected constraints not covered in the original `spec.md`?
-- If yes, record each as a finding in the review envelope. One that changes a contract returns to the `direction` gate; one inside the agreed contract is fixed or waived in the reverify round.
+- If yes, record each as a finding in the review envelope. One that changes the agreed contract is reported as a problem for the Host to decide; one inside the agreed contract is fixed or waived in the reverify round.
 
 ---
 
@@ -62,11 +62,11 @@ Use this skill when all implementation tasks in `tasks.md` are marked complete (
 
 ### Optional feedback breakpoint
 
-After `review-refine` passes and before `living-spec-draft`, an executor may pause for user feedback or proceed automatically. An external runner owns that option and its wait/resume state; it adds no stage, check or approval file. Intermediate commits are independent of waiting. Feedback that changes implementation returns to build/reverify for the affected part; a direction change returns to the `direction` gate. This breakpoint does not replace the `integration` gate (G3), and Living Spec reflection still completes before G3.
+After `review-refine` passes and before `living-spec-draft`, an executor may pause for user feedback or proceed automatically. An external runner owns that option and its wait/resume state; it adds no stage, check or approval file. Intermediate commits are independent of waiting. Feedback that changes implementation returns to build/reverify for the affected part; a direction change is a close (the `spec` skill). This breakpoint does not replace the `dev-integration` gate, and Living Spec reflection still completes before `dev-integration`.
 
 ## 3. Review Report
 
-The review envelope is the report, for a direct run and a delegated Reviewer run alike. For Route 2 and above, record the findings as found (all open):
+The review envelope is the report, for a direct run and a delegated Reviewer run alike. For a spec Unit (`spec` or `proposal` depth), record the findings as found (all open):
 
 ```bash
 devkit workflow envelope new --unit <dir> --kind review --stage review-refine \
@@ -80,7 +80,7 @@ devkit workflow envelope new --unit <dir> --kind review --stage review-refine \
 EOF
 ```
 
-This writes the next `envelopes/review-NN.yaml`; omit `--findings-file` for a pass. After fixes, close the round with `devkit workflow envelope new --unit <dir> --kind reverify --stage review-refine --from latest --resolve <N> --waive <N>=<reason>` (`--resolve all` when every finding is fixed), which writes `reverify-NN.yaml`; `devkit workflow next --unit <dir>` reads it for `envelope-review-passed`. Do not record fixes inside the review file itself. Route 1 (`s-lane`) states the same content in the session response.
+This writes the next `envelopes/review-NN.yaml`; omit `--findings-file` for a pass. After fixes, close the round with `devkit workflow envelope new --unit <dir> --kind reverify --stage review-refine --from latest --resolve <N> --waive <N>=<reason>` (`--resolve all` when every finding is fixed), which writes `reverify-NN.yaml`; `devkit workflow next --unit <dir>` reads it for `envelope-review-passed`. Do not record fixes inside the review file itself. A `session`-depth task (`sdd-session-*`) states the same content in the final response or PR body and writes no envelope; a reviewer subagent returns it as a message.
 
 - Unexplained scope drift, stray files and unmet scenarios are findings, each with `evidence` and `failure_condition`.
 - Check results go in `checks`; the summary states which scenarios were confirmed and by what.

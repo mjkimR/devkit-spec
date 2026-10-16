@@ -18,7 +18,7 @@ entrypoints:
 
 ## 1. Summary
 
-A spec bundle is the work unit of Route 2 and of every handed-off proposal: a directory
+A spec bundle is the work unit of `spec`-depth work and of every handed-off proposal: a directory
 `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/` whose `spec.md` is the anchor of a devkit workflow unit. `devkit spec new`
 creates one without a proposal, writing the document IDs the spec rules expect (`devkit workflow new` would write an
 `id` the rules reject) and binding `spec.md` to a delivery workflow. The same skeleton writer serves
@@ -27,7 +27,7 @@ creates one without a proposal, writing the document IDs the spec rules expect (
 ## 2. Scope & Boundary
 
 - **In-Scope**: `devkit spec new` (`create_spec`), the bundle layout and directory naming, the `spec.md`, `plan.md`
-  and `tasks.md` skeletons and their skeleton marker, the workflow binding of `spec.md` and the `bugfix` variant.
+  and `tasks.md` skeletons and their skeleton marker, the workflow binding of `spec.md` and the `sdd-spec-bugfix` variant.
 - **Out-of-Scope**:
   - Proposals and handoff: `CAP-DLV-proposal-incubation`.
   - The stages that fill the skeletons and their checks: `CAP-DLV-delivery-workflows`.
@@ -54,12 +54,13 @@ creates one without a proposal, writing the document IDs the spec rules expect (
    written for real and the line removed. A skeleton-marked `spec.md` is exempt from `RULE-document-summary` until it
    is written.
 5. **Binding**: `spec.md` is bound with devkit's `write_binding` (`workflow`, `workflow_hash`) to `--workflow`,
-   default `direct-delivery`. An explicit workflow that does not resolve or validate, or that names by path a
+   default `sdd-spec-feature`. The bound workflow is the only record of the work's `task-kind`: `spec.md` has no
+   `kind` field. An explicit workflow that does not resolve or validate, or that names by path a
    definition other than the one discovered for its id (devkit's `WORKFLOW_NOT_BINDABLE`: the binding records only
    the id, so later lookups would find another definition or none), is `SPEC_WORKFLOW_INVALID` before writing; a default that is not available leaves `spec.md` unbound with a `SPEC_UNBOUND` notice, whose
    `[FIX]` is `devkit workflow bind --unit <dir> --workflow <id>`.
-6. **Bugfix bundles start with `spec.md` only**: a bundle bound to `bugfix` carries `kind: bugfix` (that workflow's
-   exits check `frontmatter(spec.md kind bugfix)`) and gets no `plan.md` or `tasks.md`: the workflow writes them in
+6. **Bugfix bundles start with `spec.md` only**: a bundle bound to `sdd-spec-bugfix` gets no `plan.md` or
+   `tasks.md`: the workflow writes them in
    `plan-tasks`, and skeletons would have to match the characterized criteria at the `characterize` stage's
    `lint-clean` exit (`RULE-task-coverage` skips a spec without `tasks.md`). Rationale:
    `ADR-bugfix-bundles-start-with-spec-only`.
@@ -85,20 +86,20 @@ devkit spec new <slug> [--title/-t TEXT] [--summary TEXT] [--workflow <id>] [--n
 | --- | --- |
 | `--title/-t` | Spec title (default: the slug). |
 | `--summary` | Write `summary: <text>` into `spec.md`: one or two English sentences saying what the spec defines. Empty, or containing a letter outside the Latin script: `ARGUMENT_INVALID` (`[TARGET] --summary`), nothing written. |
-| `--workflow` | Workflow `spec.md` is bound to (default `direct-delivery`; `bugfix` adds `kind: bugfix` and writes `spec.md` only). |
+| `--workflow` | Workflow `spec.md` is bound to (default `sdd-spec-feature`; `sdd-spec-bugfix` writes `spec.md` only). |
 | `--namespace` | Write `namespace: <name>`: `global` or a namespace registered in `[[tool.spec.namespaces]]`, else `ARGUMENT_INVALID` with the valid names in `[FIX]`. Omitted: the namespace of the current directory, if any (rule 7). |
 | `--date` | Bundle date (default: today): the directory name and `created`. |
 
 ```bash
-uv run devkit spec new login-flow --title "Login flow"     # direct-delivery
-uv run devkit spec new crash-on-save --workflow bugfix     # kind: bugfix, spec.md only
+uv run devkit spec new login-flow --title "Login flow"              # sdd-spec-feature
+uv run devkit spec new crash-on-save --workflow sdd-spec-bugfix     # spec.md only
 uv run devkit spec new login-flow --summary "Defines how users sign in with email and password."
 ```
 
 Text output, then `[NEXT_CMD: ...]` only when `spec.md` is bound:
 
 ```text
-[SPEC: SPEC-login-flow path=specs/2026-10/20261013-login-flow workflow=direct-delivery]
+[SPEC: SPEC-login-flow path=specs/2026-10/20261013-login-flow workflow=sdd-spec-feature]
 [NEXT_CMD: devkit workflow next --unit specs/2026-10/20261013-login-flow]
 ```
 
@@ -122,8 +123,8 @@ specs/<YYYY-MM>/<YYYYMMDD>-<slug>/
 
 ### 4.3 Skeletons
 
-- **`spec.md`**: frontmatter `id: SPEC-<slug>`, `title`, optional `summary`, `status: planned`, optional
-  `kind: bugfix`, `created: <bundle date>`, optional `namespace` and `milestone`, `related_capabilities: []`,
+- **`spec.md`**: frontmatter `id: SPEC-<slug>`, `title`, optional `summary`, `status: planned`,
+  `created: <bundle date>`, optional `namespace` and `milestone`, `related_capabilities: []`,
   `related_stories: []`, then `workflow` and `workflow_hash` from the binding. H1 `# [SPEC-<slug>] <title>`; sections
   `1. Problem Statement & Motivation`, `2. User Stories`, `3. Non-Goals` (a `Scope Excluded` placeholder),
   `4. Acceptance Criteria & Behavioral Contracts` (one placeholder `### [AC-01] <scenario>` with Given/When/Then
@@ -149,7 +150,7 @@ create_spec(root, "quotas", cwd=Path.cwd())  # the namespace of cwd when --names
 ```
 
 `resolve_binding` (`devkit_spec.proposals.binding`) resolves and validates a workflow with devkit's `Workspace`
-before anything is written; `DEFAULT_WORKFLOW` is `direct-delivery`, `BUGFIX_WORKFLOW` `bugfix`.
+before anything is written; `DEFAULT_WORKFLOW` is `sdd-spec-feature`, `BUGFIX_WORKFLOW` `sdd-spec-bugfix`.
 
 ### 4.5 Codes
 
@@ -161,6 +162,6 @@ before anything is written; `DEFAULT_WORKFLOW` is `direct-delivery`, `BUGFIX_WOR
 | `SPEC_EXISTS` | `ERROR` (`INPUT_ERROR`) | `SpecExistsError` | A document declares `SPEC-<slug>` or `PROP-<slug>`, a proposal of the slug exists, or the bundle directory exists; `[TARGET]` lists them. |
 | `SPEC_WORKFLOW_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecWorkflowError` | `--workflow` names a workflow that does not resolve or validate, or a definition path other than the one discovered for its id; `[DETAIL]` carries devkit's code (`WORKFLOW_NOT_BINDABLE` for the latter). |
 | `SPEC_WRITE_FAILED` | `ERROR` (`MAINTENANCE`) | `SpecWriteError` | A write failed; what was written is removed. When the roll-back was incomplete, `[DETAIL]` lists what could not be removed. |
-| `SPEC_UNBOUND` | `NOTICE` | `SpecUnboundNotice` | No `--workflow` and `direct-delivery` is not available: `spec.md` is unbound. |
+| `SPEC_UNBOUND` | `NOTICE` | `SpecUnboundNotice` | No `--workflow` and `sdd-spec-feature` is not available: `spec.md` is unbound. |
 | `ARGUMENT_INVALID` | `ERROR` (`INPUT_ERROR`) | devkit's `ArgumentError` | `--namespace` is neither `global` nor registered, or `--summary` is empty or not English. |
 | `SPEC_CONFIG_INVALID` | `ERROR` (`INPUT_ERROR`) | `SpecConfigError` | `[tool.spec]` is malformed and the namespace is not `--namespace global` (it is validated or detected; `CAP-DLV-project-policy`). |

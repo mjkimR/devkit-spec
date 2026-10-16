@@ -33,51 +33,64 @@ terminate the user's session.
 - A task's `_Boundary:_` is the expected scope: explain a necessary extension in the report. Write boundaries given to
   a delegated role are strict.
 
-## 3. Routes and Workflows
+## 3. Classification and Workflows
 
-`spec` chooses the route by uncertainty, contract impact and risk:
+Work is classified on three axes, by the agent against the criteria and confirmed by the user at `plan-intent`:
 
-- **Route 1, S-Lane**: low uncertainty and low risk, done within the session; workflow `s-lane`, no planning files.
-- **Route 2, direct delivery**: known direction, contract impact; workflow `direct-delivery`, or `bugfix` for a
-  defect with contract impact or uncertainty.
-- **Route 3, incubated**: high uncertainty, local review; a proposal (`devkit spec proposal new`), then handoff to a
-  spec (`devkit spec proposal handoff`). **Route 4** is the same with team review through a pull request. Both use
-  workflow `incubated-delivery` until handoff.
+- **`task-kind`**: `feature` (new or changed behavior, the default) or `bugfix` (a defect against an agreed contract:
+  reproduce first, Red then Green).
+- **`planning-depth`**: what must be settled before implementation, not size. `session`: nothing (no design choice,
+  no contract impact, verifiable in the session), no Unit. `spec`: the contract, direction clear; a spec Unit.
+  `proposal`: the direction, options to explore; a proposal Unit, Planning, then handoff to a spec.
+- **`activity-effort`**: `low`, `medium` (default) or `high`, chosen per activity; it sets how thorough review and
+  verification are, never lowers gates, exit checks or `required` policies.
 
-Route 2 and above write `spec.md`, `plan.md` and `tasks.md` before production code. Stage order, checks, gates and
-returns come from the workflow definitions, never an ad-hoc sequence: `devkit workflow next --unit <dir>` diagnoses the
-stage, `devkit workflow show --unit <dir>` shows the definition.
+The workflow is `sdd-<planning-depth>[-<task-kind>]`: `sdd-session-feature`, `sdd-session-bugfix`, `sdd-spec-feature`,
+`sdd-spec-bugfix` and `sdd-proposal` (handed off to `sdd-spec-<task_kind>`). A team review is `proposal` depth plus PR
+policy. The axes are not stored: the Unit's kind and bound workflow show them. Depth is raised by the Host
+(`[tool.spec] depth_escalation`), never lowered except by a proposal's handoff, and never by a worker.
 
-Read `devkit spec policy` before routing, gate and Git decisions. `ask` gates wait for the user's answer: `intent` and
-`direction` are recorded with `devkit workflow answer --by user`, the `integration` OK is asserted with `--given
-integration` on the `devkit workflow next` runs after it (`ADR-integration-approval-asserted`); `auto` delegates the
-decision within existing authority and the assumptions are reported. Records name the authority (`user` or `policy`)
-and never carry the conversation: no quotes, paraphrase or dates of it in decision notes, envelopes, assumptions or
-feedback; a decline note states the reason as a decision. Neither grants new merge, publication or
-deletion authority, and the intent gate always needs the user's intent. Report stages the policy switched off as
-skipped. Before formal worktree work read the `spec` skill's `references/worktree.md`; before completion or Git
-actions its `references/completion.md`. Explicit user instructions take precedence.
+Unit depths write `spec.md`, `plan.md` and `tasks.md` before production code. Stage order, checks, gates and returns come
+from the workflow definitions, never an ad-hoc sequence: `devkit workflow next --unit <dir>` diagnoses the stage,
+`devkit workflow show --unit <dir>` shows the definition. A `session` task follows its definition in the session and
+creates no Unit, envelope, gate record file or reconcile document.
 
-Sessions run in direct mode: the host implements. The user-invoked `spec-orchestrate` skill switches a session to
-orchestration mode, where the host coordinates worker subagents building independent units in their own worktrees,
-until the user returns it to direct mode.
+Read `devkit spec policy` before classification, gate and Git decisions. `plan-intent` (goal, scope, verification,
+expected behavior for a bugfix, `task-kind` and `planning-depth`) and `plan-accept` (a proposal's direction) are always
+the user's and are recorded with `devkit workflow answer --by user`; `dev-integration` follows its policy: under `ask`
+the user's OK is asserted with `--given dev-integration` on the `devkit workflow next` runs after it
+(`ADR-integration-approval-asserted`), under `auto` it is delegated once the path's review, checks and reconcile pass.
+There is no Development direction gate: inside the agreed intent choices are made with the recommended option and
+recorded; only a problem that breaks the agreement stops the work. Records name the authority (`user` or `policy`) and
+never carry the conversation: no quotes, paraphrase or dates of it in decision notes, envelopes, assumptions or
+feedback; a decline note states the reason as a decision. Neither grants new merge, publication or deletion authority.
+Report stages the policy switched off as skipped. Before formal worktree work read the `spec` skill's
+`references/worktree.md`; before completion or Git actions its `references/completion.md`. Explicit user instructions
+take precedence.
+
+The mode is chosen per activity of a slug: `direct` (the default: the Host implements), `local-orchestrated` (the Host
+coordinates one-shot workers in their own worktrees; user-invoked `spec-orchestrate`) or `cloud-pr` (a Cloud Agent
+runs it from a PR). Heavier modes are the user's choice; a `session` task always runs in `direct` or the `cloud-pr`
+general PR path.
 
 ## 4. Verification and Completion
 
-Every route compares the final diff, the agreed requirements, the check results and the Living Spec impact before
+Every task compares the final diff, the agreed requirements, the check results and the Living Spec impact before
 reporting completion (`spec-review`, `spec-sync`). Fix implementation defects rather than rewriting documentation to
 endorse them. Reconcile behavior, capability and constraint changes into the affected Living Spec, and recheck after
 further changes.
 
-Formal specs keep a resolved `reconcile.md` and stay in place when completed; S-Lane needs no planning or reconcile
-file but reports its document-impact reasoning. `devkit rules check` runs the spec rules; commits run them through
-devkit's `rules-check` commit gate (on by default; `devkit rules check --staged` reproduces it), and CI runs
-`devkit rules check --ci --base <ref>`. Completion, commit, integration and ending the session are separate events.
+Spec Units keep a resolved `reconcile.md` and stay in place when completed; a `session` task writes no planning or
+reconcile file and reports the change, effort, review result, verification and remaining constraints in its final
+response or PR body (a needed Living Spec change raises it to `spec`). `devkit rules check` runs the spec rules;
+commits run them through devkit's `rules-check` commit gate (on by default; `devkit rules check --staged` reproduces
+it), and CI runs `devkit rules check --ci --base <ref>`. Completion, commit, integration and ending the session are
+separate events.
 
 ## 5. Templates and Policy Files
 
 - Templates for new documents: `.devkit/managed/spec/templates/{capability,story,decision,proposal}.md`.
-- Project policy lives in `.devkit/config.toml` (`[workflow.approvals]`, `[workflow.stages]`, `[worktree]`,
-  `[tool.spec]`); read it through `devkit spec policy`, never by parsing the file.
+- Project policy lives in `.devkit/config.toml` (`[workflow.approvals]` with `dev-integration` only,
+  `[workflow.stages]`, `[worktree]`, `[tool.spec]`); read it through `devkit spec policy`, never by parsing the file.
 - Managed files under `.devkit/managed/` are never edited; project changes go through `devkit override` or the
   project's own bundle.

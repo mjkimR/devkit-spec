@@ -22,10 +22,10 @@ common directory.
 
 ---
 
-## 2. Scenario 1: Route 2, from intent to the first stage
+## 2. Scenario 1: `spec` depth, from inline Planning to the first stage
 
-The agent routes an intent with the `spec` skill, creates a spec bundle and lets devkit's workflow engine name the
-next step (`CAP-DLV-spec-bundles`, `CAP-DLV-delivery-workflows`, `CAP-DLV-project-policy`).
+The agent classifies an intent with the `spec` skill, creates a spec bundle in inline Planning and lets devkit's
+workflow engine name the next step (`CAP-DLV-spec-bundles`, `CAP-DLV-delivery-workflows`, `CAP-DLV-project-policy`).
 
 ```mermaid
 sequenceDiagram
@@ -41,29 +41,31 @@ sequenceDiagram
     DK-->>Agent: constitution + instruction read conditions
     Agent->>DK: devkit spec policy
     DK->>Spec: lazy import devkit_spec.cli
-    Spec-->>Agent: [GATE_POLICY ...] [STAGE_POLICY ...] [GIT_POLICY ...]
-    Agent->>DK: devkit spec new <slug> [--workflow bugfix]
+    Spec-->>Agent: [GATE_POLICY ...] [STAGE_POLICY ...] [GIT_POLICY ...] [ROUTING_POLICY ...]
+    Agent->>DK: devkit spec new <slug> [--workflow sdd-spec-bugfix]
     DK->>Spec: new
     Spec->>Lib: create_spec
     Lib->>WF: resolve and validate workflow (Workspace)
-    Lib->>FS: write spec.md (+ plan.md, tasks.md unless bugfix), skeleton-marked, spec.md bound
+    Lib->>FS: write spec.md (+ plan.md, tasks.md unless sdd-spec-bugfix), skeleton-marked, spec.md bound
     Spec-->>Agent: [SPEC: SPEC-<slug> path= workflow=] [NEXT_CMD: devkit workflow next --unit <dir>]
     Agent->>DK: devkit workflow next --unit <dir>
-    DK-->>Agent: current stage, unmet checks, [WAITING: human gate:intent] or [NEXT_SKILL: ...]
+    DK-->>Agent: current stage, unmet checks, [WAITING: human gate:plan-intent] or [NEXT_SKILL: ...]
 ```
 
 - A missing default workflow leaves `spec.md` unbound with a `SPEC_UNBOUND` notice; an explicit workflow that does not
   resolve fails before anything is written (`SPEC_WORKFLOW_INVALID`).
-- Under `ask`, the agent records the user's explicit G1 or G2 answer with `devkit workflow answer --unit <dir>
-  --request gate:<gate> --action accept --by user` and asserts a G3 OK with `--given integration` on each later `next`, writing
-  nothing (`ADR-integration-approval-asserted`); under `auto` the gate passes by policy (`source=policy`).
+- The agent records the user's explicit `plan-intent` with `devkit workflow answer --unit <dir> --request
+  gate:plan-intent --action accept --by user` and commits: that state is Development's input. Under `ask` it asserts a
+  `dev-integration` OK with `--given dev-integration` on each later `next`, writing nothing
+  (`ADR-integration-approval-asserted`); under `auto` the gate passes by policy (`source=policy`).
 
 ---
 
 ## 3. Scenario 2: Proposal incubation and handoff
 
-Route 3 and 4 work starts as a proposal bound to `incubated-delivery` and becomes a spec bundle once its direction is
-approved (`CAP-DLV-proposal-incubation`, `ADR-handoff-workflow-key`).
+`proposal`-depth work starts as a draft proposal bound to `sdd-proposal`, is planned on its `plan-<slug>` branch and
+becomes a spec bundle at the start of Development once the user accepted it (`CAP-DLV-proposal-incubation`,
+`ADR-task-kind-and-planning-depth`).
 
 ```mermaid
 sequenceDiagram
@@ -75,21 +77,23 @@ sequenceDiagram
     participant FS as Working tree
     participant Reg as Scope registry
 
-    Agent->>Spec: proposal new <slug> [--handoff-workflow bugfix] [--summary ...]
-    Spec->>FS: docs/proposals/PROP-<slug>/ (proposal.md bound to incubated-delivery)
+    Agent->>Spec: proposal new <slug> [--task-kind bugfix] [--summary ...]
+    Spec->>FS: docs/proposals/PROP-<slug>/ (proposal.md bound to sdd-proposal)
     Spec-->>Agent: [PROPOSAL: ...] [NEXT_CMD: devkit workflow next --unit <dir>]
-    Agent->>Spec: proposal padr <slug> <title>
+    User-->>Agent: confirms the draft
+    Agent->>WF: workflow answer --request gate:plan-intent --action accept --by user
+    Agent->>Spec: proposal padr <slug> <title> (Planning, on plan-<slug>)
     Agent->>WF: workflow next --unit docs/proposals/PROP-<slug>
-    WF-->>Agent: [WAITING: human gate:direction]
-    User-->>Agent: chooses the direction
-    Agent->>WF: workflow answer --request gate:direction --action accept --by user
-    Agent->>Spec: proposal handoff <slug> [--direction-chosen]
-    Spec->>Spec: validate slug, approval, namespace, summary, binding, every target path
-    Spec->>FS: write specs/<YYYY-MM>/<YYYYMMDD>-<slug>/, bind handoff_workflow
+    WF-->>Agent: [WAITING: human gate:plan-accept]
+    User-->>Agent: accepts the direction
+    Agent->>WF: workflow answer --request gate:plan-accept --action accept --by user (+ status: accepted)
+    Agent->>Spec: proposal handoff <slug> (Development, on dev-<slug>)
+    Spec->>Spec: validate slug, approval, needs_decompose, namespace, summary, task_kind, binding, every target path
+    Spec->>FS: write specs/<YYYY-MM>/<YYYYMMDD>-<slug>/, bind sdd-spec-<task_kind>
     Spec->>FS: copy target-docs.md, promote PADRs to ADRs, move materials/
     Spec->>FS: rewrite links and ID references, remove the proposal and its gate records
-    opt the user's recorded answer accepted the direction
-        Spec->>WF: record the spec's open G1 and G2 (by user)
+    opt the proposal recorded plan-intent and plan-accept
+        Spec->>WF: carry gate:plan-intent and gate:plan-accept to the spec under the same names
     end
     opt linked worktree
         Spec->>Reg: register the bundle's scope
@@ -97,10 +101,10 @@ sequenceDiagram
     Spec-->>Agent: [HANDOFF ...] [PROMOTED_ADR ...] [REWRITTEN ...] [SCOPE ...] [NEXT_CMD ...]
 ```
 
-- Handoff refuses without approval (`SPEC_PROPOSAL_NOT_APPROVED`): `status: accepted`, or `--direction-chosen` passed
-  only when the user explicitly chose the direction.
-- The proposal unit's gate records and envelopes are dropped with it; when the user's recorded answer accepted the
-  direction, the spec's open G1 and G2 are recorded from it (`[CARRIED_GATE]`), and a failure there is a
+- Handoff refuses without `status: accepted` (`SPEC_PROPOSAL_NOT_APPROVED`) and a proposal marked
+  `needs_decompose: true` (`SPEC_PROPOSAL_NEEDS_DECOMPOSE`).
+- The proposal unit's gate records and envelopes are dropped with it; its `plan-intent` and `plan-accept` records are
+  carried to the spec under the same names (`[CARRIED_GATE]`), and a failure there is a
   `SPEC_PROPOSAL_GATE_NOT_CARRIED` warning that leaves the handoff done.
 - A failure while writing the bundle, ADRs or materials removes what was written and keeps the proposal
   (`SPEC_PROPOSAL_HANDOFF_FAILED`); a failed scope registration is a `SPEC_SCOPE_REGISTER_FAILED` warning and the
@@ -149,8 +153,8 @@ sequenceDiagram
 
 ## 5. Scenario 4: Worktree lifecycle with the scope registry
 
-Under `[tool.spec] worktree = "required"` Route 2, Route 3 and bugfix tasks run in their own worktree, and under
-`"auto"` the tasks that need one do; the skills keep the
+In `direct` mode under `[tool.spec] worktree = "required"` every `spec` and `proposal` activity runs in its own
+worktree, and under `"auto"` the activities that need one do (`local-orchestrated` always uses one); the skills keep the
 registry current, and devkit-spec's `devkit.post_finish` extension cleans up after a successful finish
 (`CAP-COLL-work-scope-registry`, `ADR-cleanup-after-worktree-finish`).
 
@@ -164,7 +168,7 @@ sequenceDiagram
 
     Agent->>WT: worktree start <slug> (in the base)
     WT-->>Agent: [NEXT_CMD: cd <base>-wt-<slug>] (setup + devkit sync ran there)
-    Agent->>Spec: spec new <slug> (Route 2) or proposal handoff <slug> (Route 3)
+    Agent->>Spec: spec new <slug> (spec depth) or proposal handoff <slug> (proposal depth)
     Agent->>Spec: scope register --spec <dir> (handoff registers itself)
     Spec->>Reg: record + owner token (token saved in the worktree's git dir)
     loop spec-tasks writes tasks.md, spec-sync writes reconcile.md
@@ -172,7 +176,7 @@ sequenceDiagram
         Spec->>Reg: compare revision, write record, append journal
         Spec-->>Agent: pairs + [SCOPE_ACK: status=applied overlaps=...]
     end
-    Note over Agent: G3 integration approval
+    Note over Agent: dev-integration approval
     Agent->>WT: worktree finish <slug> [--merge] (in the base)
     WT-->>Agent: [WORKTREE_FINISHED: ...] or a refusal (task stays registered, no extension)
     WT->>Spec: post-finish extension (devkit.post_finish)

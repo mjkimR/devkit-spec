@@ -2,13 +2,14 @@
 id: ADR-handoff-workflow-key
 title: Name the follow-up workflow of a proposal handoff_workflow
 summary: A proposal names the workflow its spec follows after handoff in the handoff_workflow frontmatter key, because workflow and workflow_hash are devkit's binding of the proposal unit itself; devkit spec proposal handoff performs the cross-layout move.
-status: accepted
+status: superseded
 created_at: 2026-10-13
+superseded_by: ADR-task-kind-and-planning-depth
 ---
 
 # [ADR-handoff-workflow-key] Name the follow-up workflow of a proposal handoff_workflow
 
-- **Status**: Accepted
+- **Status**: Superseded by `ADR-task-kind-and-planning-depth`
 - **Date**: 2026-10-13
 - **Deciders**: @mjkimR
 - **Involved Components/Capabilities**: `CAP-DLV-proposal-incubation`, `CAP-DLV-delivery-workflows`

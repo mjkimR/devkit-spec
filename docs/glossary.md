@@ -44,16 +44,19 @@ term's contract, the last column names it. Search synonyms for these terms live 
 
 | Term | Definition | Defined in |
 | :--- | :--- | :--- |
-| **Route** | The delivery path chosen by uncertainty, contract impact and risk: Route 1 (S-Lane), Route 2 (direct delivery or bugfix), Route 3 (incubated, local review), Route 4 (incubated, team review through a pull request). | `CAP-DLV-delivery-workflows` |
-| **S-Lane** | Route 1: low uncertainty and low risk, done within the session with no planning files; workflow `s-lane`. | `CAP-DLV-delivery-workflows` |
-| **Workflow** | A devkit workflow definition shipped by the bundle (`s-lane`, `direct-delivery`, `bugfix`, `incubated-delivery`): ordered stages with exit checks, gates and returns. | `CAP-DLV-delivery-workflows` |
+| **Task kind** (`task-kind`) | What the work does: `feature` (new or changed behavior, default) or `bugfix` (a defect against an agreed contract, reproduced first). Shown by the bound workflow; only a proposal stores it, as `task_kind`. | `ADR-task-kind-and-planning-depth` |
+| **Planning depth** (`planning-depth`) | What must be settled before implementation: `session` (nothing; no Unit), `spec` (the contract; a spec Unit) or `proposal` (the direction; a proposal Unit, then handoff). Raised by the Host, lowered only by a handoff. | `ADR-task-kind-and-planning-depth` |
+| **Activity effort** (`activity-effort`) | `low`, `medium` (default) or `high`: how thorough one activity's review and verification are; never lowers gates, exit checks or `required` policies. | `CAP-DLV-delivery-workflows` |
+| **Session** | `planning-depth` `session`: done in the session without Unit, envelope, gate record file or reconcile document; workflows `sdd-session-feature`, `sdd-session-bugfix`. | `CAP-DLV-delivery-workflows` |
+| **Close** | Ending Development without a merge: depth escalation, supersede or abandon, each under a new slug. | `CAP-HARN-agent-guidance` |
+| **Workflow** | A devkit workflow definition shipped by the bundle, `sdd-<planning-depth>[-<task-kind>]` (`sdd-session-feature`, `sdd-session-bugfix`, `sdd-spec-feature`, `sdd-spec-bugfix`, `sdd-proposal`): ordered stages with exit checks, gates and returns. | `CAP-DLV-delivery-workflows` |
 | **Unit / anchor / binding** | devkit's terms: a unit is a work directory a workflow drives; its anchor is the file that binds it (`spec.md` or `proposal.md`); the binding is `workflow` plus `workflow_hash` in the anchor. | `CAP-DLV-delivery-workflows` |
 | **Stage** | One step of a workflow (`intent`, `specify`, `build-verify`, ...); `devkit workflow next` names the current one and its unmet checks. | `CAP-DLV-delivery-workflows` |
-| **Gate** | A stage that waits for a decision: G1 `intent`, G2 `direction`, G3 `integration`; policy `ask`, `auto` or `off` in `[workflow.approvals]`; G1 and G2 answers are recorded, the G3 OK is asserted with `--given integration`. | `ADR-integration-approval-asserted` |
+| **Gate** | A stage that waits for a decision, named `<activity>-<decision>`: `plan-intent` and `plan-accept` (always the user's, recorded), `dev-integration` (`ask` or `auto` in `[workflow.approvals]`; the OK is asserted with `--given dev-integration`). | `ADR-integration-approval-asserted` |
 | **Exception stage** (E) | The out-of-band stage every workflow has for a retry cap, tool failure or unresolved conflict; no gate. | `CAP-DLV-delivery-workflows` |
-| **Handoff workflow** | The workflow a spec follows after handoff, named in a proposal's `handoff_workflow` (default `direct-delivery`). | `ADR-handoff-workflow-key` |
+| **Handoff workflow** | The workflow a spec follows after handoff, `sdd-spec-<task_kind>` from the proposal's `task_kind` (default `feature`). | `ADR-task-kind-and-planning-depth` |
 | **Envelope** | devkit's YAML record of a stage result (`specs/.../envelopes/<kind>-<NN>.yaml`): `status`, findings, checks, diff scope. Written with `devkit workflow envelope new`. | `CAP-DLV-delivery-workflows` |
-| **Final change report** | The `final-report` envelope before G3, carrying the tests, build and lint evidence. | `CAP-DLV-delivery-workflows` |
+| **Final change report** | The `final-report` envelope before `dev-integration`, carrying the tests, build and lint evidence. | `CAP-DLV-delivery-workflows` |
 | **Role contract / support role** | A host-neutral subagent definition (`challenger`, `reconciler`, `reviewer`, `scout`, `worker`) that a stage may delegate to; projected per agent host; always optional. | `CAP-HARN-agent-guidance` |
 | **Direct mode / orchestration mode** | Session states, not settings: in direct mode (the default) the host implements; in orchestration mode, switched on by the user-invoked `spec-orchestrate` skill, the host coordinates `worker` subagents building independent units in their own worktrees until a plain instruction returns it. | `CAP-DLV-delivery-workflows` |
 | **Developer** | The main agent session that runs a workflow and records envelopes, as opposed to a delegated support role. | `CAP-DLV-delivery-workflows` |
@@ -68,7 +71,7 @@ term's contract, the last column names it. Search synonyms for these terms live 
 | **Scope registry** | One JSON record per running task under `<git-common-dir>/devkit-spec-scope/<namespace>/`, shared by every worktree, with an append-only journal. Detection only; never exclusive ownership. | `CAP-COLL-work-scope-registry` |
 | **Owner token** | The secret a registration returns once and saves in the worktree's Git directory; the record stores only its hash. | `CAP-COLL-work-scope-registry` |
 | **Overlap** | Two scope sets naming the same document path, or code paths where one equals or contains the other. Evidence for scheduling, not a proof of conflict. | `CAP-COLL-work-scope-registry` |
-| **Task worktree** | A linked Git worktree for one task (`devkit worktree start <slug>`): every Route 2, Route 3 or bugfix task under `[tool.spec] worktree = "required"`, and a task that needs one under `"auto"`. | `CAP-DLV-project-policy` |
+| **Task worktree** | A linked Git worktree for one activity (`devkit worktree start <slug>`): every worker in `local-orchestrated` mode, and in `direct` mode every `spec` or `proposal` activity under `[tool.spec] worktree = "required"` and one that needs it under `"auto"`. | `CAP-DLV-project-policy` |
 
 ## 5. Packaging and Harness
 

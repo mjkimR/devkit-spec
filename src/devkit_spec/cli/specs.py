@@ -32,7 +32,8 @@ from devkit_spec.proposals import create_spec
 @click.option(
     "--workflow",
     default=None,
-    help="Workflow spec.md is bound to (bugfix adds kind: bugfix) [default: direct-delivery]",
+    help="Workflow spec.md is bound to: sdd-spec-feature or sdd-spec-bugfix, the task-kind of the work "
+    "[default: sdd-spec-feature]",
 )
 @click.option(
     "--namespace",

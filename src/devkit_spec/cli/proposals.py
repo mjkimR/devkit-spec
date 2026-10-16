@@ -10,7 +10,8 @@ Text output (paths are relative to the workspace root):
 - ``handoff``: ``[HANDOFF: <proposal id> spec= dir= workflow=]``, then ``[TARGET_DOCS: <path>]``,
   ``[MATERIALS: <dir>]``, one ``[PROMOTED_ADR: <id> path= padr=]`` per promoted decision, one
   ``[DROPPED_RECORD: <path>]`` per workflow record of the proposal unit removed with it, one
-  ``[CARRIED_GATE: <request> decision=<path>]`` per gate of the spec recorded from the user's direction answer, one
+  ``[CARRIED_GATE: <request> decision=<path>]`` per approval of the proposal (``gate:plan-intent``,
+  ``gate:plan-accept``) recorded in the spec under its name, one
   ``[REWRITTEN: <path>:<line> kind=link|id from= to=]`` per rewritten link or reference, one
   ``[UNRESOLVED_LINK: <path>:<line> kind= target= reason=]`` per link or reference left as it was,
   ``[SCOPE: <task> namespace= ... token=]`` when it registered the bundle's work scope, and
@@ -60,9 +61,10 @@ def proposal_group() -> None:
 @click.option("--target-area", "-a", default=None, help="Capability area the proposal targets (capabilities/<area>/)")
 @click.option("--milestone", "-m", default=None, help="Milestone, phase or release; carried to spec.md on handoff")
 @click.option(
-    "--handoff-workflow",
+    "--task-kind",
     default=None,
-    help="Workflow the spec follows after handoff (handoff_workflow) [default at handoff: direct-delivery]",
+    help="task-kind of the work: feature or bugfix; the spec follows sdd-spec-<task-kind> after handoff "
+    "[default: feature]",
 )
 @click.option(
     "--namespace",
@@ -75,6 +77,12 @@ def proposal_group() -> None:
     default=None,
     help="One or two English sentences: what the proposal changes and why; carried to spec.md [default: none]",
 )
+@click.option(
+    "--supersedes",
+    default=None,
+    help="PROP-<slug> of the accepted proposal this draft replaces (close by supersede) [default: none]",
+)
+@click.option("--needs-decompose", is_flag=True, help="Mark the draft to be split in Backlog before Planning starts")
 @click.option("--with-target-docs", is_flag=True, help="Also scaffold target-docs.md, the Living Spec blueprint")
 @WORKSPACE
 @FORMAT_OPTION
@@ -84,9 +92,11 @@ def new_cmd(
     title: str | None,
     target_area: str | None,
     milestone: str | None,
-    handoff_workflow: str | None,
+    task_kind: str | None,
     namespace: str | None,
     summary: str | None,
+    supersedes: str | None,
+    needs_decompose: bool,
     with_target_docs: bool,
     workspace_root: str | None,
     output_format: str,
@@ -98,9 +108,11 @@ def new_cmd(
         title=title,
         target_area=target_area,
         milestone=milestone,
-        handoff_workflow=handoff_workflow,
+        task_kind=task_kind,
         namespace=namespace,
         summary=summary,
+        supersedes=supersedes,
+        needs_decompose=needs_decompose,
         with_target_docs=with_target_docs,
         cwd=Path.cwd(),
     )
@@ -159,18 +171,13 @@ def padr_cmd(
 
 @proposal_group.command(name="handoff")
 @click.argument("slug")
-@click.option(
-    "--direction-chosen",
-    is_flag=True,
-    help="The user chose this draft or reviewing proposal's direction; hand it off without status: accepted",
-)
 @WORKSPACE
 @FORMAT_OPTION
 @boundary
-def handoff_cmd(slug: str, direction_chosen: bool, workspace_root: str | None, output_format: str) -> None:
-    """Hand the approved proposal SLUG off to a spec bundle and remove the proposal."""
+def handoff_cmd(slug: str, workspace_root: str | None, output_format: str) -> None:
+    """Hand the accepted proposal SLUG off to a spec bundle sdd-spec-<task_kind> and remove the proposal."""
     root = resolve_root(workspace_root)
-    result = handoff_proposal(root, slug, direction_chosen=direction_chosen)
+    result = handoff_proposal(root, slug)
     registered, scope_notices = auto_register(root, result.dir, source=SOURCE_HANDOFF)
     result.notices += scope_notices
     if is_json(output_format):

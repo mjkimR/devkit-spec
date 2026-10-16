@@ -1,6 +1,6 @@
 # Delegation Input and Return Envelope
 
-Read this when delegating to a support role (`scout`, `challenger`, `reviewer`, `reconciler`, `worker`), writing a review, presenting the final change report before G3, or reporting the integration result. Role contracts ship with the spec bundle and are projected into each agent's native agent directory by `devkit sync`; the stage definition is rendered by `devkit workflow show --unit <dir>`. Envelope files follow devkit's envelope contract; this reference says how spec-driven delivery uses it.
+Read this when delegating to a support role (`scout`, `challenger`, `reviewer`, `reconciler`, `worker`), writing a review, presenting the final change report before `dev-integration`, or reporting the integration result. Role contracts ship with the spec bundle and are projected into each agent's native agent directory by `devkit sync`; the stage definition is rendered by `devkit workflow show --unit <dir>`. Envelope files follow devkit's envelope contract; this reference says how spec-driven delivery uses it.
 
 ## 1. Input payload
 
@@ -30,7 +30,7 @@ diff_scope: { base: "<ref>", head: "<sha>" }
 - Docs impact has no envelope key: the reconciler writes it into the draft `reconcile.md` (targets, or the no-impact reasoning in its body).
 - Re-invocation or a stronger model is decided from the failure reason and changed input, not by repeating the same call.
 
-## 3. Final change report (before G3)
+## 3. Final change report (before `dev-integration`)
 
 Kind `final-report`, carrying the evidence `devkit workflow next` cannot produce itself. The `final-change-report` stage needs `checks.tests`, `checks.build` and `checks.lint` starting with `PASS`:
 
@@ -42,7 +42,7 @@ devkit workflow envelope new --unit <dir> --kind final-report --stage final-chan
 
 Changed paths come from `git diff --name-only <base>..<head>`; docs impact and reconcile state live in `reconcile.md`; the review result is the latest review envelope. Do not repeat them. Record assumptions the user should see with `--assume`.
 
-When open feedback marked `severity: critical` exists (`devkit spec list feedback --status open --where severity=critical`), including items the `collect-feedback` sweep just recorded, list them in the report presented to the user, one line each: `FB-<slug> → <target>`, nothing else. The summary stays in the feedback file; the line exists so the person deciding G3 sees that a feedback hygiene pass is due.
+When open feedback marked `severity: critical` exists (`devkit spec list feedback --status open --where severity=critical`), including items the `collect-feedback` sweep just recorded, list them in the report presented to the user, one line each: `FB-<slug> → <target>`, nothing else. The summary stays in the feedback file; the line exists so the person deciding `dev-integration` sees that a feedback hygiene pass is due.
 
 ## 4. Integration result (after `spec-integrate`)
 
@@ -54,16 +54,16 @@ Integration writes no envelope. After the commit the Developer still runs `devki
 
 ## 6. Where reports live
 
-Route 2 and above: every envelope is a file under the feature's spec directory, readable by the session router, host subagents and an external runner alike:
+A spec Unit (`spec` and `proposal` depth): every envelope is a file under the feature's spec directory, readable by the session router, host subagents and an external runner alike:
 
 ```
 specs/<YYYY-MM>/<YYYYMMDD>-<slug>/envelopes/<kind>-<NN>.yaml
 ```
 
-- `kind`: `scout | challenger | review | reverify | reconciler | worker | final-report`, or any kind matching `[a-z][a-z0-9-]*` that a workflow check names (`envelope-completed(<kind>)`, `envelope-check-pass(<kind> <key>)`, `revision-ancestor(<kind> <kind>)`). Workflow `bugfix` uses `red` (`checks.reproduced`) and `green` (`checks.resolved`, `checks.preserved`), see the `spec-specify` skill's bugfix reference; the `collect-feedback` stage uses `feedback` (`checks.swept`), see the `spec-feedback` skill. `NN` is a sequence per kind; the highest is current and earlier files are history. Never overwrite; `envelope new` writes the next number.
+- `kind`: `scout | challenger | review | reverify | reconciler | worker | final-report`, or any kind matching `[a-z][a-z0-9-]*` that a workflow check names (`envelope-completed(<kind>)`, `envelope-check-pass(<kind> <key>)`, `revision-ancestor(<kind> <kind>)`). Workflow `sdd-spec-bugfix` uses `red` (`checks.reproduced`) and `green` (`checks.resolved`, `checks.preserved`), see the `spec-specify` skill's bugfix reference; the `collect-feedback` stage uses `feedback` (`checks.swept`), see the `spec-feedback` skill. `NN` is a sequence per kind; the highest is current and earlier files are history. Never overwrite; `envelope new` writes the next number.
 - `review-NN.yaml` records a review round as found: every finding is `open`. `reverify-NN.yaml` closes a round: it names it in `review`, carries its findings forward with `resolution: resolved | waived` (a waived finding states its reason in `waiver`) and may add findings discovered while re-verifying. The deciding review state is the latest review round, or the latest reverify that closes it; a newer review round makes earlier reverify files history.
 - Required keys: `kind` (equal to the file name kind) and `status`. A malformed file is reported as `[ENVELOPE_ERROR: ...]` and ignored.
 - Everything else is optional and written only when it carries information: `stage`, `summary` (recommended), `findings`, `assumptions`, `unverified_areas`, `checks`, `diff_scope`. Do not restate other files: Git has the dates and paths, `reconcile.md` has the docs impact.
-- G3 approval is not an envelope. Under `ask`, authority is the user's explicit OK, asserted with `--given integration` on each `devkit workflow next --unit <dir>` after it and never written to a file, or the PR ready state where a runner binds the gate. Under `auto`, it is the reported policy delegation after required review, reconciliation and checks (`[GATE: integration policy=auto ... source=policy]`). After that authorization `devkit workflow next --unit <dir>` names the `integrate` stage.
+- `dev-integration` approval is not an envelope. Under `ask`, authority is the user's explicit OK, asserted with `--given dev-integration` on each `devkit workflow next --unit <dir>` after it and never written to a file, or the PR ready state where a runner binds the gate. Under `auto`, it is the reported policy delegation after required review, reconciliation and checks (`[GATE: dev-integration policy=auto ... source=policy]`). After that authorization `devkit workflow next --unit <dir>` names the `integrate` stage.
 - `devkit workflow next --unit <dir>` evaluates these files (`envelope-review-passed`, `envelope-check-pass`, `envelope-completed`, `revision-ancestor`; `revision-ancestor` compares `diff_scope.head` of two kinds and needs real commit ids). Write files with `devkit workflow envelope new --unit <dir> --kind <kind> [--stage <id>]` and authoring flags, never by hand-editing YAML: `--summary`, repeatable `--check key=PASS|FAIL|SKIP[ detail]` (how `envelope-check-pass` stages such as `feedback`, `red` and `green` get their evidence), `--assume`, `--unverified`, `--findings-file <path>|-`, `--base`, `--head $(git rev-parse HEAD)`; `--kind reverify --from latest --resolve N|all --waive N=REASON` carries findings forward (`--from` is refused on a review and required on a reverify). Check files with `devkit workflow envelope check --unit <dir>`.
-- Route 1 keeps the report in the session response; no file is required. The conversation always keeps the summary and the file path, never the whole envelope.
+- `session` depth keeps the report in the final response or PR body and writes no envelope at any effort; a reviewer subagent returns its result as a message. The conversation always keeps the summary and the file path, never the whole envelope.

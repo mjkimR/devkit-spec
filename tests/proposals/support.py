@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 
@@ -35,7 +36,7 @@ Prose, not parsed.
 """
 
 INCUBATED = """---
-id: incubated-delivery
+id: sdd-proposal
 title: Incubated delivery
 status: active
 schema_version: 1
@@ -60,7 +61,7 @@ Prose, not parsed.
 """
 
 
-# A spec workflow with the intent and direction gates; ``middle`` holds stages between them.
+# A spec workflow with the plan-intent gate; ``middle`` holds stages between it and specify.
 GATED = """---
 id: {id}
 title: Delivery
@@ -72,8 +73,8 @@ layout:
   anchor: spec.md
 stages:
   - id: intent
-    name: G1 intent
-    human_gate: intent
+    name: Plan intent
+    human_gate: plan-intent
     entry: []
     exit: [anchor-exists]
     artifacts: [spec.md]
@@ -81,17 +82,7 @@ stages:
     role: developer
     isolation: none
     returns: []
-{middle}  - id: direction
-    name: G2 direction
-    human_gate: direction
-    entry: [anchor-exists]
-    exit: [anchor-exists]
-    artifacts: [spec.md]
-    skills: []
-    role: developer
-    isolation: none
-    returns: []
-  - id: specify
+{middle}  - id: specify
     name: Specify
     human_gate: false
     entry: []
@@ -130,6 +121,8 @@ def write_workflow(root: Path, workflow_id: str, text: str | None = None) -> Pat
 def accept(proposal: Path, extra: str = "") -> None:
     """Set the proposal's status to accepted, adding ``extra`` frontmatter lines after it."""
     text = proposal.read_text(encoding="utf-8")
+    if "\ntask_kind:" in extra:  # replace the scaffolded task_kind line instead of duplicating the key
+        text = re.sub(r"(?m)^task_kind:.*\n", "", text, count=1)
     proposal.write_text(text.replace("status: draft", "status: accepted" + extra, 1), encoding="utf-8")
 
 

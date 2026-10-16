@@ -11,7 +11,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-WORKFLOWS = ("s-lane", "direct-delivery", "bugfix", "incubated-delivery")
+WORKFLOWS = ("sdd-session-feature", "sdd-session-bugfix", "sdd-spec-feature", "sdd-spec-bugfix", "sdd-proposal")
+GATES = {"plan-intent", "plan-accept", "dev-integration", False}
 ROLES = ("challenger", "reconciler", "reviewer", "scout")
 AGENT_FILES = (".claude/agents/{role}.md", ".codex/agents/{role}.toml", ".agents/agents/{role}.md")
 
@@ -49,11 +50,12 @@ def test_every_role_is_projected_for_every_agent(synced: Path) -> None:
             assert (synced / pattern.format(role=role)).is_file(), pattern.format(role=role)
 
 
-def test_the_worker_is_projected_only_where_it_can_reach_a_worktree(synced: Path) -> None:
-    assert (synced / ".devkit/managed/spec/subagents/worker.md").is_file()
-    assert (synced / ".claude/agents/worker.md").is_file()
-    assert (synced / ".agents/agents/worker.md").is_file()
-    assert not (synced / ".codex/agents/worker.toml").exists()
+@pytest.mark.parametrize("worker", ["development-worker", "planning-worker"])
+def test_a_worker_is_projected_only_where_it_can_reach_a_worktree(synced: Path, worker: str) -> None:
+    assert (synced / f".devkit/managed/spec/subagents/{worker}.md").is_file()
+    assert (synced / f".claude/agents/{worker}.md").is_file()
+    assert (synced / f".agents/agents/{worker}.md").is_file()
+    assert not (synced / f".codex/agents/{worker}.toml").exists()
 
 
 def test_no_skill_is_projected_for_a_procedure_only_a_role_runs(synced: Path) -> None:
@@ -70,36 +72,68 @@ def test_show_renders_each_workflow(synced: Path, workflow: str) -> None:
     assert result.stdout.startswith(f"[WORKFLOW: {workflow} ")
 
 
-def test_a_direct_delivery_unit_is_a_spec_bundle_that_starts_at_the_intent_gate(synced: Path) -> None:
-    created = _devkit(
-        "workflow", "new", "login", "--workflow", "direct-delivery", "--date", "2026-01-15", "-w", str(synced)
-    )
+@pytest.mark.parametrize("workflow", ["sdd-spec-feature", "sdd-spec-bugfix"])
+def test_a_spec_unit_is_a_spec_bundle_that_starts_at_the_plan_intent_gate(synced: Path, workflow: str) -> None:
+    slug = workflow.removeprefix("sdd-spec-")
+    created = _devkit("workflow", "new", slug, "--workflow", workflow, "--date", "2026-01-15", "-w", str(synced))
     assert created.returncode == 0, created.stderr
-    unit = synced / "specs/2026-01/20260115-login"
+    unit = synced / f"specs/2026-01/20260115-{slug}"
     assert (unit / "spec.md").is_file(), created.stdout
-    assert "workflow: direct-delivery" in (unit / "spec.md").read_text(encoding="utf-8")
+    assert f"workflow: {workflow}" in (unit / "spec.md").read_text(encoding="utf-8")
 
     step = _devkit("workflow", "next", "--unit", str(unit), "-w", str(synced))
     assert step.returncode == 0, step.stderr
-    assert "[STAGE: intent human_gate=intent" in step.stdout
-    assert "[WAITING: human gate:intent]" in step.stdout
+    assert "[STAGE: intent human_gate=plan-intent" in step.stdout
+    assert "[WAITING: human gate:plan-intent]" in step.stdout
 
 
-def test_an_incubated_delivery_unit_is_a_proposal_bundle(synced: Path) -> None:
-    created = _devkit("workflow", "new", "idea", "--workflow", "incubated-delivery", "-w", str(synced))
+def test_a_proposal_unit_is_a_proposal_bundle(synced: Path) -> None:
+    created = _devkit("workflow", "new", "idea", "--workflow", "sdd-proposal", "-w", str(synced))
     assert created.returncode == 0, created.stderr
     unit = synced / "docs/proposals/PROP-idea"
     assert (unit / "proposal.md").is_file(), created.stdout
 
     step = _devkit("workflow", "next", "--unit", str(unit), "-w", str(synced))
     assert step.returncode == 0, step.stderr
-    assert "[STAGE: intent-proposal human_gate=intent" in step.stdout
+    assert "[STAGE: intent-proposal human_gate=plan-intent" in step.stdout
+
+
+def _definition(workflow: str) -> dict[str, object]:
+    text = (Path(__file__).resolve().parents[1] / f"src/devkit_spec/bundle/workflows/{workflow}.md").read_text("utf-8")
+    return yaml.safe_load(text.split("---\n", 2)[1])
 
 
 @pytest.mark.parametrize("workflow", WORKFLOWS)
 def test_the_integration_gate_is_answered_by_given(workflow: str) -> None:
-    text = (Path(__file__).resolve().parents[1] / f"src/devkit_spec/bundle/workflows/{workflow}.md").read_text("utf-8")
-    data = yaml.safe_load(text.split("---\n", 2)[1])
-    gates = {stage.get("human_gate") for stage in data["stages"]}
-    expected = {"integration": {"answer": "given"}} if "integration" in gates else None
+    data = _definition(workflow)
+    gates = {stage.get("human_gate") for stage in data["stages"]}  # type: ignore[union-attr]
+    expected = {"dev-integration": {"answer": "given"}} if "dev-integration" in gates else None
     assert data.get("gates") == expected
+
+
+@pytest.mark.parametrize("workflow", WORKFLOWS)
+def test_only_the_three_named_gates_are_used_and_development_has_no_direction_gate(workflow: str) -> None:
+    stages = _definition(workflow)["stages"]
+    assert {stage.get("human_gate") for stage in stages} <= GATES  # type: ignore[union-attr]
+    assert "direction" not in {stage["id"] for stage in stages}  # type: ignore[union-attr]
+    names = " ".join(str(stage["name"]) for stage in stages)  # type: ignore[union-attr]
+    assert not any(token in names.split() for token in ("G1", "G2", "G3", "E"))
+    for stage in stages:  # type: ignore[union-attr]
+        assert all(ret["to"] != "direction" for ret in stage.get("returns", [])), stage["id"]
+
+
+@pytest.mark.parametrize("workflow", ["sdd-session-feature", "sdd-session-bugfix"])
+def test_a_session_requires_no_unit_envelope_spec_or_reconcile_artifact(workflow: str) -> None:
+    data = _definition(workflow)
+    assert "layout" not in data
+    for stage in data["stages"]:  # type: ignore[union-attr]
+        checks = " ".join([*stage["entry"], *stage["exit"]])
+        assert not any(word in checks for word in ("envelope", "spec.md", "reconcile", "anchor", "tasks")), stage
+        assert not any("envelopes/" in str(item) or "reconcile" in str(item) for item in stage["artifacts"]), stage
+
+
+def test_the_session_bugfix_reproduces_before_it_fixes() -> None:
+    order = [stage["id"] for stage in _definition("sdd-session-bugfix")["stages"]]  # type: ignore[union-attr]
+    assert order.index("reproduce-session") < order.index("execute-verify")
+    feature = [stage["id"] for stage in _definition("sdd-session-feature")["stages"]]  # type: ignore[union-attr]
+    assert [stage for stage in order if stage != "reproduce-session"] == feature

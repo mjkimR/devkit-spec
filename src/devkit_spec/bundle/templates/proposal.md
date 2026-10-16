@@ -7,7 +7,9 @@ created_at: YYYY-MM-DD
 target_area: capabilities/<area>/      # Target capability area on graduation (e.g., capabilities/governance/)
 priority: high                        # critical | high | medium | low (estimated priority)
 size: M                               # S | M | L | XL (estimated scope: S=single fix, M=1-2 sessions, L=complex module, XL=major overhaul)
-# handoff_workflow: bugfix   # workflow after handoff (default: direct-delivery)
+task_kind: feature                    # feature | bugfix: the spec follows sdd-spec-<task_kind>
+# supersedes: PROP-<old-slug>         # close by supersede: the accepted proposal this draft replaces
+# needs_decompose: true               # Backlog splits this draft before Planning starts
 ---
 
 # [PROP-<slug>] Proposal Title

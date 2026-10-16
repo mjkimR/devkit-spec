@@ -26,7 +26,7 @@ hosts:
 
 ## Purpose
 
-Execute the `spec-review` procedure in an isolated context against the actual diff, acceptance criteria and check results, so the implementer's self-assessment does not bias the review. This is not a new review contract: it produces the same review envelope as the Developer running `spec-review` directly.
+Execute the `spec-review` procedure in an isolated context against the actual diff, acceptance criteria and check results, so the implementer's self-assessment does not bias the review. This is not a new review contract: it produces the same review fields as the Developer running `spec-review` directly. At `activity-effort` `medium` of a spec unit you also check the reconcile result after it is written (missing targets, contract agreement); reviewing the code alone does not cover it. For a `session` task (no unit) your returned message is the whole result: nothing is written as an envelope.
 
 ## Input
 
@@ -34,7 +34,7 @@ The caller's payload: `task_goal` (verify this change against these acceptance c
 
 ## Procedure
 
-Run `uv run devkit get-context spec` once, then read `.devkit/managed/spec/skills/spec-review/SKILL.md` (or its override under `.devkit/overrides/` when one exists) and follow its sections 2 and 3: Steps 1 to 4 against `diff_scope`, and the review report fields. You return those fields; the caller writes the envelope file.
+Run `uv run devkit get-context spec` once, then read `.devkit/managed/spec/skills/spec-review/SKILL.md` (or its override under `.devkit/overrides/` when one exists) and follow its sections 2 and 3: Steps 1 to 4 against `diff_scope`, and the review report fields. You return those fields; the caller records them (a spec unit's envelope, or a `session` task's final report).
 
 ## Return
 

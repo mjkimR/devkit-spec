@@ -64,7 +64,7 @@ id = "spec-progress"
 kind = "rule"
 source = "rules/spec_progress"
 
-# Entry router: classify intent, choose the route and drive the workflow.
+# Entry router: classify the task (task-kind, planning-depth), run Backlog and inline Planning, drive the workflow.
 [[assets]]
 id = "spec"
 kind = "skill"
@@ -176,26 +176,32 @@ id = "templates"
 kind = "document"
 source = "templates"
 
-# Delivery workflows: routed stage schemas with the intent, direction and integration gates.
+# Delivery workflows, one per planning-depth and task-kind (sdd-<planning-depth>[-<task-kind>]), with the
+# plan-intent, plan-accept and dev-integration gates.
 [[assets]]
-id = "s-lane"
+id = "sdd-session-feature"
 kind = "workflow"
-source = "workflows/s-lane.md"
+source = "workflows/sdd-session-feature.md"
 
 [[assets]]
-id = "direct-delivery"
+id = "sdd-session-bugfix"
 kind = "workflow"
-source = "workflows/direct-delivery.md"
+source = "workflows/sdd-session-bugfix.md"
 
 [[assets]]
-id = "bugfix"
+id = "sdd-spec-feature"
 kind = "workflow"
-source = "workflows/bugfix.md"
+source = "workflows/sdd-spec-feature.md"
 
 [[assets]]
-id = "incubated-delivery"
+id = "sdd-spec-bugfix"
 kind = "workflow"
-source = "workflows/incubated-delivery.md"
+source = "workflows/sdd-spec-bugfix.md"
+
+[[assets]]
+id = "sdd-proposal"
+kind = "workflow"
+source = "workflows/sdd-proposal.md"
 
 # Optional support roles the workflows delegate to: host-neutral contracts, projected per agent; the body is the
 # role's prompt, so a procedure no main session runs lives there rather than in a skill.
@@ -220,9 +226,14 @@ kind = "subagent"
 source = "subagents/scout.md"
 
 [[assets]]
-id = "worker"
+id = "development-worker"
 kind = "subagent"
-source = "subagents/worker.md"
+source = "subagents/development-worker.md"
+
+[[assets]]
+id = "planning-worker"
+kind = "subagent"
+source = "subagents/planning-worker.md"
 
 # Occasional procedures, found through `devkit playbook search` on explicit request.
 [[assets]]
@@ -264,15 +275,17 @@ assets = [
     "spec-rule",
     "spec-feedback",
     "spec-entrypoints",
-    "s-lane",
-    "direct-delivery",
-    "bugfix",
-    "incubated-delivery",
+    "sdd-session-feature",
+    "sdd-session-bugfix",
+    "sdd-spec-feature",
+    "sdd-spec-bugfix",
+    "sdd-proposal",
     "challenger",
     "reconciler",
     "reviewer",
     "scout",
-    "worker",
+    "development-worker",
+    "planning-worker",
     "brownfield-adoption",
     "feedback-hygiene",
 ]

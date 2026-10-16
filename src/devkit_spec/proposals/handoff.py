@@ -5,8 +5,8 @@ path it would create), then:
 
 1. writes ``specs/<YYYY-MM>/<YYYYMMDD>-<slug>/`` with ``spec.md``, ``plan.md`` and ``tasks.md`` carried from the
    proposal body, each marked as a skeleton (``spec.md`` keeps the proposal's ``namespace``, which must be
-   ``global`` or registered, and its ``summary``, which must be a string), and binds ``spec.md`` to the proposal's
-   ``handoff_workflow`` (default ``direct-delivery``; ``kind: bugfix`` for ``bugfix``). A spec bound to ``bugfix``
+   ``global`` or registered, and its ``summary``, which must be a string), and binds ``spec.md`` to
+   ``sdd-spec-<task_kind>`` (the proposal's ``task_kind``, default ``feature``). A spec bound to ``sdd-spec-bugfix``
    gets ``spec.md`` only, with the proposal's target area and boundaries in its carried notes;
 2. copies ``target-docs.md`` into the spec bundle;
 3. promotes each ``decisions/PADR-<slug>.md`` to ``docs/decisions/<YYYY-MM>/<YYYYMMDD>-<slug>.md`` as an accepted
@@ -18,8 +18,8 @@ path it would create), then:
    envelopes, as devkit's loaders find them) are not carried: they are dropped with the proposal;
 5. rewrites links and ID references that pointed into the proposal (``rewrite``);
 6. removes the proposal;
-7. when the user accepted the proposal's direction (``_user_direction``), records the spec's open ``gate:intent``
-   and then ``gate:direction`` as the user's answers carried from the proposal (``_record_gates``).
+7. carries the proposal's ``gate:plan-intent`` and ``gate:plan-accept`` records to the spec under the same names
+   (``_proposal_gates``, ``_record_gates``): a carried approval is never turned into the approval of another decision.
 
 A legacy proposal or PADR whose slug starts with a number (``PROP-2024-budget``) is refused: the ID it would become
 breaks ``RULE-id-convention``. A failure of any kind in steps 1 to 4 removes what they wrote, moves what they moved
@@ -42,7 +42,16 @@ from typing import Any
 from devkit.advisory import AdvisoryError
 from devkit.core import FrontmatterError, GitError, run_git
 from devkit.core.frontmatter import parse
-from devkit.workflow import Binding, Workspace, load_decisions, load_envelopes, record_answer
+from devkit.workflow import (
+    Binding,
+    Decision,
+    Workspace,
+    load_decisions,
+    load_envelopes,
+    new_decision,
+    record_answer,
+    write_decision,
+)
 
 from devkit_spec.config import GLOBAL
 from devkit_spec.documents import DocumentIndex, parse_document
@@ -52,6 +61,7 @@ from devkit_spec.errors import (
     ProposalHandoffError,
     ProposalInvalidError,
     ProposalLinkUnresolvedWarning,
+    ProposalNeedsDecomposeError,
     ProposalNotApprovedError,
     ProposalNotFoundError,
     ProposalReferencesRewrittenNotice,
@@ -60,7 +70,13 @@ from devkit_spec.errors import (
     ProposalUnboundNotice,
     ProposalWrongWorktreeError,
 )
-from devkit_spec.proposals.binding import BUGFIX_WORKFLOW, DEFAULT_WORKFLOW, resolve_binding
+from devkit_spec.proposals.binding import (
+    DEFAULT_TASK_KIND,
+    DEFAULT_WORKFLOW,
+    TASK_KINDS,
+    resolve_binding,
+    spec_workflow,
+)
 from devkit_spec.proposals.body import CarriedProposal, carry_proposal_body
 from devkit_spec.proposals.rewrite import (
     ID,
@@ -94,22 +110,23 @@ from devkit_spec.proposals.specs import (
     roll_back,
     spec_dir,
     spec_files,
-    spec_kind,
+    spec_only,
     text_value,
     text_values,
     write_spec_bundle,
 )
 
-HANDOFF_WORKFLOW = "handoff_workflow"
-"""The proposal frontmatter key naming the workflow its spec follows (``workflow`` is devkit's own binding)."""
+TASK_KIND = "task_kind"
+"""The proposal frontmatter key holding its ``task-kind``; the spec follows ``sdd-spec-<task_kind>`` after handoff
+(``workflow`` is devkit's own binding of the proposal)."""
+NEEDS_DECOMPOSE = "needs_decompose"
 NAMESPACE = "namespace"
 SUMMARY = "summary"
 ACCEPTED = "accepted"
-DIRECTION_STATUSES = ("draft", "reviewing")
-DIRECTION_GATE = "gate:direction"
-# The spec's gates a user's direction answer of the proposal covers, recorded in this order.
-CARRIED_GATES = ("gate:intent", DIRECTION_GATE)
-BY_USER = "user"
+INTENT_GATE = "gate:plan-intent"
+ACCEPT_GATE = "gate:plan-accept"
+# The proposal's approvals the spec carries by name, in this order (handoff never re-labels them).
+CARRIED_GATES = (INTENT_GATE, ACCEPT_GATE)
 RETURN_PREFIX = "return:"
 
 # Files an operating system leaves behind; never carried, they are deleted with the proposal.
@@ -154,9 +171,9 @@ class HandoffResult:
 
     ``workflow`` is the workflow ``spec.md`` is bound to (``None``: unbound), ``rewritten_files`` the files whose
     links or references changed, ``unresolved`` what pointed into the proposal and could not be mapped.
-    ``dropped_records`` are the proposal unit's workflow records removed with it, ``carried_gates`` the spec's gates
-    recorded from the user's direction answer. ``notices`` are the warnings and notices the caller reports with the
-    result.
+    ``dropped_records`` are the proposal unit's workflow records removed with it, ``carried_gates`` the proposal's own
+    approvals recorded in the spec under their names. ``notices`` are the warnings and notices the caller reports
+    with the result.
     """
 
     proposal: str
@@ -213,16 +230,15 @@ def _read(path: Path, root: Path) -> str:
         raise ProposalInvalidError(f"{rel} cannot be read: {exc}", target_files=[rel]) from exc
 
 
-def handoff_proposal(
-    root: Path, slug: str, *, direction_chosen: bool = False, today: date | None = None
-) -> HandoffResult:
+def handoff_proposal(root: Path, slug: str, *, today: date | None = None) -> HandoffResult:
     """Hand proposal ``slug`` off to a spec bundle under the workspace ``root`` (see the module docstring).
 
-    Approval is ``status: accepted``, or ``draft``/``reviewing`` with ``direction_chosen`` (the user chose the
-    direction explicitly); it is never inferred. The spec's gates are recorded only from the user's recorded
-    acceptance of the proposal's direction; a failure there is a ``ProposalGateNotCarriedWarning``. Raises, before writing anything: ``ProposalSlugError`` (also for a
-    proposal or PADR slug whose first segment has no letter), ``ProposalNotFoundError``, ``ProposalInvalidError``,
-    ``ProposalNotApprovedError``, ``ProposalSlugConflictError``, ``ProposalWorkflowError``,
+    Approval is ``status: accepted``, written once ``plan-accept`` was given; it is never inferred. The spec carries
+    the proposal's own ``gate:plan-intent`` and ``gate:plan-accept`` records under their names; a failure there is a
+    ``ProposalGateNotCarriedWarning``. Raises, before writing anything: ``ProposalSlugError`` (also for a
+    proposal or PADR slug whose first segment has no letter), ``ProposalNotFoundError``, ``ProposalInvalidError``
+    (also a ``task_kind`` outside ``TASK_KINDS``), ``ProposalNotApprovedError``, ``ProposalNeedsDecomposeError``,
+    ``ProposalSlugConflictError``, ``ProposalWorkflowError``,
     ``ProposalTargetExistsError``, ``ProposalWrongWorktreeError`` (``_check_worktree``). A failure while writing
     removes what was written, moves the materials and carried files back and keeps the proposal, then raises
     ``ProposalHandoffError`` (with what the roll-back could not undo in its details), or the ``AdvisoryError``
@@ -247,20 +263,24 @@ def handoff_proposal(
         raise ProposalInvalidError(f"{proposal_rel}: {exc.message}", target_files=[proposal_rel]) from exc
 
     status = text_value(meta.get("status")).lower()
-    if not (status == ACCEPTED or (direction_chosen and status in DIRECTION_STATUSES)):
-        needed = (
-            "accepted, draft or reviewing"
-            if direction_chosen
-            else "accepted (draft or reviewing with --direction-chosen)"
-        )
+    if status != ACCEPTED:
         raise ProposalNotApprovedError(
-            f"proposal PROP-{slug} has status {status or '-'}; handoff needs {needed}", target_files=[proposal_rel]
+            f"proposal PROP-{slug} has status {status or '-'}; handoff needs accepted (given at plan-accept)",
+            target_files=[proposal_rel],
+        )
+    if meta.get(NEEDS_DECOMPOSE) is True:
+        raise ProposalNeedsDecomposeError(
+            f"proposal PROP-{slug} is marked {NEEDS_DECOMPOSE}: true; it is split in Backlog, never handed off",
+            target_files=[proposal_rel],
         )
     namespace = _namespace(root, meta, proposal_rel)
     summary = _summary(meta, proposal_rel)
+    kind = _task_kind(meta, proposal_rel)
     index = DocumentIndex.load(root)
     check_spec_conflict(index, slug)
-    binding, unbound = resolve_binding(root, meta.get(HANDOFF_WORKFLOW), proposal_rel, field=HANDOFF_WORKFLOW)
+    # The default task-kind binds like no field: a project without its workflow gets an unbound spec and a notice.
+    explicit = spec_workflow(kind) if kind and kind != DEFAULT_TASK_KIND else None
+    binding, unbound = resolve_binding(root, explicit, proposal_rel, field=TASK_KIND)
 
     month, stamp = day.strftime("%Y-%m"), day.strftime("%Y%m%d")
     target_dir = spec_dir(root, slug, day)
@@ -272,14 +292,14 @@ def handoff_proposal(
     decisions: list[_Decision] = []
     extras: list[tuple[Path, Path]] = []
     records: list[Path] = []
-    user_direction = False
+    gates: list[Decision] = []
     if is_bundle:
         if (bundle / TARGET_DOCS).is_file():
             target_docs_text = _read(bundle / TARGET_DOCS, root)
         decisions = _plan_decisions(root, bundle / DECISIONS, month, stamp)
         targets += [decision.target for decision in decisions]
         records = _unit_records(bundle)
-        user_direction = _user_direction(bundle, text_value(meta.get("workflow")))
+        gates = _proposal_gates(bundle, text_value(meta.get("workflow")))
         preserved = root / "docs" / MATERIALS / month / f"{stamp}-{slug}"
         extras = _plan_extras(root, bundle, decisions, records, preserved, move_materials)
         if move_materials or extras:
@@ -300,7 +320,7 @@ def handoff_proposal(
         else ""
     )
     carried = carry_proposal_body(text) if is_bundle else CarriedProposal()
-    bugfix = spec_kind(binding) == BUGFIX_WORKFLOW
+    bugfix = spec_only(binding)
     if bugfix:
         # No plan.md: what it would hold from the proposal is carried in spec.md's notes.
         carried.notes += _scope_notes(meta)
@@ -312,13 +332,12 @@ def handoff_proposal(
         origin=f"Handed off from proposal PROP-{slug} on {created}.{materials_ref}{target_docs_ref}\n",
         carried=carried,
         meta=meta,
-        kind=spec_kind(binding),
         namespace=namespace,
         summary=summary,
         target_docs_ref=target_docs_ref,
     )
     if bugfix:
-        # bugfix writes plan.md and tasks.md in its plan-tasks stage; skeletons would have to match the
+        # sdd-spec-bugfix writes plan.md and tasks.md in its plan-tasks stage; skeletons would have to match the
         # characterized criteria for the characterize stage's lint-clean exit.
         files = {SPEC_FILE: files[SPEC_FILE]}
 
@@ -389,7 +408,7 @@ def handoff_proposal(
         removed = plan.proposal
         rel = Path(removed).relative_to(root).as_posix()
         notices.append(ProposalCleanupWarning(f"{rel} could not be removed: {exc}", target_files=[rel]))
-    carried = _record_gates(root, target_dir, slug, notices) if user_direction and binding is not None else []
+    carried = _record_gates(root, target_dir, slug, binding, gates, notices) if gates and binding is not None else []
     result = _result(
         root, slug, target_dir, binding, unbound, target_docs_text, materials_target, decisions, report, notices
     )
@@ -557,50 +576,95 @@ def _unit_records(bundle: Path) -> list[Path]:
     return sorted({bundle / file for file in files if file})
 
 
-def _user_direction(bundle: Path, workflow: str) -> bool:
-    """Whether the user accepted the proposal's direction: the latest ``gate:direction`` record of the unit's bound
-    ``workflow`` that is not ``cancel`` is ``accept`` with ``by: user``, and no return record follows it. Any later
-    return that is not a ``cancel`` counts, whatever its stage or action: stricter than devkit's voiding, so a
-    doubtful case is asked again rather than carried."""
-    if not workflow:
-        return False
-    records = load_decisions(bundle).segment(workflow, 0)
-    answer = records.effective(DIRECTION_GATE)
-    if answer is None or answer.action != "accept" or answer.by != BY_USER:
-        return False
-    return not any(
-        record.request.startswith(RETURN_PREFIX) and record.action != "cancel" and record.seq > answer.seq
-        for record in records.records
+def _task_kind(meta: dict[str, Any], proposal_rel: str) -> str | None:
+    """The proposal's ``task_kind``; ``None`` when it has none (the default, ``feature``).
+
+    Raises ``ProposalInvalidError`` when it is not one of ``TASK_KINDS``.
+    """
+    if TASK_KIND not in meta:
+        return None
+    value = meta[TASK_KIND]
+    if isinstance(value, str) and value.strip() in TASK_KINDS:
+        return value.strip()
+    raise ProposalInvalidError(
+        f"{proposal_rel}: {TASK_KIND} {value!r} is not one of {' | '.join(TASK_KINDS)}",
+        target_files=[proposal_rel],
+        fix=f"Set the proposal's {TASK_KIND} to the task-kind confirmed at plan-accept ({' or '.join(TASK_KINDS)}),"
+        " then rerun the handoff",
     )
 
 
-def _record_gates(root: Path, target_dir: Path, slug: str, notices: list[AdvisoryError]) -> list[CarriedGate]:
-    """Record each of ``CARRIED_GATES`` that is an open request of the bound spec as the user's ``accept`` carried
-    from ``PROP-<slug>`` (devkit's ``record_answer``), in order. A gate that is not open (answered by policy, or a
-    ``bugfix`` direction gate behind ``characterize``) is skipped. The first failure of any kind stops and is added
-    to ``notices`` as a ``ProposalGateNotCarriedWarning``: the handoff itself is done by then."""
+def _proposal_gates(bundle: Path, workflow: str) -> list[Decision]:
+    """The proposal's approvals the spec carries (``CARRIED_GATES``, in order): for each, the latest record of the
+    unit's bound ``workflow`` that is not ``cancel``, when it is ``accept`` and no return record that is not a
+    ``cancel`` follows it. Stricter than devkit's voiding, so a doubtful approval is asked again rather than carried.
+    """
+    if not workflow:
+        return []
+    records = load_decisions(bundle).segment(workflow, 0)
+    carried = []
+    for request in CARRIED_GATES:
+        answer = records.effective(request)
+        if answer is None or answer.action != "accept":
+            continue
+        if any(
+            record.request.startswith(RETURN_PREFIX) and record.action != "cancel" and record.seq > answer.seq
+            for record in records.records
+        ):
+            continue
+        carried.append(answer)
+    return carried
+
+
+def _record_gates(
+    root: Path,
+    target_dir: Path,
+    slug: str,
+    binding: Binding,
+    gates: list[Decision],
+    notices: list[AdvisoryError],
+) -> list[CarriedGate]:
+    """Record each of the proposal's ``gates`` in the spec under its own name, with its ``by`` and a note naming
+    ``PROP-<slug>``. A gate that is an open request of the bound spec (``gate:plan-intent`` at its ``intent`` stage)
+    is answered with devkit's ``record_answer``; one the spec's workflow never asks (``gate:plan-accept``) is written
+    as a decision record of the spec's workflow with the proposal's stage, kept for the audit trail and counting for
+    no stage. A gate the spec answered by policy is skipped. The first failure of any kind stops and is added to
+    ``notices`` as a ``ProposalGateNotCarriedWarning``: the handoff itself is done by then."""
     rel = target_dir.relative_to(root).as_posix()
     note = f"PROP-{slug}"
     carried: list[CarriedGate] = []
-    request = CARRIED_GATES[0]
+    request = gates[0].request
     try:
         workspace = Workspace(root, lint=None, ancestor=None)
-        for request in CARRIED_GATES:
+        for gate in gates:
+            request = gate.request
             unit = workspace.resolve_unit(rel)
-            if request not in {open_request.id for open_request in workspace.evaluate_unit(unit, lint=False).requests}:
-                continue
-            decision = record_answer(workspace, unit, request, "accept", note=note, by=BY_USER, lint=False)
+            evaluation = workspace.evaluate_unit(unit, lint=False)
+            if request in {open_request.id for open_request in evaluation.requests}:
+                decision = record_answer(workspace, unit, request, "accept", note=note, by=gate.by, lint=False)
+            elif any(stage.gate == request.removeprefix("gate:") for stage in unit.doc.stages):
+                continue  # the spec's own gate, not open: answered by policy or already recorded
+            else:
+                record = new_decision(
+                    load_decisions(target_dir),
+                    request,
+                    "accept",
+                    workflow=binding.workflow,
+                    stage=gate.stage,
+                    note=note,
+                    by=gate.by,
+                )
+                decision = write_decision(target_dir, record)
             carried.append(CarriedGate(request, f"{rel}/{decision.file}"))
     except Exception as exc:  # the handoff is done: any failure here is reported, never raised
         detail = f"{exc.code}: {exc.message}" if isinstance(exc, AdvisoryError) else str(exc)
         notices.append(
             ProposalGateNotCarriedWarning(
-                f"{request} of SPEC-{slug} was not recorded from the user's direction answer of {note}",
+                f"{request} of SPEC-{slug} was not carried from {note}",
                 detail,
                 target_files=[f"{rel}/{SPEC_FILE}"],
-                fix=f"Once the cause is resolved, run devkit workflow answer --unit {rel} --request {request} "
-                f"--action accept --by user --note {note}, then the same for each later gate devkit workflow next "
-                "reports as waiting",
+                fix=f"Once the cause is resolved, ask the user again for each gate devkit workflow next --unit {rel} "
+                "reports as waiting and record the answer with devkit workflow answer",
             )
         )
     return carried

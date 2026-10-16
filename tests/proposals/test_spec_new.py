@@ -29,20 +29,20 @@ def _meta(path: Path) -> dict[str, object]:
 
 
 def test_creates_a_bound_bundle(workspace: Path) -> None:
-    write_workflow(workspace, "direct-delivery")
+    write_workflow(workspace, "sdd-spec-feature")
     created = create_spec(workspace, "SPEC-Login Flow", title="Login: Flow", day=TODAY)
     target = spec_dir(workspace, "login-flow")
     assert created.to_dict() == {
         "id": "SPEC-login-flow",
         "dir": f"specs/{MONTH}/{STAMP}-login-flow",
-        "workflow": "direct-delivery",
+        "workflow": "sdd-spec-feature",
         "namespace": None,
         "next_command": f"devkit workflow next --unit specs/{MONTH}/{STAMP}-login-flow",
         "notices": [],
     }
     spec = _meta(target / "spec.md")
     assert spec["id"] == "SPEC-login-flow" and spec["title"] == "Login: Flow" and spec["status"] == "planned"
-    assert spec["workflow"] == "direct-delivery" and str(spec["workflow_hash"]).startswith("sha256:")
+    assert spec["workflow"] == "sdd-spec-feature" and str(spec["workflow_hash"]).startswith("sha256:")
     assert "kind" not in spec
     assert _meta(target / "plan.md") == {"id": "PLAN-login-flow", "spec": "SPEC-login-flow"}
     assert _meta(target / "tasks.md") == {
@@ -59,37 +59,37 @@ def test_creates_a_bound_bundle(workspace: Path) -> None:
     assert "_Requirements: AC-01_" in (target / "tasks.md").read_text(encoding="utf-8")
 
 
-def test_bugfix_carries_its_kind(workspace: Path) -> None:
-    write_workflow(workspace, "bugfix")
-    created = create_spec(workspace, "crash", workflow="bugfix", day=TODAY)
+def test_a_bugfix_spec_starts_with_spec_md_and_no_kind_field(workspace: Path) -> None:
+    write_workflow(workspace, "sdd-spec-bugfix")
+    created = create_spec(workspace, "crash", workflow="sdd-spec-bugfix", day=TODAY)
     target = spec_dir(workspace, "crash")
     spec = _meta(target / "spec.md")
-    assert created.workflow == "bugfix" and spec["kind"] == "bugfix" and spec["workflow"] == "bugfix"
-    # The bugfix workflow writes plan.md and tasks.md in its plan-tasks stage.
+    assert created.workflow == "sdd-spec-bugfix" and "kind" not in spec and spec["workflow"] == "sdd-spec-bugfix"
+    # The sdd-spec-bugfix workflow writes plan.md and tasks.md in its plan-tasks stage.
     assert sorted(path.name for path in target.iterdir()) == ["spec.md"]
 
 
-@pytest.mark.parametrize("definition", [None, WORKFLOW.format(id="bugfix").replace("schema_version: 1", "")])
+@pytest.mark.parametrize("definition", [None, WORKFLOW.format(id="sdd-spec-bugfix").replace("schema_version: 1", "")])
 def test_an_unbindable_workflow_writes_nothing(workspace: Path, definition: str | None) -> None:
     if definition is not None:
-        write_workflow(workspace, "bugfix", definition)
+        write_workflow(workspace, "sdd-spec-bugfix", definition)
     with pytest.raises(SpecWorkflowError) as raised:
-        create_spec(workspace, "crash", workflow="bugfix", day=TODAY)
+        create_spec(workspace, "crash", workflow="sdd-spec-bugfix", day=TODAY)
     assert raised.value.code == "SPEC_WORKFLOW_INVALID"
     assert not (workspace / "specs").exists()
 
 
 def test_a_workflow_path_outside_the_discovered_definitions_is_refused(workspace: Path, write: Write) -> None:
-    write_workflow(workspace, "s-lane")
-    write("elsewhere/s-lane.md", WORKFLOW.format(id="s-lane"))
+    write_workflow(workspace, "sdd-session-feature")
+    write("elsewhere/sdd-session-feature.md", WORKFLOW.format(id="sdd-session-feature"))
     with pytest.raises(SpecWorkflowError) as raised:
-        create_spec(workspace, "moved", workflow="elsewhere/s-lane.md", day=TODAY)
+        create_spec(workspace, "moved", workflow="elsewhere/sdd-session-feature.md", day=TODAY)
     assert raised.value.code == "SPEC_WORKFLOW_INVALID"
     assert any("WORKFLOW_NOT_BINDABLE" in detail for detail in raised.value.details)
     assert not (workspace / "specs").exists()
     # The discovered definition named by its path binds its id.
-    created = create_spec(workspace, "kept", workflow=".devkit/workflows/s-lane.md", day=TODAY)
-    assert created.workflow == "s-lane"
+    created = create_spec(workspace, "kept", workflow=".devkit/workflows/sdd-session-feature.md", day=TODAY)
+    assert created.workflow == "sdd-session-feature"
 
 
 def test_without_the_default_workflow_the_spec_stays_unbound(workspace: Path) -> None:
@@ -105,7 +105,7 @@ def test_without_the_default_workflow_the_spec_stays_unbound(workspace: Path) ->
 def test_any_failure_while_writing_is_rolled_back(
     workspace: Path, monkeypatch: pytest.MonkeyPatch, error: Exception, raised_type: type[Exception]
 ) -> None:
-    write_workflow(workspace, "direct-delivery")
+    write_workflow(workspace, "sdd-spec-feature")
 
     def write_binding(*_: object) -> None:
         raise error
@@ -120,7 +120,7 @@ def test_any_failure_while_writing_is_rolled_back(
 
 @pytest.mark.parametrize("error", [FrontmatterError("bad"), RuntimeError("bug")])
 def test_an_incomplete_roll_back_says_so(workspace: Path, monkeypatch: pytest.MonkeyPatch, error: Exception) -> None:
-    write_workflow(workspace, "direct-delivery")
+    write_workflow(workspace, "sdd-spec-feature")
 
     def write_binding(*_: object) -> None:
         raise error
@@ -154,11 +154,11 @@ def test_refuses_a_taken_slug(workspace: Path, write: Write) -> None:
 
 
 def test_cli(workspace: Path) -> None:
-    write_workflow(workspace, "direct-delivery")
+    write_workflow(workspace, "sdd-spec-feature")
     result = _spec_new(workspace, "demo", "--date", "2026-09-02")
     assert result.exit_code == 0, result.output
     assert result.stdout.splitlines() == [
-        "[SPEC: SPEC-demo path=specs/2026-09/20260902-demo workflow=direct-delivery]",
+        "[SPEC: SPEC-demo path=specs/2026-09/20260902-demo workflow=sdd-spec-feature]",
         "[NEXT_CMD: devkit workflow next --unit specs/2026-09/20260902-demo]",
     ]
     assert _meta(workspace / "specs/2026-09/20260902-demo/spec.md")["created"].isoformat() == "2026-09-02"  # type: ignore[union-attr]
@@ -190,14 +190,14 @@ def test_a_new_bundle_passes_the_rules_and_starts_its_workflow(tmp_path: Path) -
     """With the spec bundle synced: RULE-id-convention and the other rules accept it, and its workflow begins."""
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     assert _devkit(tmp_path, "sync").returncode == 0
-    for args in (("demo",), ("crash", "--workflow", "bugfix")):
+    for args in (("demo",), ("crash", "--workflow", "sdd-spec-bugfix")):
         result = _devkit(tmp_path, "spec", "new", *args, "--format", "json")
         assert result.returncode == 0, result.stdout + result.stderr
         unit = json.loads(result.stdout)["dir"]
         result = _devkit(tmp_path, "workflow", "next", "--unit", unit, "--format", "json")
         assert result.returncode == 0, result.stdout + result.stderr
         payload = json.loads(result.stdout)
-        assert payload["workflow"] == ("bugfix" if "bugfix" in args else "direct-delivery")
+        assert payload["workflow"] == ("sdd-spec-bugfix" if "sdd-spec-bugfix" in args else "sdd-spec-feature")
         assert payload["stage"]["id"] == "intent"
     result = _devkit(tmp_path, "rules", "check")
     assert result.returncode == 0, result.stdout + result.stderr
@@ -213,7 +213,7 @@ def test_a_characterized_bugfix_bundle_passes_the_rules(tmp_path: Path) -> None:
         "new",
         "x",
         "--workflow",
-        "bugfix",
+        "sdd-spec-bugfix",
         "--summary",
         "Saving an empty file works.",
         "--format",

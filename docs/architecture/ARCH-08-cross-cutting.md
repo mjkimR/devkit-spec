@@ -70,7 +70,8 @@ Libraries never print: modules below `cli` return results and notices or raise `
 
   | Key | Meaning |
   | :--- | :--- |
-  | `[tool.spec] worktree` | `required`: Route 2 and above always run in a task worktree; `auto` (default): when the task needs one (`ADR-worktree-and-pull-request-levels`) |
+  | `[tool.spec] worktree` | `direct` mode only: `required` runs every `spec` and `proposal` activity in a task worktree; `auto` (default): when the activity needs one (`ADR-worktree-and-pull-request-levels`) |
+| `[tool.spec] depth_escalation` | `auto` (default): the Host raises `planning-depth` on its own; `ask`: the user confirms each raise (`ADR-task-kind-and-planning-depth`) |
   | `[[tool.spec.namespaces]]` (`name`, `path`) | Monorepo packages with their own Living Spec under `docs/packages/<name>/` (`CAP-DOCS-namespaces`) |
   | `[tool.spec.scope]` (`shared_path`, `namespace`, `timeout`) | The work-scope registry (`CAP-COLL-work-scope-registry`) |
 

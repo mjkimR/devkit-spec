@@ -1,6 +1,6 @@
 # spec-specify reference: feature specification
 
-Read when the bundle is bound to workflow `direct-delivery` (a new feature, enhancement or contract change). The procedure fills `spec.md` during the `specify` stage. The shared contracts (non-goals, AC format, references, clarification rule, self-validation, DoD) are in `SKILL.md` §4 and §5 and are not repeated here.
+Read when the bundle is bound to workflow `sdd-spec-feature` (a new feature, enhancement or contract change). The procedure fills `spec.md` during the `specify` stage. The shared contracts (non-goals, AC format, references, clarification rule, self-validation, DoD) are in `SKILL.md` §4 and §5 and are not repeated here.
 
 ## Step 1: Clarify intent and the core problem
 
@@ -23,7 +23,7 @@ Define what this feature will **not** do. Each non-goal names its Scope Excluded
 
 ## Step 4: Validate against system invariants
 
-Review `docs/architecture/` and the capabilities the feature touches (`devkit spec refs <CAP-ID> --direction in` shows what depends on them). State explicitly when an ADR will be required. A new policy or design choice outside the approved scope goes back to the `direction` gate (`devkit workflow return --unit <dir> --to direction --note "<choice>"`).
+Review `docs/architecture/` and the capabilities the feature touches (`devkit spec refs <CAP-ID> --direction in` shows what depends on them). State explicitly when an ADR will be required. A design choice inside the agreed intent is decided with the recommended option and recorded; one outside it is reported as a problem for the Host (there is no Development direction gate).
 
 ## Step 5: Output standard
 
@@ -40,7 +40,7 @@ related_capabilities:
   - CAP-<AREA>-<slug>
 related_stories:
   - US-<slug>
-workflow: direct-delivery           # written by `devkit spec new` or `devkit spec proposal handoff`
+workflow: sdd-spec-feature          # written by `devkit spec new` or `devkit spec proposal handoff`
 workflow_hash: sha256:<hex>
 ---
 

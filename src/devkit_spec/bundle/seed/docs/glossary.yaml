@@ -3,8 +3,8 @@
 terms:
   - primary: reconciliation
     synonyms: ["reconcile", "정합성", "정합", "동기화", "sync", "역반영"]
-  - primary: S-Lane
-    synonyms: ["s-lane", "단기 세션", "flash"]
+  - primary: session
+    synonyms: ["planning-depth session", "단기 세션", "flash", "s-lane"]
   - primary: capability
     synonyms: ["역량", "기능", "cap"]
   - primary: proposal

@@ -7,14 +7,15 @@ the same constitution, skills, workflows and rules it ships.
 
 1. Run `uv run --no-active devkit get-context spec` once per agent context and read the instructions it lists before
    the actions they govern.
-2. Start with `/spec <intent>`; `/spec-next` orients in work already under way. The router picks the route
-   (S-Lane, direct delivery, bugfix, incubated) and the workflow (`CAP-DLV-delivery-workflows`).
-3. Read `uv run --no-active devkit spec policy` before routing, gate and Git decisions. This repository sets no
-   `[workflow.approvals]`, so every gate is `ask`. It sets `[tool.spec] worktree = "required"`, so every Route 2 and
-   above task runs in a task worktree, and `[worktree] pull_request = "auto"`: after G3 a task that needs no pull
-   request integrates locally with `devkit worktree finish <slug> --merge`, which fast-forwards `main` and pushes it.
-4. Route 2 and above write `spec.md`, `plan.md` and `tasks.md` (`devkit spec new <slug>`) before production code, and
-   reconcile into `docs/` before completion.
+2. Start with `/spec <intent>`; `/spec-next` orients in work already under way. The router classifies the work
+   (`task-kind`, `planning-depth`, `activity-effort`) and picks the workflow (`CAP-DLV-delivery-workflows`).
+3. Read `uv run --no-active devkit spec policy` before classification, gate and Git decisions. This repository sets
+   no `[workflow.approvals]`, so `dev-integration` is `ask` (`plan-intent` and `plan-accept` always are). It sets
+   `[tool.spec] worktree = "required"`, so every `spec` and `proposal` activity in `direct` mode runs in a task
+   worktree, and `[worktree] pull_request = "auto"`: after `dev-integration` a task that needs no pull request
+   integrates locally with `devkit worktree finish <slug> --merge`, which fast-forwards `main` and pushes it.
+4. `spec` and `proposal` depths write `spec.md`, `plan.md` and `tasks.md` (`devkit spec new <slug>`, or the handoff)
+   before production code, and reconcile into `docs/` before completion.
 
 ## 2. Boundaries of a Change
 

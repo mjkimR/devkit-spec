@@ -1,4 +1,4 @@
-"""The proposal unit's workflow records at handoff: dropped, and the spec's gates recorded from the user's answer."""
+"""The proposal unit's workflow records at handoff: dropped, and its plan-intent and plan-accept carried by name."""
 
 from __future__ import annotations
 
@@ -17,23 +17,23 @@ UNIT = "docs/proposals/PROP-{slug}"
 
 
 def _proposal(root: Path, slug: str) -> Path:
-    """A bundle bound to ``incubated-delivery`` whose spec follows the gated ``direct-delivery``; returns its
+    """A bundle bound to ``sdd-proposal`` whose spec follows the gated ``sdd-spec-feature``; returns its
     proposal.md."""
-    write_workflow(root, "incubated-delivery", INCUBATED)
-    write_workflow(root, "direct-delivery", GATED.format(id="direct-delivery", middle=""))
-    write_workflow(root, "bugfix", GATED.format(id="bugfix", middle=CHARACTERIZE))
+    write_workflow(root, "sdd-proposal", INCUBATED)
+    write_workflow(root, "sdd-spec-feature", GATED.format(id="sdd-spec-feature", middle=""))
+    write_workflow(root, "sdd-spec-bugfix", GATED.format(id="sdd-spec-bugfix", middle=CHARACTERIZE))
     created = create_proposal(root, slug, today=TODAY)
     return root / created.path
 
 
 def _record(root: Path, slug: str, name: str, **fields: object) -> None:
-    """A decision record of the proposal unit: an ``accept`` of the direction gate in ``incubated-delivery`` unless
+    """A decision record of the proposal unit: an ``accept`` of ``plan-accept`` in ``sdd-proposal`` unless
     ``fields`` say otherwise."""
     data = {
-        "request": "gate:direction",
+        "request": "gate:plan-accept",
         "kind": "approve",
         "action": "accept",
-        "workflow": "incubated-delivery",
+        "workflow": "sdd-proposal",
         "stage": "direction-handoff",
         "at": "2026-10-13T00:00:00Z",
     }
@@ -44,8 +44,8 @@ def _record(root: Path, slug: str, name: str, **fields: object) -> None:
 
 
 def _answered(root: Path, slug: str, *, by: str = "user") -> None:
-    _record(root, slug, "01-gate-intent.yaml", request="gate:intent", stage="intent-proposal", by="user")
-    _record(root, slug, "02-gate-direction.yaml", request="gate:direction", stage="direction-handoff", by=by)
+    _record(root, slug, "01-gate-plan-intent.yaml", request="gate:plan-intent", stage="intent-proposal", by="user")
+    _record(root, slug, "02-gate-plan-accept.yaml", request="gate:plan-accept", stage="direction-handoff", by=by)
 
 
 def _spec_records(root: Path, slug: str) -> list[dict[str, object]]:
@@ -69,8 +69,8 @@ def test_drops_the_unit_records_and_carries_the_rest(workspace: Path, write: Wri
     result = handoff_proposal(workspace, "records", today=TODAY)
 
     assert result.dropped_records == [
-        f"{unit}/decisions/01-gate-intent.yaml",
-        f"{unit}/decisions/02-gate-direction.yaml",
+        f"{unit}/decisions/01-gate-plan-intent.yaml",
+        f"{unit}/decisions/02-gate-plan-accept.yaml",
         f"{unit}/decisions/03-broken.yaml",
         f"{unit}/envelopes/scout-01.yaml",
     ]
@@ -94,57 +94,65 @@ def test_records_alone_create_no_materials_directory(workspace: Path) -> None:
     assert len(result.dropped_records) == 2
 
 
-def test_records_the_specs_gates_from_the_users_direction_answer(workspace: Path) -> None:
-    _proposal(workspace, "carry")
+def test_carries_plan_intent_and_plan_accept_under_their_names(workspace: Path) -> None:
+    accept(_proposal(workspace, "carry"))
     _answered(workspace, "carry")
 
-    result = handoff_proposal(workspace, "carry", direction_chosen=True, today=TODAY)
+    result = handoff_proposal(workspace, "carry", today=TODAY)
 
     spec = f"specs/{MONTH}/{STAMP}-carry"
     assert result.carried_gates == [
-        CarriedGate("gate:intent", f"{spec}/decisions/01-gate-intent.yaml"),
-        CarriedGate("gate:direction", f"{spec}/decisions/02-gate-direction.yaml"),
+        CarriedGate("gate:plan-intent", f"{spec}/decisions/01-gate-plan-intent.yaml"),
+        CarriedGate("gate:plan-accept", f"{spec}/decisions/02-gate-plan-accept.yaml"),
     ]
     records = _spec_records(workspace, "carry")
-    assert [(r["request"], r["action"], r["by"], r["note"], r["workflow"]) for r in records] == [
-        ("gate:intent", "accept", "user", "PROP-carry", "direct-delivery"),
-        ("gate:direction", "accept", "user", "PROP-carry", "direct-delivery"),
+    assert [(r["request"], r["action"], r["by"], r["note"], r["workflow"], r["stage"]) for r in records] == [
+        ("gate:plan-intent", "accept", "user", "PROP-carry", "sdd-spec-feature", "intent"),
+        ("gate:plan-accept", "accept", "user", "PROP-carry", "sdd-spec-feature", "direction-handoff"),
     ]
     assert result.notices == []
     ws = Workspace(workspace, lint=None, ancestor=None)
     evaluation = ws.evaluate_unit(ws.resolve_unit(spec), lint=False)
-    assert evaluation.to_dict()["done"] == ["intent", "direction"]
+    # plan-intent opens the spec; plan-accept is kept for the audit trail and asks nothing.
+    assert evaluation.to_dict()["done"] == ["intent"]
+    assert evaluation.requests == [] and evaluation.decision_errors == []
 
 
-def test_records_only_the_intent_gate_of_a_bugfix_spec(workspace: Path) -> None:
-    accept(_proposal(workspace, "defect"), "\nhandoff_workflow: bugfix")
+def test_a_bugfix_spec_carries_both_records(workspace: Path) -> None:
+    accept(_proposal(workspace, "defect"), "\ntask_kind: bugfix")
     _answered(workspace, "defect")
     result = handoff_proposal(workspace, "defect", today=TODAY)
-    assert [gate.request for gate in result.carried_gates] == ["gate:intent"]
-    assert [record["request"] for record in _spec_records(workspace, "defect")] == ["gate:intent"]
+    assert result.workflow == "sdd-spec-bugfix"
+    assert [gate.request for gate in result.carried_gates] == ["gate:plan-intent", "gate:plan-accept"]
+
+
+def test_keeps_who_answered(workspace: Path) -> None:
+    accept(_proposal(workspace, "remote"))
+    _answered(workspace, "remote", by="autohub")
+    handoff_proposal(workspace, "remote", today=TODAY)
+    assert [record["by"] for record in _spec_records(workspace, "remote")] == ["user", "autohub"]
 
 
 @pytest.mark.parametrize(
     "records",
     [
         [],
-        [("02-gate-direction.yaml", {"by": "policy"})],
-        [("02-gate-direction.yaml", {"by": "user", "action": "decline"})],
-        [("02-gate-direction.yaml", {"by": "user", "action": "cancel"})],
+        [("02-gate-plan-accept.yaml", {"by": "user", "action": "decline"})],
+        [("02-gate-plan-accept.yaml", {"by": "user", "action": "cancel"})],
         [
-            ("02-gate-direction.yaml", {"by": "user"}),
-            ("03-gate-direction.yaml", {"by": "user", "action": "decline"}),
-            ("04-gate-direction.yaml", {"by": "user", "action": "cancel"}),
+            ("02-gate-plan-accept.yaml", {"by": "user"}),
+            ("03-gate-plan-accept.yaml", {"by": "user", "action": "decline"}),
+            ("04-gate-plan-accept.yaml", {"by": "user", "action": "cancel"}),
         ],
         [
-            ("02-gate-direction.yaml", {"by": "user"}),
+            ("02-gate-plan-accept.yaml", {"by": "user"}),
             ("03-return-spike.yaml", {"request": "return:spike", "kind": "return", "stage": "spike", "by": "user"}),
         ],
-        [("02-gate-direction.yaml", {"by": "user", "workflow": "other"})],
+        [("02-gate-plan-accept.yaml", {"by": "user", "workflow": "other"})],
     ],
-    ids=["none", "policy", "declined", "cancelled", "declined-after-accept", "returned", "other-workflow"],
+    ids=["none", "declined", "cancelled", "declined-after-accept", "returned", "other-workflow"],
 )
-def test_records_nothing_without_the_users_direction_answer(
+def test_carries_nothing_without_an_accepted_record(
     workspace: Path, records: list[tuple[str, dict[str, object]]]
 ) -> None:
     accept(_proposal(workspace, "ask"))
@@ -157,15 +165,15 @@ def test_records_nothing_without_the_users_direction_answer(
 
 
 def test_a_cancel_after_the_users_accept_changes_nothing(workspace: Path) -> None:
-    _proposal(workspace, "cancel")
+    accept(_proposal(workspace, "cancel"))
     _answered(workspace, "cancel")
-    _record(workspace, "cancel", "03-gate-direction.yaml", by="user", action="cancel")
-    result = handoff_proposal(workspace, "cancel", direction_chosen=True, today=TODAY)
-    assert [gate.request for gate in result.carried_gates] == ["gate:intent", "gate:direction"]
+    _record(workspace, "cancel", "03-gate-plan-accept.yaml", by="user", action="cancel")
+    result = handoff_proposal(workspace, "cancel", today=TODAY)
+    assert [gate.request for gate in result.carried_gates] == ["gate:plan-intent", "gate:plan-accept"]
 
 
 def test_records_nothing_for_an_unbound_spec(workspace: Path) -> None:
-    write_workflow(workspace, "incubated-delivery", INCUBATED)
+    write_workflow(workspace, "sdd-proposal", INCUBATED)
     accept(workspace / create_proposal(workspace, "loose", today=TODAY).path)
     _answered(workspace, "loose")
     result = handoff_proposal(workspace, "loose", today=TODAY)
@@ -176,22 +184,18 @@ def test_records_nothing_for_an_unbound_spec(workspace: Path) -> None:
 def test_a_recording_failure_is_a_warning(workspace: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     accept(_proposal(workspace, "fails"))
     _answered(workspace, "fails")
-    real = handoff_module.record_answer
 
-    def record_answer(ws: Workspace, unit: object, request: str, *args: object, **kwargs: object) -> object:
-        if request == "gate:direction":
-            raise OSError("disk full")
-        return real(ws, unit, request, *args, **kwargs)  # type: ignore[arg-type]
+    def write_decision(*args: object, **kwargs: object) -> object:
+        raise OSError("disk full")
 
-    monkeypatch.setattr(handoff_module, "record_answer", record_answer)
+    monkeypatch.setattr(handoff_module, "write_decision", write_decision)
     result = handoff_proposal(workspace, "fails", today=TODAY)
 
-    assert [gate.request for gate in result.carried_gates] == ["gate:intent"]
-    assert [record["request"] for record in _spec_records(workspace, "fails")] == ["gate:intent"]
+    assert [gate.request for gate in result.carried_gates] == ["gate:plan-intent"]
+    assert [record["request"] for record in _spec_records(workspace, "fails")] == ["gate:plan-intent"]
     [notice] = result.notices
     assert notice.code == "SPEC_PROPOSAL_GATE_NOT_CARRIED"
-    assert "gate:direction" in notice.message and "disk full" in notice.details
+    assert "gate:plan-accept" in notice.message and "disk full" in notice.details
     spec = f"specs/{MONTH}/{STAMP}-fails"
-    assert notice.fix is not None
-    assert f"devkit workflow answer --unit {spec} --request gate:direction --action accept --by user" in notice.fix
+    assert notice.fix is not None and f"devkit workflow next --unit {spec}" in notice.fix
     assert not (workspace / UNIT.format(slug="fails")).exists()

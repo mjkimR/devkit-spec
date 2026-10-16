@@ -63,8 +63,8 @@ first; request decisions only beyond that scope. External reports are prepared a
 | `unknown` | Ownership review | Inspect the observed targets, propose repository or upstream destinations, and keep unresolved items open |
 
 An asset developed in this repository has `scope: repo` even when shipped as an upstream tool to other projects; promote it locally: a defect with clear
-expected behavior becomes a spec (the `direct-delivery` workflow, or `bugfix` when reproduction matters), a small
-wording fix an `s-lane` change, an open design question a proposal (`uv run devkit spec proposal new <slug>`).
+expected behavior becomes a `bugfix` task (`sdd-session-bugfix`, or `sdd-spec-bugfix` when its behavior must be written
+down), a small wording fix a `session` change, an open design question a draft proposal (`uv run devkit spec proposal new <slug>`).
 
 ## Step 4: Update status and seal
 
@@ -78,7 +78,7 @@ disposition line to its body so the destination is traceable:
 ```
 
 The destination is the spec, proposal, decision, rule or playbook ID that received the item, the changed file path
-for an `s-lane` fix, or the report location for a forward. A dismissal states its reason in the same line.
+for a `session` fix, or the report location for a forward. A dismissal states its reason in the same line.
 
 ## Completion conditions
 

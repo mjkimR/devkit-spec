@@ -7,7 +7,8 @@ approvals and stage switches in ``[workflow.approvals]`` and
 
 ```toml
 [tool.spec]
-worktree = "auto"   # "auto": a task worktree when the task needs one; "required": route 2 and above always
+worktree = "auto"           # direct mode only: "auto" a separate worktree when the activity needs one; "required" always
+depth_escalation = "auto"   # "auto": the Host raises planning-depth on its own; "ask": the user confirms each raise
 
 [[tool.spec.namespaces]]   # a package of a monorepo with its own Living Spec under docs/packages/<name>/
 name = "api"
@@ -47,6 +48,11 @@ SCOPE_NAMESPACE = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
 SCOPE_TIMEOUT_DEFAULT = 10
 SCOPE_TIMEOUT_RANGE = (1, 300)
 WORKTREE_LEVELS = ("auto", "required")
+DEPTH_ESCALATION = ("auto", "ask")
+FIXED_GATES = ("plan-intent", "plan-accept")
+"""Gates a person always decides: no ``[workflow.approvals]`` key may delegate them (``exception`` is a stage)."""
+INTEGRATION_GATE = "dev-integration"
+INTEGRATION_POLICIES = ("ask", "auto")
 FEEDBACK_CHOICES = {
     "capture": ("observed", "requested-only"),
     "coverage": ("repo", "repo-and-upstream"),
@@ -93,6 +99,7 @@ class FeedbackConfig:
 @dataclass(frozen=True)
 class SpecConfig:
     worktree: str = "auto"
+    depth_escalation: str = "auto"
     namespaces: tuple[Namespace, ...] = field(default=())
     scope: ScopeConfig = field(default=ScopeConfig())
     feedback: FeedbackConfig = field(default=FeedbackConfig())
@@ -108,8 +115,16 @@ def template() -> list[TemplateTable]:
                 TemplateKey(
                     "worktree",
                     defaults.worktree,
-                    "auto: a task worktree when the task needs one; required: route 2 and above and bugfix always",
+                    "direct mode only: whether a spec or proposal activity branch runs in a separate worktree; auto:"
+                    " when the activity needs one; required: always (local-orchestrated always uses one)",
                     kind=" | ".join(f'"{level}"' for level in WORKTREE_LEVELS),
+                ),
+                TemplateKey(
+                    "depth_escalation",
+                    defaults.depth_escalation,
+                    "auto: the Host raises planning-depth on its own judgment; ask: the user confirms each raise;"
+                    " workers never raise it",
+                    kind=" | ".join(f'"{value}"' for value in DEPTH_ESCALATION),
                 ),
             ),
         ),
@@ -196,18 +211,42 @@ def read_spec_config(root: Path) -> SpecConfig:
     table = tool.get(TABLE, {}) if isinstance(tool, dict) else None
     if not isinstance(table, dict):
         raise SpecConfigError("config tool.spec: expected a table")
-    unknown = sorted(set(table) - {"worktree", "namespaces", "scope", "feedback"})
+    unknown = sorted(set(table) - {"worktree", "depth_escalation", "namespaces", "scope", "feedback"})
     if unknown:
         raise SpecConfigError(f"config tool.spec: unknown keys: {', '.join(unknown)}")
     worktree = table.get("worktree", "auto")
     if worktree not in WORKTREE_LEVELS:
         raise SpecConfigError(f'config tool.spec.worktree: expected "auto" or "required", got {worktree!r}')
+    escalation = table.get("depth_escalation", "auto")
+    if escalation not in DEPTH_ESCALATION:
+        raise SpecConfigError(f'config tool.spec.depth_escalation: expected "auto" or "ask", got {escalation!r}')
     return SpecConfig(
         worktree=worktree,
+        depth_escalation=escalation,
         namespaces=_namespaces(table.get("namespaces", [])),
         scope=_scope(table.get("scope", {})),
         feedback=_feedback(table.get("feedback", {})),
     )
+
+
+def check_approvals(approvals: dict[str, str]) -> None:
+    """Refuse ``[workflow.approvals]`` entries the spec workflows do not accept: a key for a ``FIXED_GATES`` gate
+    (always a person's decision) and ``dev-integration = "off"`` (it would skip the integration stage).
+
+    devkit's engine takes any gate name with ``ask``, ``auto`` or ``off``; this is devkit-spec's narrower policy.
+    """
+    fixed = sorted(gate for gate in approvals if gate in FIXED_GATES)
+    if fixed:
+        raise SpecConfigError(
+            f"config workflow.approvals: {', '.join(fixed)} is always decided by a person and takes no policy key",
+            fix=f"Remove {', '.join(fixed)} from [workflow.approvals] in .devkit/config.toml",
+        )
+    integration = approvals.get(INTEGRATION_GATE, "ask")
+    if integration not in INTEGRATION_POLICIES:
+        raise SpecConfigError(
+            f'config workflow.approvals.{INTEGRATION_GATE}: expected "ask" or "auto", got {integration!r}',
+            fix=f'Set {INTEGRATION_GATE} = "ask" or "auto" in [workflow.approvals] of .devkit/config.toml',
+        )
 
 
 def _feedback(value: object) -> FeedbackConfig:

@@ -59,11 +59,11 @@ Run `devkit spec list feedback --status open --where severity=critical` for the 
 
 Match the diagnostic findings to one of the following states. Stage names, entry/exit checks and human gates come from the bound workflow (`devkit workflow show --unit <dir>`); this matrix only maps repository evidence onto those stages.
 
-Map `[STAGE]` ids onto these rows with the stage table in [workflow signals](references/workflow-signals.md); the `intent` and `direction` gates are presented as it describes.
+Map `[STAGE]` ids onto these rows with the stage table in [workflow signals](references/workflow-signals.md); the `plan-intent`, `plan-accept` and `dev-integration` gates are presented as it describes.
 
 | Diagnosed State | Status Criteria | Recommended Next Action | Associated Skill / Tool |
 | :--- | :--- | :--- | :--- |
-| **Shaping (Proposal Hand-off)** | Proposal is `status: accepted`, or its direction was chosen and `next` reports it complete | Run handoff to move the proposal into `specs/`, then the post-handoff link check (§3.1) | `devkit spec proposal handoff <slug>` |
+| **Shaping (Proposal Hand-off)** | Proposal is `status: accepted` (`plan-accept` given) and `next` reports it complete | Run handoff to move the proposal into `specs/`, then the post-handoff link check (§3.1) | `devkit spec proposal handoff <slug>` |
 | **Shaping (Proposal Incubation)** | Proposal is in `draft` or `reviewing` | Review hypothesis, add research to `materials/`, or draft a PADR; for a spike, delegate `scout`/`challenger` | `devkit spec proposal padr <slug> <title>`, `spec-delegate` |
 | **Specification (Drafting)** | Spec folder exists, `spec.md` incomplete | Complete user stories, non-goals, and Given/When/Then criteria | `spec-specify` |
 | **Specification (Planning)** | `spec.md` approved, `plan.md` incomplete | Review architecture invariants and define component contracts | `spec-plan` |
@@ -72,8 +72,8 @@ Map `[STAGE]` ids onto these rows with the stage table in [workflow signals](ref
 | **Building (Verification Review)** | All tasks in `tasks.md` checked | Inspect git diff, check for stray files, verify boundary isolation | `spec-review` |
 | **Reconcile (Living Spec Sync)** | Review passed, pending docs sync | Reconcile into `docs/capabilities/`, `docs/stories/`, and write `reconcile.md` | `spec-sync` |
 | **Collect feedback (Sweep)** | Reconcile done, no `envelopes/feedback-NN.yaml` with `checks.swept` passing (stage not `[SKIPPED]`) | Sweep the session for unrecorded observations, write the files and the sweep envelope | `spec-feedback` |
-| **Awaiting G3 (Integration Approval)** | Review and reconcile done, final change report not yet approved | Present the final change report and wait for the user's OK (asserted with `--given integration`, not recorded) or PR ready state | `spec` |
-| **Integration (Post-Approval)** | G3 held (the user's OK, PR ready state, or `source=policy`), not yet integrated with base or merged | Integrate base, re-verify changed parts, confirm reconcile, run `devkit rules check --ci --base <ref>`, report | `spec-integrate` |
+| **Awaiting `dev-integration` (Integration Approval)** | Review and reconcile done, final change report not yet approved | Present the final change report and wait for the user's OK (asserted with `--given dev-integration`, not recorded) or PR ready state | `spec` |
+| **Integration (Post-Approval)** | `dev-integration` held (the user's OK, PR ready state, or `source=policy`), not yet integrated with base or merged | Integrate base, re-verify changed parts, confirm reconcile, run `devkit rules check --ci --base <ref>`, report | `spec-integrate` |
 | **Idle / Clean Working Tree** | No active specs, working tree clean | Ready for new feature request, bugfix, or proposal brainstorming | `/spec <intent>` |
 
 ### 3.1 Post-handoff link check

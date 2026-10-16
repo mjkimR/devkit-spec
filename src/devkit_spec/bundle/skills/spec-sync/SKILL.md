@@ -47,9 +47,9 @@ Use this skill immediately after `spec-review` passes and implementation is comp
 ---
 
 ### Principle 5: Draft Delegation and Integration-Stage Confirmation
-- Step 1 and Step 2 (impact assessment and docs draft) MAY be delegated to the `reconciler` role in an isolated context (its role contract, invoked through `spec-delegate`). The Reconciler writes only inside the injected docs scope and this feature's `reconcile.md`, never source or tests, and never stages or commits. The Developer rejects any draft whose diff touches a declared source or test path.
+- The implementer writes and resolves the reflection and `reconcile.md` at every `activity-effort`. Verification: `low` your own check; `medium` the `reviewer` checks the written result; `high` a separate read-only `reconciler` verifies it (`spec-delegate`). You fix what it finds. A `session` task has none: a needed Living Spec change raises it to `spec`.
 - Implementation-versus-contract mismatches are returned for a code fix (the stage returns to `build-verify`, or `fix-verify` for a bugfix), not endorsed by documentation or waived.
-- Confirmation (`reconcile.md` `status: resolved`, spec `status: completed`) is done by the Developer or the integration executor (`spec-integrate`). Resolve before the `integration` gate (G3). Intermediate commits do not complete this stage; the final check is `devkit rules check --ci --base <ref>`.
+- Confirmation (`reconcile.md` `status: resolved`, spec `status: completed`) is done by the Developer or the integration executor (`spec-integrate`). Resolve before the `dev-integration` gate. Intermediate commits do not complete this stage; the final check is `devkit rules check --ci --base <ref>`.
 
 ## 3. Reconciliation Workflow
 

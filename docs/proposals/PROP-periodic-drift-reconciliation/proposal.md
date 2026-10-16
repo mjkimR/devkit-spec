@@ -12,9 +12,9 @@ boundaries:
     - capabilities/delivery/
   excludes:
     - docs/decisions/
-# handoff_workflow: bugfix            # workflow after handoff (default: direct-delivery)
-workflow: incubated-delivery
-workflow_hash: sha256:c6cf386f9eb37b061d626d4bc701dd4e01f43674666d160179f69da5c391463e
+task_kind: feature                    # feature | bugfix: the spec follows sdd-spec-<task_kind>
+workflow: sdd-proposal
+workflow_hash: sha256:79420190142b779136c39c7edcfd2aac42abf8c250f21bfffc46f8172777e1f9
 ---
 
 # [PROP-periodic-drift-reconciliation] Periodic spec-code drift check and user-driven reconciliation sweep

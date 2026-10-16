@@ -57,12 +57,12 @@ def test_new_json(workspace: Path) -> None:
 
 
 def test_new_binds_the_proposal_and_workflow_next_runs(workspace: Path) -> None:
-    write_workflow(workspace, "incubated-delivery", INCUBATED)
-    result = _proposal(workspace, "new", "bound", "--handoff-workflow", "bugfix")
+    write_workflow(workspace, "sdd-proposal", INCUBATED)
+    result = _proposal(workspace, "new", "bound", "--task-kind", "bugfix")
     assert result.exit_code == 0, result.output
     assert result.stdout.splitlines() == [
         "[PROPOSAL: PROP-bound path=docs/proposals/PROP-bound/proposal.md dir=docs/proposals/PROP-bound "
-        "target_docs=- workflow=incubated-delivery]",
+        "target_docs=- workflow=sdd-proposal]",
         "[NEXT_CMD: devkit workflow next --unit docs/proposals/PROP-bound]",
     ]
     assert result.stderr == ""
@@ -72,7 +72,7 @@ def test_new_binds_the_proposal_and_workflow_next_runs(workspace: Path) -> None:
     )
     assert result.exit_code == 0, result.output
     payload = json.loads(result.stdout)
-    assert payload["workflow"] == "incubated-delivery" and payload["bound"] is True, payload
+    assert payload["workflow"] == "sdd-proposal" and payload["bound"] is True, payload
 
 
 def test_handoff_refuses_an_unapproved_proposal(workspace: Path) -> None:
@@ -85,7 +85,7 @@ def test_handoff_refuses_an_unapproved_proposal(workspace: Path) -> None:
 
 
 def test_handoff_text(workspace: Path, write: Write) -> None:
-    write_workflow(workspace, "direct-delivery")
+    write_workflow(workspace, "sdd-spec-feature")
     _proposal(workspace, "new", "shipit")
     _proposal(workspace, "padr", "shipit", "Pick")
     write("docs/proposals/PROP-shipit/materials/m.md", "[up](../proposal.md)\n")
@@ -98,7 +98,7 @@ def test_handoff_text(workspace: Path, write: Write) -> None:
     lines = result.stdout.splitlines()
     head = lines[0]
     assert head.startswith("[HANDOFF: PROP-shipit spec=SPEC-shipit dir=specs/") and head.endswith(
-        " workflow=direct-delivery]"
+        " workflow=sdd-spec-feature]"
     )
     spec_dir = head.split(" dir=")[1].split(" ")[0]
     month, bundle = spec_dir.split("/")[1:]
@@ -120,17 +120,24 @@ def test_handoff_text(workspace: Path, write: Write) -> None:
     assert not (workspace / "docs/proposals/PROP-shipit").exists()
 
 
+def _accept(workspace: Path, slug: str) -> None:
+    proposal = workspace / f"docs/proposals/PROP-{slug}/proposal.md"
+    proposal.write_text(proposal.read_text(encoding="utf-8").replace("status: draft", "status: accepted", 1), "utf-8")
+
+
 def test_handoff_strict_fails_on_the_unresolved_link_warning(workspace: Path, write: Write) -> None:
     _proposal(workspace, "new", "strict")
+    _accept(workspace, "strict")
     write("docs/stories/US-a.md", "[gone](../proposals/PROP-strict/decisions/)\n")
-    result = _proposal(workspace, "handoff", "strict", "--direction-chosen", "--strict")
+    result = _proposal(workspace, "handoff", "strict", "--strict")
     assert result.exit_code == 1
     assert result.stdout.startswith("[HANDOFF: PROP-strict ")
 
 
 def test_handoff_json(workspace: Path) -> None:
     _proposal(workspace, "new", "jsonic")
-    result = _proposal(workspace, "handoff", "jsonic", "--direction-chosen", "--format", "json")
+    _accept(workspace, "jsonic")
+    result = _proposal(workspace, "handoff", "jsonic", "--format", "json")
     assert result.exit_code == 0 and result.stderr == ""
     payload = json.loads(result.stdout)
     assert payload["proposal"] == "PROP-jsonic" and payload["spec"] == "SPEC-jsonic"
@@ -141,25 +148,25 @@ def test_handoff_json(workspace: Path) -> None:
 
 
 def test_handoff_reports_dropped_records_and_carried_gates(workspace: Path) -> None:
-    write_workflow(workspace, "incubated-delivery", INCUBATED)
-    write_workflow(workspace, "direct-delivery", GATED.format(id="direct-delivery", middle=""))
+    write_workflow(workspace, "sdd-proposal", INCUBATED)
+    write_workflow(workspace, "sdd-spec-feature", GATED.format(id="sdd-spec-feature", middle=""))
     _proposal(workspace, "new", "gated")
     unit = "docs/proposals/PROP-gated"
     (workspace / unit / "decisions").mkdir(exist_ok=True)
-    (workspace / unit / "decisions/01-gate-direction.yaml").write_text(
-        "request: gate:direction\nkind: approve\naction: accept\nworkflow: incubated-delivery\n"
+    (workspace / unit / "decisions/01-gate-plan-accept.yaml").write_text(
+        "request: gate:plan-accept\nkind: approve\naction: accept\nworkflow: sdd-proposal\n"
         "stage: direction-handoff\nby: user\nat: '2026-10-13T00:00:00Z'\n",
         encoding="utf-8",
     )
+    _accept(workspace, "gated")
 
-    result = _proposal(workspace, "handoff", "gated", "--direction-chosen")
+    result = _proposal(workspace, "handoff", "gated")
 
     assert result.exit_code == 0, result.output
     lines = result.stdout.splitlines()
     spec_dir = lines[0].split(" dir=")[1].split(" ")[0]
-    assert lines[1:4] == [
-        f"[DROPPED_RECORD: {unit}/decisions/01-gate-direction.yaml]",
-        f"[CARRIED_GATE: gate:intent decision={spec_dir}/decisions/01-gate-intent.yaml]",
-        f"[CARRIED_GATE: gate:direction decision={spec_dir}/decisions/02-gate-direction.yaml]",
+    assert lines[1:3] == [
+        f"[DROPPED_RECORD: {unit}/decisions/01-gate-plan-accept.yaml]",
+        f"[CARRIED_GATE: gate:plan-accept decision={spec_dir}/decisions/01-gate-plan-accept.yaml]",
     ]
     assert result.stderr == ""

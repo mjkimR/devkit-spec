@@ -51,7 +51,7 @@ Work through this attack list against `relevant_files`. A referenced document ID
 
 ## Return
 
-The fields of a devkit envelope of kind `challenger`, as YAML with findings as a list; do not write files: `status` (`completed`, `needs_input` or `failed`), `summary`, and `findings` where each finding has `issue`, `evidence`, `failure_condition` (required) and `suggested_action`, which carries the simpler alternative when there is one. A choice only the human can make is a finding whose `suggested_action` starts with `Decision needed:` (decided at the `direction` gate, G2). `assumptions` list what the critique took as given; `unverified_areas` list claims that could not be checked against the repository.
+The fields of a devkit envelope of kind `challenger`, as YAML with findings as a list; do not write files: `status` (`completed`, `needs_input` or `failed`), `summary`, and `findings` where each finding has `issue`, `evidence`, `failure_condition` (required) and `suggested_action`, which carries the simpler alternative when there is one. A choice only the human can make is a finding whose `suggested_action` starts with `Decision needed:` (decided at `plan-accept`). `assumptions` list what the critique took as given; `unverified_areas` list claims that could not be checked against the repository.
 
 ## Write boundaries
 

@@ -6,9 +6,9 @@ An incubation space to propose and mature new features, technical spikes, or arc
 
 ## 1. Zero-Clutter Lifecycle Principles
 
-- **Draft & Review (`draft` / `reviewing`)**: Scaffold the bundle using `devkit spec proposal new <slug>` and define the core hypothesis and spike questions in `proposal.md`. Isolate preliminary decisions into `decisions/PADR-{slug}.md` and research into `materials/`.
-- **Graduation (`accepted`)**: `devkit spec proposal handoff <slug>` creates the execution specification at `specs/{YYYY-MM}/{YYYYMMDD}-{slug}/` bound to the proposal's `handoff_workflow` (default `direct-delivery`), promotes PADRs into `docs/decisions/`, moves `materials/` and any other bundle file (such as a `notes.md`) into `docs/materials/`, copies `target-docs.md` (if present) to the spec directory, rewrites Markdown links and ID references pointing into the bundle, and removes the bundle directory. Follow up the reported unresolved links (`spec-next` skill).
-- **Rejection (`rejected`)**: Record a brief rejection ADR in `docs/decisions/` and delete the bundle directory.
+- **Draft & Review (`draft` / `reviewing`)**: In Backlog, scaffold the bundle using `devkit spec proposal new <slug>` (`--task-kind bugfix` for a defect) and define the core hypothesis and spike questions in `proposal.md`; the user's confirmation of the draft is `plan-intent`. Planning runs on its own `plan-<slug>` branch and collects its questions for the user in one round. Isolate preliminary decisions into `decisions/PADR-{slug}.md` and research into `materials/`.
+- **Graduation (`accepted`)**: the user's `plan-accept` sets `status: accepted`. Development then starts with `devkit spec proposal handoff <slug>`, which creates the execution specification at `specs/{YYYY-MM}/{YYYYMMDD}-{slug}/` bound to `sdd-spec-<task_kind>`, carries the `plan-intent` and `plan-accept` records, promotes PADRs into `docs/decisions/`, moves `materials/` and any other bundle file (such as a `notes.md`) into `docs/materials/`, copies `target-docs.md` (if present) to the spec directory, rewrites Markdown links and ID references pointing into the bundle, and removes the bundle directory. Follow up the reported unresolved links (`spec-next` skill).
+- **Rejection (`rejected`)**: Change only `status: rejected`, with the user's reason in the commit message. A later hygiene pass records the rejection ADR in `docs/decisions/` (referencing the proposal and the rejection commit) and deletes the bundle directory in the same commit.
 - Historical context and discussions are tracked via Git history. No `archive/` directories are maintained.
 
 ---
@@ -39,6 +39,9 @@ docs/proposals/PROP-{slug}/
       - capabilities/<area>/
     excludes:
       - template/
+  task_kind: feature                    # feature | bugfix: the spec follows sdd-spec-<task_kind>
+  # supersedes: PROP-<old-slug>         # close by supersede: the accepted proposal this draft replaces
+  # needs_decompose: true               # Backlog splits this draft before Planning starts
   ---
   ```
   - **`priority`**: Business/system significance (`critical` > `high` > `medium` > `low`).
@@ -58,7 +61,8 @@ Do not manually maintain catalog tables in README files. Active proposals are di
 devkit spec proposal new <slug>                        # Scaffold proposal bundle
 devkit spec proposal new <slug> --milestone "Phase 1"   # Scaffold with target milestone
 devkit spec proposal new <slug> --with-target-docs      # Scaffold with Living Spec target blueprint
-devkit spec proposal new <slug> --handoff-workflow bugfix  # A defect: hand off to the bugfix workflow
+devkit spec proposal new <slug> --task-kind bugfix     # A defect: the spec follows sdd-spec-bugfix
+devkit spec proposal new <slug> --needs-decompose      # Split in Backlog before Planning
 devkit spec proposal padr <slug> <title>                # Scaffold preliminary decision (PADR)
 devkit spec proposal padr <slug> <title> --slug <padr-slug>  # PADR slug other than the title's
 devkit spec list proposal                               # List proposals

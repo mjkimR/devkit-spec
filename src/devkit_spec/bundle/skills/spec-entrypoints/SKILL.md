@@ -32,7 +32,7 @@ Use this skill when a spec bundle has both `tasks.md` and `reconcile.md` (normal
 1. `devkit spec entrypoints derive --all` aggregates every `completed` and `in-progress` bundle; each path carries its spec count, `src/a.py(2)` (`--format json` for the spec IDs). Add `--status` to change the filter.
 2. Choose a threshold from the distribution: `--min-count 2` keeps pairs two or more specs agree on and removes most one-off joins. Inspect the remaining `new=` paths per document; `--format json` helps when the list is long.
 3. Apply per document so each decision is explicit: `devkit spec entrypoints derive --all --min-count <n> --apply --target <id> --code <path> ...`, adding `--exclude` for hub paths. Directories and files under them collapse to the directory. Then run `devkit rules check`.
-4. Report which documents were filled and which stayed empty with the reason (`missing-path`, no candidates, candidates rejected in review). Backfill of many documents is a Living Spec change: record it through the current bundle's `reconcile.md` or an S-Lane report.
+4. Report which documents were filled and which stayed empty with the reason (`missing-path`, no candidates, candidates rejected in review). Backfill of many documents is a Living Spec change: record it through the current bundle's `reconcile.md` or the report of a `session` task.
 
 ---
 
@@ -40,5 +40,5 @@ Use this skill when a spec bundle has both `tasks.md` and `reconcile.md` (normal
 
 - [ ] Every written path exists and `devkit rules check` passes.
 - [ ] Each written document was reviewed, not applied blindly from the full candidate list.
-- [ ] Documents with changed `entrypoints` are reconcile targets (or reported in S-Lane).
+- [ ] Documents with changed `entrypoints` are reconcile targets (or reported by a `session` task).
 - [ ] Rejected or deferred candidates are stated in the report when they matter later.

@@ -14,6 +14,8 @@ from proposals.support import INCUBATED, MONTH, STAMP, TODAY, WORKFLOW, accept, 
 
 from devkit_spec.errors import (
     ProposalHandoffError,
+    ProposalInvalidError,
+    ProposalNeedsDecomposeError,
     ProposalNotApprovedError,
     ProposalNotFoundError,
     ProposalSlugConflictError,
@@ -113,14 +115,23 @@ def test_without_target_docs(workspace: Path) -> None:
     assert not (workspace / "docs/proposals/PROP-lean-idea").exists()
 
 
-def test_direction_chosen_approves_a_draft_or_reviewing_proposal(workspace: Path) -> None:
-    _new(workspace, "chosen")
-    result = handoff_proposal(workspace, "chosen", direction_chosen=True, today=TODAY)
-    assert result.spec == "SPEC-chosen"
-    proposal = _new(workspace, "rejected")
-    proposal.write_text(proposal.read_text(encoding="utf-8").replace("status: draft", "status: rejected"), "utf-8")
-    with pytest.raises(ProposalNotApprovedError):
-        handoff_proposal(workspace, "rejected", direction_chosen=True, today=TODAY)
+@pytest.mark.parametrize("status", ["draft", "reviewing", "rejected"])
+def test_only_an_accepted_proposal_is_handed_off(workspace: Path, status: str) -> None:
+    proposal = _new(workspace, "pending")
+    proposal.write_text(proposal.read_text(encoding="utf-8").replace("status: draft", f"status: {status}"), "utf-8")
+    with pytest.raises(ProposalNotApprovedError) as raised:
+        handoff_proposal(workspace, "pending", today=TODAY)
+    assert "plan-accept" in raised.value.message
+    assert proposal.is_file() and not (workspace / "specs").exists()
+
+
+def test_a_proposal_marked_for_decomposition_is_never_handed_off(workspace: Path) -> None:
+    proposal = _new(workspace, "large")
+    accept(proposal, "\nneeds_decompose: true")
+    with pytest.raises(ProposalNeedsDecomposeError) as raised:
+        handoff_proposal(workspace, "large", today=TODAY)
+    assert raised.value.code == "SPEC_PROPOSAL_NEEDS_DECOMPOSE"
+    assert proposal.is_file() and not (workspace / "specs").exists()
 
 
 def test_unknown_proposal(workspace: Path) -> None:
@@ -444,7 +455,7 @@ def _frontmatter_keys(text: str) -> list[str]:
 
 
 def test_marks_skeletons(workspace: Path) -> None:
-    write_workflow(workspace, "direct-delivery")
+    write_workflow(workspace, "sdd-spec-feature")
     accept(_new(workspace, "marked"))
     result = handoff_proposal(workspace, "marked", today=TODAY)
     target = spec_dir(workspace, "marked")
@@ -455,25 +466,25 @@ def test_marks_skeletons(workspace: Path) -> None:
         assert lines[closing + 1] == SKELETON_MARKER, name
         assert text.count(SKELETON_MARKER) == 1, name
     spec = (target / "spec.md").read_text(encoding="utf-8")
-    assert "\nworkflow: direct-delivery\nworkflow_hash: sha256:" in spec
+    assert "\nworkflow: sdd-spec-feature\nworkflow_hash: sha256:" in spec
     assert "## 3. Non-Goals\n\n1. **Scope Excluded**: <what this change will not do>\n" in spec
     assert "### [AC-01] <scenario>\n- **Given** <precondition>\n" in spec
     assert _frontmatter_keys((target / "tasks.md").read_text(encoding="utf-8")) == ["id", "spec", "plan"]
     assert _frontmatter_keys((target / "plan.md").read_text(encoding="utf-8")) == ["id", "spec"]
-    assert result.workflow == "direct-delivery"
+    assert result.workflow == "sdd-spec-feature"
     assert result.next_command == f"devkit workflow next --unit {SPEC}-marked"
 
 
 def test_binds_the_proposal_workflow(workspace: Path) -> None:
-    write_workflow(workspace, "direct-delivery")
-    write_workflow(workspace, "bugfix")
-    accept(_new(workspace, "defect"), "\nhandoff_workflow: bugfix")
+    write_workflow(workspace, "sdd-spec-feature")
+    write_workflow(workspace, "sdd-spec-bugfix")
+    accept(_new(workspace, "defect"), "\ntask_kind: bugfix")
     result = handoff_proposal(workspace, "defect", today=TODAY)
     spec = (spec_dir(workspace, "defect") / "spec.md").read_text(encoding="utf-8")
-    assert "\nworkflow: bugfix\nworkflow_hash: sha256:" in spec
+    assert "\nworkflow: sdd-spec-bugfix\nworkflow_hash: sha256:" in spec
     assert spec.startswith("---\nid: SPEC-defect\n")
-    assert parse(spec).data["kind"] == "bugfix"  # type: ignore[index]
-    # bugfix writes plan.md and tasks.md later; the scope they would carry lands in spec.md's notes.
+    assert "kind" not in parse(spec).data  # type: ignore[operator]  # the bound workflow is the task-kind
+    # sdd-spec-bugfix writes plan.md and tasks.md later; the scope they would carry lands in spec.md's notes.
     assert sorted(path.name for path in spec_dir(workspace, "defect").iterdir()) == ["spec.md"]
     assert (
         "## 5. Carried Proposal Notes" in spec
@@ -482,16 +493,16 @@ def test_binds_the_proposal_workflow(workspace: Path) -> None:
         in spec
     )
     assert "### [AC-01] <scenario>" in spec
-    assert result.workflow == "bugfix" and "SPEC_PROPOSAL_UNBOUND" not in _codes(result)
+    assert result.workflow == "sdd-spec-bugfix" and "SPEC_PROPOSAL_UNBOUND" not in _codes(result)
 
 
-@pytest.mark.parametrize("definition", [None, WORKFLOW.format(id="bugfix").replace("schema_version: 1", "")])
+@pytest.mark.parametrize("definition", [None, WORKFLOW.format(id="sdd-spec-bugfix").replace("schema_version: 1", "")])
 def test_an_unbindable_proposal_workflow_writes_nothing(workspace: Path, definition: str | None) -> None:
-    write_workflow(workspace, "direct-delivery")
+    write_workflow(workspace, "sdd-spec-feature")
     if definition is not None:
-        write_workflow(workspace, "bugfix", definition)
+        write_workflow(workspace, "sdd-spec-bugfix", definition)
     proposal = _new(workspace, "defect")
-    accept(proposal, "\nhandoff_workflow: bugfix")
+    accept(proposal, "\ntask_kind: bugfix")
     with pytest.raises(ProposalWorkflowError) as raised:
         handoff_proposal(workspace, "defect", today=TODAY)
     assert "bugfix" in raised.value.message
@@ -500,15 +511,15 @@ def test_an_unbindable_proposal_workflow_writes_nothing(workspace: Path, definit
 
 
 def test_the_proposal_units_own_binding_is_not_carried(workspace: Path) -> None:
-    write_workflow(workspace, "direct-delivery")
-    write_workflow(workspace, "incubated-delivery", INCUBATED)
+    write_workflow(workspace, "sdd-spec-feature")
+    write_workflow(workspace, "sdd-proposal", INCUBATED)
     proposal = _new(workspace, "unit")
-    assert "workflow: incubated-delivery" in proposal.read_text(encoding="utf-8")
+    assert "workflow: sdd-proposal" in proposal.read_text(encoding="utf-8")
     accept(proposal)
     result = handoff_proposal(workspace, "unit", today=TODAY)
-    assert result.workflow == "direct-delivery"
+    assert result.workflow == "sdd-spec-feature"
     spec = parse((spec_dir(workspace, "unit") / "spec.md").read_text(encoding="utf-8")).data
-    assert spec is not None and spec["workflow"] == "direct-delivery" and "kind" not in spec
+    assert spec is not None and spec["workflow"] == "sdd-spec-feature" and "kind" not in spec
 
 
 def test_without_the_default_workflow_the_spec_stays_unbound(workspace: Path) -> None:
@@ -581,7 +592,7 @@ def _fail_binding(error: Exception) -> Callable[..., None]:
 def test_any_failure_while_writing_is_rolled_back(
     workspace: Path, write: Write, monkeypatch: pytest.MonkeyPatch, error: Exception, raised_type: type[Exception]
 ) -> None:
-    write_workflow(workspace, "direct-delivery")
+    write_workflow(workspace, "sdd-spec-feature")
     proposal = _new(workspace, "bind")
     write("docs/proposals/PROP-bind/materials/a.md", "# a\n")
     accept(proposal)
@@ -594,7 +605,7 @@ def test_any_failure_while_writing_is_rolled_back(
     assert not (workspace / "specs" / MONTH).exists()
     assert proposal.is_file() and (proposal.parent / "materials/a.md").is_file()
     # Nothing is left behind, so the handoff can be rerun.
-    assert handoff_proposal(workspace, "bind", today=TODAY).workflow == "direct-delivery"
+    assert handoff_proposal(workspace, "bind", today=TODAY).workflow == "sdd-spec-feature"
 
 
 def _cross_device(bundle: Path) -> Callable[[object, object], None]:
@@ -661,14 +672,14 @@ def test_single_file_proposal(workspace: Path, write: Write) -> None:
     assert result.decisions == [] and result.materials is None
 
 
-def test_a_workflow_path_outside_the_discovered_definitions_writes_nothing(workspace: Path, write: Write) -> None:
-    write_workflow(workspace, "direct-delivery")
-    write("elsewhere/x.md", WORKFLOW.format(id="direct-delivery"))
-    proposal = _new(workspace, "moved")
-    accept(proposal, "\nhandoff_workflow: elsewhere/x.md")
-    with pytest.raises(ProposalWorkflowError) as raised:
-        handoff_proposal(workspace, "moved", today=TODAY)
-    assert any("WORKFLOW_NOT_BINDABLE" in detail for detail in raised.value.details)
+@pytest.mark.parametrize("value", ["refactor", "elsewhere/x.md", "[feature]"])
+def test_a_task_kind_outside_the_axis_writes_nothing(workspace: Path, value: str) -> None:
+    write_workflow(workspace, "sdd-spec-feature")
+    proposal = _new(workspace, "odd")
+    accept(proposal, f"\ntask_kind: {value}")
+    with pytest.raises(ProposalInvalidError) as raised:
+        handoff_proposal(workspace, "odd", today=TODAY)
+    assert "task_kind" in raised.value.message
     assert proposal.is_file() and not (workspace / "specs").exists()
 
 

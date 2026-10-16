@@ -56,9 +56,16 @@ directories and writes the guidance pointer into the root `AGENTS.md` block.
    `spec-pointer` fragment); everything else is reached through `devkit get-context spec` and the skills.
 3. **Managed files are read-only**: files under `.devkit/managed/` and projected agent files are never edited;
    project changes go through `devkit override` or the project's own bundle.
-4. **Routing**: the `spec` skill MUST choose the route by uncertainty, contract impact and risk, after reading
-   `devkit spec policy`, and drive one workflow per route (`CAP-DLV-delivery-workflows`). Route 2 and above write
-   `spec.md`, `plan.md` and `tasks.md` before production code. Explicit user instructions take precedence.
+4. **Classification**: the `spec` skill MUST classify work on `task-kind`, then `planning-depth`, then per activity
+   the mode and `activity-effort`, after reading `devkit spec policy`, propose the classification for the user to
+   confirm at `plan-intent`, and drive the one workflow `sdd-<planning-depth>[-<task-kind>]`
+   (`CAP-DLV-delivery-workflows`). `planning-depth` follows what must be settled before implementation, not size.
+   Unit depths write `spec.md`, `plan.md` and `tasks.md` before production code; a `session` task writes no Unit,
+   envelope, gate record file or reconcile document. The Host raises the depth on its own judgment (`[tool.spec]
+   depth_escalation = "ask"`: after the user's confirmation), never lowers it, and a `session` → `spec` raise keeps
+   the work by adding a spec Unit; Development never returns to Planning, and a wrong direction is a close (depth
+   escalation, supersede or abandon) under a new slug. The mode is chosen per activity: `direct` by default,
+   `local-orchestrated` and `cloud-pr` only on the user's instruction. Explicit user instructions take precedence.
 5. **Progressive disclosure**: a skill loads only the instructions and references of the current phase; a reference
    names the moment to read it ("Read this before ...").
 6. **No session hijacking**: agents MUST NOT unilaterally terminate the user's session or stop active work without
@@ -90,8 +97,8 @@ A project opts out of the bundle with `[presets] spec = false` in `.devkit/confi
 | `guidance` | `spec-pointer` |
 | `rule` | `document-reference`, `id-convention`, `spec-format`, `traceability-link`, `task-coverage`, `spec-lifecycle`, `reconcile-contract`, `document-summary`, `code-entrypoints` (`CAP-GOV-spec-rules`) |
 | `skill` | the 13 skills of 4.4 |
-| `workflow` | `s-lane`, `direct-delivery`, `bugfix`, `incubated-delivery` |
-| `subagent` | `challenger`, `reconciler`, `reviewer`, `scout`, `worker` |
+| `workflow` | `sdd-session-feature`, `sdd-session-bugfix`, `sdd-spec-feature`, `sdd-spec-bugfix`, `sdd-proposal` |
+| `subagent` | `challenger`, `reconciler`, `reviewer`, `scout`, `planning-worker`, `development-worker` |
 | `playbook` | `brownfield-adoption`, `feedback-hygiene` |
 | `document` | `templates`; `docs-skeleton` (`seeded = true`, `target = "docs"`) |
 
@@ -105,10 +112,12 @@ The constitution's sections:
 2. **Living Spec and Scope**: `docs/` holds the current contract; feature specs are `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/`;
    namespaces under `docs/packages/<name>/`; English `summary`; references by full ID; Non-Goals and
    `_Boundary:` are the expected scope.
-3. **Routes and Workflows**: Route 1 S-Lane (`s-lane`), Route 2 direct delivery (`direct-delivery`, or `bugfix`),
-   Routes 3 and 4 incubated (`incubated-delivery` until handoff); gate policy read through `devkit spec policy`.
+3. **Classification and Workflows**: the three axes, the five workflows, the gates `plan-intent`, `plan-accept` and
+   `dev-integration`, no Development direction gate, and the modes per activity; policy read through
+   `devkit spec policy`.
 4. **Verification and Completion**: compare diff, requirements, check results and Living Spec impact before
-   reporting completion; formal specs keep a resolved `reconcile.md`.
+   reporting completion; spec Units keep a resolved `reconcile.md`, a `session` task reports in its final response
+   or PR body.
 5. **Templates and Policy Files**: template paths, policy tables, managed files.
 
 ### 4.3 Instructions and Guidance Pointer
@@ -126,16 +135,16 @@ Living Spec and `specs/` holds feature specs.
 
 | Skill | Purpose | devkit-spec commands it runs |
 | --- | --- | --- |
-| `spec` | Entry router: classify intent, choose the route, drive the workflow; Tier 2 routes operational requests to playbooks. | `policy`, `new`, `proposal new`, `proposal handoff` |
+| `spec` | Entry router: classify the work, run Backlog and inline Planning, raise the depth and close, drive the workflow; Tier 2 routes operational requests to playbooks. | `policy`, `new`, `proposal new`, `proposal handoff` |
 | `spec-next` | Orientation: diagnose the stage of work under way and the next action. | `policy`, `list spec\|proposal\|feedback`, `proposal padr`, `proposal handoff` |
 | `spec-specify` | Write `spec.md` (feature or bugfix reference); creates the bundle with `devkit spec new`. | `new`, `list`, `refs`, `search`, `policy` |
 | `spec-plan` | Write `plan.md`: design, interfaces, verification plan. | `list`, `refs`, `search` |
 | `spec-tasks` | Write `tasks.md` with `_Boundary:` and `_Requirements:`. | `list spec`, `scope update` |
 | `spec-review` | Verify the change against the spec, the diff and the checks before completion. | |
 | `spec-sync` | Reconcile the change into the Living Spec and resolve `reconcile.md`. | `list`, `refs`, `search`, `proposal new`, `scope update` |
-| `spec-integrate` | Integrate after G3: conflicts, re-verification, reconcile confirmation, cumulative check, cleanup. | `policy`, `scope sweep`, `proposal prune` |
-| `spec-delegate` | Delegate a stage to a role contract and record its envelope. | |
-| `spec-orchestrate` | User-invoked orchestration mode: coordinate workers building independent units in their own worktrees; a plain instruction returns to direct mode. | `new`, `scope register`, `scope query`, `scope update` |
+| `spec-integrate` | Integrate after `dev-integration`: conflicts, re-verification, reconcile confirmation, cumulative check, cleanup. | `policy`, `scope sweep`, `proposal prune` |
+| `spec-delegate` | Delegate to a role contract as the `activity-effort` asks, record its envelope, validate a worker's committed range and handle its questions and problems. | |
+| `spec-orchestrate` | User-invoked `local-orchestrated` mode per activity: one-shot Planning and Development workers in their own worktrees, the Host keeping preparation, validation, questions, problems and integration; a plain instruction returns to `direct`. | `new`, `scope register`, `scope query`, `scope update` |
 | `spec-rule` | Author or tune a project rule for `devkit rules` in the project's own bundle. | |
 | `spec-feedback` | Record and sweep feedback observations (`specs/<YYYY-MM>/feedback/`). | `list feedback`, `resolve`, `policy` |
 | `spec-entrypoints` | Derive capability and story entrypoints from spec bundles, review and apply them. | `entrypoints derive`, `list capability` |
@@ -161,7 +170,7 @@ classification or frontmatter from them.
 
 - `capture=observed` records concrete observations autonomously; `requested-only` records only explicit requests.
   Enabled workflow sweeps under requested-only write a passing policy-skip envelope without recording observations;
-  S-Lane reports the skip without an envelope. Stages switched off produce no sweep envelope.
+  A `session` task reports the skip without an envelope. Stages switched off produce no sweep envelope.
 - Explicit observation and session sweep requests override autonomous capture, coverage and stage restrictions;
   requested sweeps write no envelope.
 - `detail=brief` keeps context, observed result or proposed change, assessment and Evidence; `standard` fills the

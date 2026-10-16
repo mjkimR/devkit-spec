@@ -56,8 +56,8 @@ Do not record: ordinary task defects (fix them), rejected non-goals, or ideas wi
 
 1. **Finish the current step first.** Do not leave the task mid-step to write feedback. Exception: for `question`, write at least the one-line decision right after you make it so the chosen interpretation is not lost.
 2. **Locate the destination** (paths and IDs are checked by `RULE-id-convention`):
-   - Formal spec work (Route 2 and above): `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/feedback/<name>.md`, in the spec bundle you are working in (no date prefix on the file).
-   - Work without a spec bundle (S-Lane, investigation or review): `specs/<YYYY-MM>/feedback/<YYYYMMDD>-<name>.md`, current month, today's date.
+   - Spec Unit work (`spec` and `proposal` depth): `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/feedback/<name>.md`, in the spec bundle you are working in (no date prefix on the file).
+   - Work without a spec bundle (`session` depth, investigation or review): `specs/<YYYY-MM>/feedback/<YYYYMMDD>-<name>.md`, current month, today's date.
    - Create the `feedback/` directory if it does not exist. Never write under `.devkit/` or `docs/`.
    - `<name>` is kebab-case and not used by another feedback file (`devkit spec resolve FB-<name>` finds none).
 3. **Write one file from the [feedback template](references/template.md).** Fill the frontmatter completely; set `id: FB-<name>` (no date) and the H1 `# [FB-<name>] <title>` (`devkit rules fix <file>` aligns both with the path). Keep the body to the section for your `kind` plus **Evidence** (quoted instruction text or a command-output excerpt). Use the configured detail level; brief and standard records should take about one minute. Detailed records prioritize useful evidence over that budget.
@@ -100,4 +100,4 @@ For a single observation, one line:
 
 ## 5. Sweep (stage or user request)
 
-For a workflow stage sweep (`collect-feedback`, or S-Lane's `report-session`) or an explicit user-requested session sweep, read the [sweep procedure](references/sweep.md). Requested sweeps override autonomous capture and coverage limits and ignore the stage switch (`[workflow.stages] collect-feedback = "off"`) and write no envelope. Deduplication covers the full open backlog: `devkit spec list feedback --status open --all-namespaces -n 0`.
+For a workflow stage sweep (`collect-feedback`, or the `report-session` stage of a `session` task) or an explicit user-requested session sweep, read the [sweep procedure](references/sweep.md). Requested sweeps override autonomous capture and coverage limits and ignore the stage switch (`[workflow.stages] collect-feedback = "off"`) and write no envelope. Deduplication covers the full open backlog: `devkit spec list feedback --status open --all-namespaces -n 0`.

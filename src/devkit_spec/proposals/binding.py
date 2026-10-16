@@ -15,12 +15,22 @@ from devkit.workflow import Binding, Workspace, schema_hash
 
 from devkit_spec.errors import ProposalWorkflowError, SpecError
 
-DEFAULT_WORKFLOW = "direct-delivery"
+TASK_KINDS = ("feature", "bugfix")
+"""The values of the ``task-kind`` axis: what the work does. It is not stored on a spec; the bound workflow says it."""
+DEFAULT_TASK_KIND = "feature"
+PROPOSAL_WORKFLOW = "sdd-proposal"
+"""The workflow a proposal bundle follows until its handoff (``planning-depth`` ``proposal``)."""
+
+
+def spec_workflow(task_kind: str) -> str:
+    """The workflow of a spec bundle of ``task_kind``: ``sdd-spec-<task-kind>`` (``planning-depth`` ``spec``)."""
+    return f"sdd-spec-{task_kind}"
+
+
+DEFAULT_WORKFLOW = spec_workflow(DEFAULT_TASK_KIND)
 """The workflow a spec bundle follows when nothing names another."""
-PROPOSAL_WORKFLOW = "incubated-delivery"
-"""The workflow a proposal bundle follows until its handoff."""
-BUGFIX_WORKFLOW = "bugfix"
-"""A spec bound to this workflow carries ``kind: bugfix`` (its exit checks ``frontmatter(spec.md kind bugfix)``)."""
+BUGFIX_WORKFLOW = spec_workflow("bugfix")
+"""A spec bound to this workflow starts with ``spec.md`` only: its ``plan-tasks`` stage writes the plan and tasks."""
 
 _log = logging.getLogger(__name__)
 

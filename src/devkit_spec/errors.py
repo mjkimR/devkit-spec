@@ -104,10 +104,23 @@ class ProposalNotApprovedError(SpecError):
 
     code = "SPEC_PROPOSAL_NOT_APPROVED"
     actor = Actor.USER
-    what_to_report = "The proposal's status, and that its handoff needs the user's approval of its direction"
+    what_to_report = "The proposal's status, and that its handoff needs the user's plan-accept of its direction"
     fix = (
-        "After the user approves, set status: accepted in the proposal, or rerun with --direction-chosen when the "
-        "user chose the direction of a draft or reviewing proposal"
+        "Ask the user for plan-accept; after the explicit acceptance, record gate:plan-accept, set status: accepted "
+        "in the proposal and commit, then rerun the handoff"
+    )
+
+
+class ProposalNeedsDecomposeError(SpecError):
+    """The proposal is marked ``needs_decompose: true`` (``INTERACTION``): Backlog splits it into new drafts; it is
+    never planned or handed off as it is."""
+
+    code = "SPEC_PROPOSAL_NEEDS_DECOMPOSE"
+    actor = Actor.USER
+    what_to_report = "That the proposal must be split in Backlog before Planning and handoff"
+    fix = (
+        "Split the proposal in Backlog into new draft proposals (or session or spec issues), delete the original "
+        "draft, and plan the new drafts"
     )
 
 
@@ -120,12 +133,13 @@ class ProposalWrongWorktreeError(SpecError):
 
 
 class ProposalWorkflowError(SpecError):
-    """The proposal's ``handoff_workflow`` cannot be resolved or does not validate (``MAINTENANCE``)."""
+    """The workflow of the proposal's ``task_kind`` (``sdd-spec-<task_kind>``) cannot be resolved or does not
+    validate (``MAINTENANCE``)."""
 
     code = "SPEC_PROPOSAL_WORKFLOW_INVALID"
     fix = (
-        "Set the proposal's handoff_workflow field to the id of a valid workflow (devkit workflow validate), or "
-        "remove the field to use direct-delivery, then rerun the handoff"
+        "Make the workflow sdd-spec-<task_kind> available and valid (devkit sync, devkit workflow validate), or "
+        "correct the proposal's task_kind, then rerun the handoff"
     )
 
 
@@ -154,12 +168,12 @@ class ProposalCleanupWarning(SpecError):
 
 
 class ProposalGateNotCarriedWarning(SpecError):
-    """The handoff completed but a gate of the spec could not be recorded from the user's direction answer of the
-    proposal (``WARNING``); the gates recorded before it stay."""
+    """The handoff completed but one of the proposal's approvals (``plan-intent``, ``plan-accept``) could not be
+    carried to the spec (``WARNING``); the gates recorded before it stay."""
 
     code = "SPEC_PROPOSAL_GATE_NOT_CARRIED"
     level = Level.WARNING
-    fix = "Record the gate in [TARGET] with devkit workflow answer --by user once the cause in [DETAIL] is resolved"
+    fix = "Once the cause in [DETAIL] is resolved, ask the user again for each gate devkit workflow next reports as waiting"
 
 
 class ProposalLinkUnresolvedWarning(SpecError):
@@ -227,7 +241,7 @@ class SpecWorkflowError(SpecError):
 
     code = "SPEC_WORKFLOW_INVALID"
     input_error = True
-    fix = "Pass the id of a valid workflow (devkit workflow validate), or omit --workflow for direct-delivery"
+    fix = "Pass the id of a valid workflow (devkit workflow validate), or omit --workflow for sdd-spec-feature"
 
 
 class SpecWriteError(SpecError):
@@ -239,7 +253,7 @@ class SpecWriteError(SpecError):
 
 
 class SpecUnboundNotice(SpecError):
-    """``devkit spec new``: the spec is not bound, ``direct-delivery`` is not available (``NOTICE``)."""
+    """``devkit spec new``: the spec is not bound, ``sdd-spec-feature`` is not available (``NOTICE``)."""
 
     code = "SPEC_UNBOUND"
     level = Level.NOTICE

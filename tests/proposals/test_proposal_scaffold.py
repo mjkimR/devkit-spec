@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from conftest import Write
 from devkit.advisory import AdvisoryError
+from devkit.core.errors import ArgumentError
 from devkit.core.frontmatter import parse
 from proposals.support import INCUBATED, TODAY, write_workflow
 
@@ -74,27 +75,45 @@ def test_create_proposal_bundle(workspace: Path) -> None:
     assert meta["target_area"] == "capabilities/governance/"
     assert meta["milestone"] == "Phase 1: Foundation"
     assert meta["boundaries"] == {"owns": ["capabilities/governance/"], "excludes": ["docs/decisions/"]}
-    assert "workflow" not in meta and "handoff_workflow" not in meta
-    assert "# handoff_workflow: bugfix" in (bundle / "proposal.md").read_text(encoding="utf-8")
+    assert "workflow" not in meta and meta["task_kind"] == "feature"
+    assert "supersedes" not in meta and "needs_decompose" not in meta
     target = (bundle / "target-docs.md").read_text(encoding="utf-8")
     assert "id: PROP-fast-engine-target\n" in target
     assert "proposal: PROP-fast-engine\n" in target
     assert "## 5. System Before & After Comparison (Before & After)" in target
 
 
-def test_create_proposal_writes_the_handoff_workflow_when_given(workspace: Path) -> None:
-    created = create_proposal(workspace, "fix", handoff_workflow="bugfix")
+def test_create_proposal_writes_the_task_kind_and_close_fields_when_given(workspace: Path) -> None:
+    created = create_proposal(workspace, "fix", task_kind="bugfix", supersedes="PROP-old-fix", needs_decompose=True)
     meta = parse((workspace / created.path).read_text(encoding="utf-8")).data
-    assert meta is not None and meta["handoff_workflow"] == "bugfix" and "workflow" not in meta
+    assert meta is not None and "workflow" not in meta
+    assert meta["task_kind"] == "bugfix" and meta["supersedes"] == "PROP-old-fix" and meta["needs_decompose"] is True
 
 
-def test_create_proposal_binds_incubated_delivery(workspace: Path) -> None:
-    write_workflow(workspace, "incubated-delivery", INCUBATED)
+@pytest.mark.parametrize(
+    ("fields", "flag"),
+    [
+        ({"task_kind": "refactor"}, "--task-kind"),
+        ({"supersedes": "old-fix"}, "--supersedes"),
+        ({"supersedes": "PROP-fix"}, "--supersedes"),
+    ],
+)
+def test_create_proposal_refuses_values_outside_the_contract(
+    workspace: Path, fields: dict[str, str], flag: str
+) -> None:
+    with pytest.raises(ArgumentError) as raised:
+        create_proposal(workspace, "fix", **fields)  # type: ignore[arg-type]
+    assert raised.value.target_files == (flag,)
+    assert not (workspace / "docs/proposals/PROP-fix").exists()
+
+
+def test_create_proposal_binds_sdd_proposal(workspace: Path) -> None:
+    write_workflow(workspace, "sdd-proposal", INCUBATED)
     created = create_proposal(workspace, "bound")
     meta = parse((workspace / created.path).read_text(encoding="utf-8")).data
-    assert meta is not None and meta["workflow"] == "incubated-delivery"
+    assert meta is not None and meta["workflow"] == "sdd-proposal"
     assert str(meta["workflow_hash"]).startswith("sha256:")
-    assert created.workflow == "incubated-delivery" and created.notices == []
+    assert created.workflow == "sdd-proposal" and created.notices == []
     assert created.next_command == "devkit workflow next --unit docs/proposals/PROP-bound"
 
 

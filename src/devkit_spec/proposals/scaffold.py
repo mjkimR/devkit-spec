@@ -4,9 +4,11 @@ A bundle holds ``proposal.md``, ``decisions/`` (``PADR-<slug>.md`` preliminary d
 optionally, ``target-docs.md`` (the Living Spec blueprint). A proposal and a spec never share a slug, so a
 handed-off ``PROP-<slug>`` maps to exactly one ``SPEC-<slug>``.
 
-``proposal.md`` is the anchor of a devkit workflow unit: a new proposal is bound to workflow ``incubated-delivery``
-when the project has it. ``workflow`` and ``workflow_hash`` are that binding; the workflow the spec follows after
-handoff is ``handoff_workflow``. ``namespace`` names the document namespace (``devkit_spec.namespaces``) the bundle
+``proposal.md`` is the anchor of a devkit workflow unit: a new proposal is bound to workflow ``sdd-proposal`` when the
+project has it. ``workflow`` and ``workflow_hash`` are that binding. ``task_kind`` (``feature`` or ``bugfix``) is the
+provisional ``task-kind`` the proposal is confirmed with at ``plan-accept``; the spec follows ``sdd-spec-<task_kind>``
+after handoff. ``supersedes`` names the accepted proposal a close by supersede replaces, and ``needs_decompose: true``
+marks a draft Backlog splits before Planning starts. ``namespace`` names the document namespace (``devkit_spec.namespaces``) the bundle
 belongs to; without it the bundle is global, and handoff carries it to ``spec.md``. ``summary`` is the one or two
 English sentences ``RULE-document-summary`` requires of ``proposal.md``; handoff carries it to ``spec.md``, and a
 PADR's ``summary`` stays in its promoted ADR.
@@ -36,7 +38,7 @@ from devkit_spec.errors import (
     SpecError,
 )
 from devkit_spec.namespaces import detect, require
-from devkit_spec.proposals.binding import PROPOSAL_WORKFLOW, resolve_binding
+from devkit_spec.proposals.binding import DEFAULT_TASK_KIND, PROPOSAL_WORKFLOW, TASK_KINDS, resolve_binding
 from devkit_spec.rules.document_summary import foreign_letters
 
 PROPOSALS = "docs/proposals"
@@ -95,6 +97,33 @@ def yaml_scalar(value: str) -> str:
     """``value`` as a YAML scalar for a frontmatter line, quoted only when YAML needs it (``A: B`` titles)."""
     dumped = yaml.safe_dump(value, allow_unicode=True, width=10**6)
     return dumped.removesuffix("\n...\n").removesuffix("\n")
+
+
+def require_task_kind(value: str | None) -> str:
+    """``value`` (default ``feature``) when it is one of ``TASK_KINDS``; ``ArgumentError`` (``--task-kind``) otherwise."""
+    kind = (value or "").strip() or DEFAULT_TASK_KIND
+    if kind in TASK_KINDS:
+        return kind
+    raise ArgumentError(
+        f"--task-kind {value!r} is not one of {' | '.join(TASK_KINDS)}",
+        target_files=["--task-kind"],
+        fix=f"Pass --task-kind {' or '.join(TASK_KINDS)}",
+    )
+
+
+def _supersedes(value: str | None, slug: str) -> str | None:
+    """The ``PROP-<slug>`` ID a new proposal supersedes, ``None`` without one; ``ArgumentError`` for anything else or
+    for the proposal's own ID (a superseding draft takes a new slug)."""
+    if value is None:
+        return None
+    old = clean_slug(value)
+    if value.strip().startswith("PROP-") and old and old != slug:
+        return f"PROP-{old}"
+    raise ArgumentError(
+        f"--supersedes {value!r} must name another proposal as PROP-<slug>",
+        target_files=["--supersedes"],
+        fix="Pass --supersedes PROP-<slug of the accepted proposal this draft replaces>; the new draft takes a new slug",
+    )
 
 
 def known_namespaces(root: Path) -> list[str]:
@@ -198,27 +227,33 @@ def create_proposal(
     title: str | None = None,
     target_area: str | None = None,
     milestone: str | None = None,
-    handoff_workflow: str | None = None,
+    task_kind: str | None = None,
     namespace: str | None = None,
     summary: str | None = None,
+    supersedes: str | None = None,
+    needs_decompose: bool = False,
     with_target_docs: bool = False,
     today: date | None = None,
     cwd: Path | None = None,
 ) -> CreatedProposal:
     """Scaffold ``docs/proposals/PROP-<slug>/`` under the workspace ``root`` and bind ``proposal.md``.
 
-    ``handoff_workflow`` and ``summary`` are written only when given (without ``summary``, a commented placeholder
-    line); ``namespace`` when given, else the namespace ``cwd`` lies in (``bundle_namespace``, reported on the result).
-    Handoff resolves the workflow and carries the namespace and summary. ``proposal.md`` is bound to ``incubated-delivery`` when it resolves and validates, else left unbound
-    with a ``SPEC_PROPOSAL_UNBOUND`` notice. Raises ``ProposalSlugError`` for a slug without letters or digits,
-    ``ArgumentError`` for a ``namespace`` that is neither ``global`` nor registered or a ``summary`` that is empty or
-    not English, ``ProposalExistsError`` when the
+    ``task_kind`` is always written (default ``feature``); ``summary`` only when given (without it, a commented
+    placeholder line); ``supersedes`` (a ``PROP-<slug>`` ID) and ``needs_decompose`` only when given; ``namespace``
+    when given, else the namespace ``cwd`` lies in (``bundle_namespace``, reported on the result). Handoff resolves
+    ``sdd-spec-<task_kind>`` and carries the namespace and summary. ``proposal.md`` is bound to ``sdd-proposal`` when it
+    resolves and validates, else left unbound with a ``SPEC_PROPOSAL_UNBOUND`` notice. Raises ``ProposalSlugError``
+    for a slug without letters or digits, ``ArgumentError`` for a ``task_kind`` outside ``TASK_KINDS``, a
+    ``supersedes`` that is not a proposal ID, a ``namespace`` that is neither ``global`` nor registered or a
+    ``summary`` that is empty or not English, ``ProposalExistsError`` when the
     bundle or a single-file proposal of the slug exists, ``ProposalSlugConflictError`` when ``SPEC-<slug>`` exists.
     """
     root = root.resolve()
     slug = new_slug(slug)
     namespace, reported = bundle_namespace(root, namespace, cwd)
     summary = require_summary(summary)
+    kind = require_task_kind(task_kind)
+    replaced = _supersedes(supersedes, slug)
     title = (title or "").strip() or slug
     area = (target_area or "").strip() or DEFAULT_TARGET_AREA
     area = area if area.endswith("/") else area + "/"
@@ -241,10 +276,12 @@ def create_proposal(
         title,
         area,
         (milestone or "").strip(),
-        (handoff_workflow or "").strip(),
+        kind,
         namespace or "",
         summary or "",
         created,
+        supersedes=replaced,
+        needs_decompose=needs_decompose,
     )
     proposal.write_text(text, encoding="utf-8")
     if binding is not None:
@@ -277,10 +314,13 @@ def _proposal(
     title: str,
     area: str,
     milestone: str,
-    handoff_workflow: str,
+    task_kind: str,
     namespace: str,
     summary: str,
     created: str,
+    *,
+    supersedes: str | None = None,
+    needs_decompose: bool = False,
 ) -> str:
     summary_line = (
         f"summary: {yaml_scalar(summary)}"
@@ -289,10 +329,10 @@ def _proposal(
     )
     namespace_line = f"namespace: {yaml_scalar(namespace)}\n" if namespace else ""
     milestone_line = f"milestone: {yaml_scalar(milestone)}\n" if milestone else ""
-    handoff_line = (
-        f"handoff_workflow: {yaml_scalar(handoff_workflow)}"
-        if handoff_workflow
-        else "# handoff_workflow: bugfix            # workflow after handoff (default: direct-delivery)"
+    task_kind_line = f"task_kind: {task_kind:<26} # feature | bugfix: the spec follows sdd-spec-<task_kind>"
+    supersedes_line = f"supersedes: {supersedes}\n" if supersedes else ""
+    decompose_line = (
+        "needs_decompose: true                 # split in Backlog before Planning starts\n" if needs_decompose else ""
     )
     return f"""---
 id: PROP-{slug}
@@ -308,8 +348,8 @@ size: M                               # S | M | L | XL
     - {yaml_scalar(area)}
   excludes:
     - docs/decisions/
-{handoff_line}
----
+{task_kind_line}
+{supersedes_line}{decompose_line}---
 
 # [PROP-{slug}] {title}
 
@@ -328,8 +368,10 @@ size: M                               # S | M | L | XL
 <!--
 - Preliminary decisions: devkit spec proposal padr {slug} "<title>" records a PADR in decisions/.
 - Research: collect benchmarks and references in materials/.
-- On acceptance: set status: accepted and run devkit spec proposal handoff {slug}.
-- On rejection: record a rejection ADR in docs/decisions/ and delete the proposal directory.
+- On acceptance (plan-accept): record gate:plan-accept, set status: accepted and merge the Planning branch; Development
+  starts with devkit spec proposal handoff {slug}.
+- On rejection: change only status: rejected, with the user's reason in the commit message; a later hygiene pass
+  writes the rejection ADR and deletes the proposal directory.
 -->
 """
 
