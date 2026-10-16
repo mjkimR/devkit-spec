@@ -10,7 +10,7 @@ agent: claude-code
 origin: agent
 severity: workaround
 recurring: false
-status: open
+status: dismissed
 created_at: 2026-10-15
 ---
 
@@ -50,3 +50,5 @@ created_at: 2026-10-15
 completion.md: a target already committed earlier in a feature is verified in the cumulative branch diff.
 guide.md: --ci judges the whole branch against its merge base, so a target changed in an earlier commit of the branch counts there.
 ```
+
+- **Disposition**: fe9f270: already resolved; `RULE-reconcile-contract` reads the staged diff together with the branch's earlier commits since its merge base, and its guide and `spec/references/completion.md` state it.

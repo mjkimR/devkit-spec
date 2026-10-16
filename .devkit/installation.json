@@ -1106,7 +1106,7 @@
     },
     ".devkit/managed/spec/rules/spec_format/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "527d2136a90026665f5183e12a5d60e251ea583461c75e38620675f5cc1c2bf9"
+      "sha256": "b493889304528e6ab8d75d1c39629836c3aeec2c5c2395087811b4ed19148b55"
     },
     ".devkit/managed/spec/rules/spec_lifecycle/guide.md": {
       "mode": 420,
