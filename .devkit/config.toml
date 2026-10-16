@@ -26,6 +26,11 @@ pull_request = "auto"
 # not built yet, materials are free-form.
 exclude = ["docs/decisions/**", "docs/proposals/**", "docs/materials/**", "specs/**"]
 
+# Capabilities carry full contracts, interfaces and code tables; they are long by nature (RULE-file-length guide §5).
+[[rules.settings.RULE-file-length.overrides]]
+path = "docs/capabilities/**"
+max_lines = 600
+
 ## [tool.spec]: the settings of devkit-spec; devkit passes [tool.*] tables through unread.
 [tool.spec]
 worktree = "required"  # direct mode: every spec and proposal activity runs in a task worktree (default "auto")
