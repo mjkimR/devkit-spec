@@ -1,0 +1,94 @@
+kind: challenger
+stage: spike
+workflow: sdd-proposal
+segment: 0
+created_at: '2026-10-16T07:50:23.183092Z'
+status: completed
+summary: '6 major, 9 minor; D1 (repository-owned roadmap) holds. Main gaps: branch-blind membership and warnings, no GitHub-free home for decomposed items, premature Closes, partial next-work order, list sorting against a non-goal, partial autohub consistency.'
+findings:
+- issue: 'F1 (major) Milestone membership and hygiene warnings read only the base: Units on plan-/dev- branches are invisible and proposals never become completed'
+  evidence: 01-master-flow.md §4.7 (base proposal status unchanged until merge); PADR-milestone-documents §4 Checks
+  failure_condition: An active milestone is flagged as a close candidate while dev-x holds a new member spec; a rejected member keeps the warnings from settling
+  suggested_action: Define settled per member kind (completed spec settled, rejected proposal excluded); check plan-/dev- branches before offering a close; state that session work is never a member
+  resolution: open
+- issue: F2 (major) Without GitHub, session/spec-depth items from a decomposition and the link to the original request have no home
+  evidence: 01-master-flow.md §5.2; PADR-issue-link-only §2 drivers vs proposal D5 (issue never required); PADR-milestone-documents §4 (body lists no work items)
+  failure_condition: A needs_decompose draft split into one draft and two spec-depth items in a repository without GitHub loses the two items and the provenance
+  suggested_action: Decide where queued non-proposal work lives without GitHub; add a GitHub-free provenance link such as decomposed_from
+  resolution: open
+- issue: 'F3 (major) Several Units linking one parent issue: the first dev PR''s Closes closes the request while siblings remain'
+  evidence: PADR-issue-link-only §4 Decomposition and Closing
+  failure_condition: 'Two drafts with issue: 42; the first merge closes #42 before the second starts'
+  suggested_action: Write Closes only for the sole remaining linked Unit, else Refs; or require child issues when more than one Unit results
+  resolution: open
+- issue: F4 (major) The next-work order is not total and admits drafts that cannot start Planning
+  evidence: PADR-milestone-documents §4 Next work; 01-master-flow.md §5.2 Planning entry; new scaffolds priority high and size M
+  failure_condition: Drafts only in not-ready or dropped-dependency milestones give no recommendation; a needs_decompose or reviewing draft is recommended; ties order differently each run
+  suggested_action: Specify a complete order with a final tie-break, filter to Planning-eligible drafts, define readiness with a dropped dependency, name who activates a milestone and how several active ones are ordered
+  resolution: open
+- issue: F5 (major) list sorting and grouping reverses a declared non-goal and text sorting of enum fields is wrong
+  evidence: 'CAP-DOCS-document-lookup §2 (Per-kind listing extras: --sort excluded, priority and size are --where fields)'
+  failure_condition: --sort priority orders low before medium; size orders L<M<S<XL
+  suggested_action: Drop CLI sorting and grouping; spec-next applies the documented order over --where queries, or record the reversal and define enum orders
+  resolution: open
+- issue: 'F6 (major) Only partly consistent with autohub: inbound issues act as a second backlog and Closes may close autohub-owned record issues'
+  evidence: autohub work-plan-backlog.md Ownership; work-plans-design.md GitHub Issue sync (one-way)
+  failure_condition: Open triage issues form a backlog outside the repository; a dev PR closes an autohub item sub-issue and the writers diverge
+  suggested_action: Decide whether issue may name an autohub record issue; reword the consistency claim; Backlog drains open issues into drafts or feedback
+  resolution: open
+- issue: F7 (minor) done and dropped milestones accumulate as history in current-state docs/
+  evidence: living-spec-writing (docs/ is a current-state ledger); CAP-DOCS-document-model historical documents cover completed specs only
+  failure_condition: list and search show every done or dropped milestone by default
+  suggested_action: Keep them as historical (hidden by default) or delete them and accept dangling references from completed specs
+  resolution: open
+- issue: F8 (minor) No rule checks milestone frontmatter; relation fields are global across kinds
+  evidence: CAP-GOV-spec-rules (RULE-spec-format scope, RULE-document-summary kinds); src/devkit_spec/documents/model.py LIST_FIELDS, SCALAR_FIELDS
+  failure_condition: 'status: activ or a missing summary passes; depends_on on a spec.md becomes a wrong-kind error'
+  suggested_action: Name the rule for cycles, cover docs/roadmap/ in format and summary rules with the status vocabulary, type issue, scope depends_on to milestones
+  resolution: open
+- issue: F9 (minor) Namespaced milestones are under-specified
+  evidence: CAP-DOCS-namespaces default selection; ARCH-01 IDs are repository-wide
+  failure_condition: spec-next at the root never sees package milestones; cross-namespace membership is undefined
+  suggested_action: Define spec-next namespace selection and cross-namespace membership, or defer per-namespace roadmaps
+  resolution: open
+- issue: F10 (minor) boundaries.owns omits four target areas
+  evidence: proposal.md frontmatter vs target-docs.md targets; src/devkit_spec/proposals/specs.py handoff boundary
+  failure_condition: spec-review flags edits outside the declared _Boundary
+  suggested_action: Add governance, harness, stories and architecture to owns
+  resolution: open
+- issue: F11 (minor) Order of change vs the SSOT is loose and 01's Backlog policy rationale no longer covers milestone edits
+  evidence: 01-master-flow.md header (change 01 first), §5.1 rationale, §10; 00-overview glossary Phase
+  failure_condition: Accepted PADRs contradict 01 until an unassigned workbench edit lands
+  suggested_action: Make the workbench edit (01 §1, §5, §5.1, §5.2, §7.4, §10, glossary; 02) a precondition of handoff or plan-accept and name its owner
+  resolution: open
+- issue: F12 (minor) Leaving the issue open after a local merge is avoidable
+  evidence: PADR-issue-link-only §4 Closing; finish --merge pushes the base
+  failure_condition: Every local-merge Unit with an issue leaves it open
+  suggested_action: Put Closes in the final commit message on a local merge, in the PR body otherwise
+  resolution: open
+- issue: F13 (minor) Release-style milestone names are refused by the ID rule
+  evidence: CAP-GOV-spec-rules ID convention (first slug segment needs a letter)
+  failure_condition: MS-1-0 and MS-2026-q4 are refused
+  suggested_action: State a naming convention such as MS-release-1-0 in the template
+  resolution: open
+- issue: F14 (minor) No evidence of need yet and no retirement or review criterion
+  evidence: proposal §1.1 (no milestones or issues); §4 lists only acceptance and rejection
+  failure_condition: Machinery built for zero or one milestone with nothing triggering its removal
+  suggested_action: 'Add a review signal or stage the work: kind and issue first, warnings and ordering once several milestones are active'
+  resolution: open
+- issue: F15 (minor) Feedback does not fully fit the follow-up intake role
+  evidence: CAP-HARN-agent-guidance feedback capture policy; spec-next Step 4 surfaces only critical feedback
+  failure_condition: Under requested-only follow-ups are not recorded; non-critical follow-ups never reach next-work
+  suggested_action: Backlog promotes repo-scope feedback into milestone drafts, or idle spec-next suggests a hygiene pass when open feedback exists
+  resolution: open
+assumptions:
+- Challenger run as a native Claude Code subagent with the challenger contract, payload only
+- 'Run retroactively: Planning applied medium without a challenger; high is applied from this run on'
+unverified_areas:
+- refs --direction in history filtering inferred from code, not run
+- autohub behaviour when a synced issue is closed externally
+checks: {}
+diff_scope:
+  base: 3c175b1
+  head: 26579d53785e95e86278ecfc61c09aaaef735146
+activity_effort: high
