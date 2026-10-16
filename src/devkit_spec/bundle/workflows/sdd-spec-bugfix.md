@@ -81,7 +81,7 @@ stages:
     exit: [envelope-review-passed]
     artifacts: [envelopes/review-NN.yaml, envelopes/reverify-NN.yaml]
     skills: [spec-review, spec-delegate]
-    role: reviewer
+    role: code-reviewer
     isolation: preferred
     returns:
       - { to: fix-verify, when: defects }
@@ -92,7 +92,7 @@ stages:
     exit: [frontmatter(reconcile.md status resolved), envelope-completed(reconcile-check), anchor-status-completed]
     artifacts: [docs draft, reconcile.md]
     skills: [spec-sync, spec-delegate]
-    role: reconciler
+    role: reconcile-reviewer
     isolation: preferred
     returns:
       - { to: fix-verify, when: implementation contradicts a contract }

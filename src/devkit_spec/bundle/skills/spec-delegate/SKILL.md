@@ -11,7 +11,7 @@ Use this skill when the main Developer session hands exploration, criticism, an 
 
 ## 1. Inputs
 
-- Role contract: `challenger`, `reconciler`, `reviewer`, `scout`, `planning-worker` or `development-worker` (the workers in `local-orchestrated` mode only), shipped with the `spec` bundle. `devkit workflow next --unit <dir>` prints `[DELEGATE: role=<role> isolation=<level> contract=<path>]` for a stage that prefers isolation; `contract=` is the effective contract (managed or overridden). Outside a delegating stage, the managed contract is `.devkit/managed/spec/subagents/<role>.md`. Read its frontmatter (`hosts.<host>`, `x-git-actions`); the body is the role's prompt, already in its projected agent file, read only when the main session substitutes.
+- Role contract: `challenger`, `reconcile-reviewer`, `code-reviewer`, `scout`, `planning-worker` or `development-worker` (the workers in `local-orchestrated` mode only), shipped with the `spec` bundle. `devkit workflow next --unit <dir>` prints `[DELEGATE: role=<role> isolation=<level> contract=<path>]` for a stage that prefers isolation; `contract=` is the effective contract (managed or overridden). Outside a delegating stage, the managed contract is `.devkit/managed/spec/subagents/<role>.md`. Read its frontmatter (`hosts.<host>`, `x-git-actions`); the body is the role's prompt, already in its projected agent file, read only when the main session substitutes.
 - Stage context: `devkit workflow next --unit <dir>` (current stage) and `devkit workflow show --unit <dir>` (where returns go).
 
 ---
@@ -30,7 +30,7 @@ Use this skill when the main Developer session hands exploration, criticism, an 
 ## 3. Procedure
 
 ### Step 1: Decide whether to delegate
-- By `activity-effort`, never below the floor: `session` depth runs a `reviewer` at `medium` and `high` (a message, no envelope) and never a worker; Unit-path Development runs a `reviewer` at `medium` and `high` and a separate `reconciler` at `high`; proposal Planning runs a `challenger` at `medium` and `high` (re-review at `high`), a `scout` when evidence is needed. `low` is the author's self-review. `[DELEGATE]` names the role at any effort; the effort decides.
+- By `activity-effort`, never below the floor: `session` depth runs a `code-reviewer` at `medium` and `high` (a message, no envelope) and never a worker; Unit-path Development runs a `code-reviewer` at `medium` and `high` and a separate `reconcile-reviewer` at `medium` and `high`. Only medium permits the initial reconcile self-check exception in the `spec` skill's `references/effort.md`; the first medium code review is mandatory regardless of size, and repeat code/reconcile calls are discretionary after the implementer verifies changes. Proposal Planning runs a `challenger` at `medium` and `high` (re-review at `high`), a `scout` when evidence is needed. `low` is the author's self-review. `[DELEGATE]` names the role at any effort; the effort decides.
 - `local-orchestrated` (`spec-orchestrate`): a `planning-worker` runs one proposal Planning turn, a `development-worker` one Development turn of a spec unit, each in its worktree; never for `session`. A worker runs its role subagents nested (Host → worker → role).
 
 ### Step 2: Build the input payload
@@ -64,7 +64,7 @@ git diff --name-only --cached   # staged (should be unchanged by the role)
 - Scout/Challenger: write the comparison table and recommendation into the proposal bundle (`materials/` or `proposal.md`); keep `unverified_areas` visible for `plan-accept`.
 - Reviewer: fix findings, then re-verify only the changed part (tests for touched packages, `devkit rules check --staged`).
 - Worker: accept the range or block it, and handle a recorded problem ([worker](references/worker.md)).
-- Reconciler: fix each omission or mismatch it found (a contract mismatch in code, never a waiver), then complete `reconcile.md` per the `spec-sync` skill.
+- Reconcile reviewer: fix each omission or mismatch it found (a contract mismatch in code, never a waiver), then complete `reconcile.md` per the `spec-sync` skill.
 - Commits are the Developer's, a worker's own aside, staging only this task's agreed paths.
 
 ---

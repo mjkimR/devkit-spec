@@ -1,6 +1,6 @@
 # Delegation Input and Return Envelope
 
-Read this when delegating to a support role (`scout`, `challenger`, `reviewer`, `reconciler`), writing a review, presenting the final change report before `dev-integration`, or reporting the integration result. Role contracts ship with the spec bundle and are projected into each agent's native agent directory by `devkit sync`; the stage definition is rendered by `devkit workflow show --unit <dir>`. Envelope files follow devkit's envelope contract; this reference says how spec-driven delivery uses it. A `planning-worker` or `development-worker` run writes its own records instead ([worker records](worker-records.md)).
+Read this when delegating to a support role (`scout`, `challenger`, `code-reviewer`, `reconcile-reviewer`), writing a review, presenting the final change report before `dev-integration`, or reporting the integration result. Role contracts ship with the spec bundle and are projected into each agent's native agent directory by `devkit sync`; the stage definition is rendered by `devkit workflow show --unit <dir>`. Envelope files follow devkit's envelope contract; this reference says how spec-driven delivery uses it. A `planning-worker` or `development-worker` run writes its own records instead ([worker records](worker-records.md)).
 
 ## 1. Input payload
 
@@ -50,7 +50,7 @@ Integration writes no envelope. After the commit the Developer still runs `devki
 
 ## 5. The spec-review report
 
-`spec-review` writes this envelope directly (kind `review`); there is no separate report format. Boundary violations, stray files and unmet scenarios are `findings` (each with `failure_condition`), check results are `checks`, and the verdict is the status: PASS → `status: completed` with no open findings, REVISE → `status: completed` with open findings, `needs_input` when verification is blocked. One format serves both the direct run and the delegated `reviewer` run.
+`spec-review` writes this envelope directly (kind `review`); there is no separate report format. Boundary violations, stray files and unmet scenarios are `findings` (each with `failure_condition`), check results are `checks`, and the verdict is the status: PASS → `status: completed` with no open findings, REVISE → `status: completed` with open findings, `needs_input` when verification is blocked. One format serves both the direct run and the delegated `code-reviewer` run.
 
 ## 6. Where reports live
 

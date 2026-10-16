@@ -47,7 +47,7 @@ Use this skill immediately after `spec-review` passes and implementation is comp
 ---
 
 ### Principle 5: Draft Delegation and Integration-Stage Confirmation
-- The implementer writes and resolves the reflection and `reconcile.md` at every `activity-effort`. Verification: `low` your own check; `medium` the `reviewer` checks the written result; `high` a separate read-only `reconciler` verifies it (`spec-delegate`). You fix what it finds. Each verification is a `reconcile-check` envelope (the `spec` skill's `references/completion.md`). A `session` task has none: a needed Living Spec change raises it to `spec`.
+- The implementer writes, fixes and resolves the reflection and `reconcile.md` at every `activity-effort`. Verification: `low` your own check; `medium` and `high` a separate read-only `reconcile-reviewer` verifies it (`spec-delegate`). Only medium permits an initial self-check instead under the `spec` skill's `references/effort.md` criteria, recording the omission reason and verification evidence in `reconcile-check`. At medium the implementer verifies fixes and decides repeat calls. Each verification is a `reconcile-check` envelope (the `spec` skill's `references/completion.md`). A `session` task has none: a needed Living Spec change raises it to `spec`.
 - Implementation-versus-contract mismatches are returned for a code fix (the stage returns to `build-verify`, or `fix-verify` for a bugfix), not endorsed by documentation or waived.
 - Confirmation (`reconcile.md` `status: resolved`, spec `status: completed`) is done by the Developer or the integration executor (`spec-integrate`). Resolve before the `dev-integration` gate. Intermediate commits do not complete this stage; the final check is `devkit rules check --ci --base <ref>`.
 

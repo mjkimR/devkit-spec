@@ -211,14 +211,14 @@ kind = "subagent"
 source = "subagents/challenger.md"
 
 [[assets]]
-id = "reconciler"
+id = "reconcile-reviewer"
 kind = "subagent"
-source = "subagents/reconciler.md"
+source = "subagents/reconcile-reviewer.md"
 
 [[assets]]
-id = "reviewer"
+id = "code-reviewer"
 kind = "subagent"
-source = "subagents/reviewer.md"
+source = "subagents/code-reviewer.md"
 
 [[assets]]
 id = "scout"
@@ -281,8 +281,8 @@ assets = [
     "sdd-spec-bugfix",
     "sdd-proposal",
     "challenger",
-    "reconciler",
-    "reviewer",
+    "reconcile-reviewer",
+    "code-reviewer",
     "scout",
     "development-worker",
     "planning-worker",

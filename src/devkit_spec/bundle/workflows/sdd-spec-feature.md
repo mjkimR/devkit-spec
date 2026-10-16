@@ -59,7 +59,7 @@ stages:
     exit: [envelope-review-passed]
     artifacts: [envelopes/review-NN.yaml, envelopes/reverify-NN.yaml]
     skills: [spec-review, spec-delegate]
-    role: reviewer
+    role: code-reviewer
     isolation: preferred
     returns:
       - { to: build-verify, when: defects }
@@ -70,7 +70,7 @@ stages:
     exit: [frontmatter(reconcile.md status resolved), envelope-completed(reconcile-check), anchor-status-completed]
     artifacts: [docs draft, reconcile.md]
     skills: [spec-sync, spec-delegate]
-    role: reconciler
+    role: reconcile-reviewer
     isolation: preferred
     returns:
       - { to: build-verify, when: implementation contradicts a contract }
@@ -156,7 +156,7 @@ There is no Development direction gate. Within the agreed goal, scope and contra
 
 ## Role invocation
 
-Developer, `spec-review` and `spec-sync` by default; the `reviewer` and `reconciler` roles follow the `activity-effort` of the Development activity (`low`: self-review and self-checked reconcile; `medium`: one reviewer pass plus reverification of fixes, the reviewer also checks the reconcile result; `high`: reviewer with re-review after fixes and an independent `reconciler` verification). Effort never lowers the floor: gates, this workflow's exit checks and `required` policies hold at every effort, and the review envelope is recorded before `dev-integration` even at `low`. `[DELEGATE]` in `next` names the role and its contract when a stage prefers isolation; `spec-delegate` decides how it runs.
+Developer, `spec-review` and `spec-sync` by default; the `code-reviewer` and `reconcile-reviewer` roles follow the `activity-effort` of the Development activity (`low`: self-review and self-checked reconcile; `medium`: one mandatory initial code review regardless of size and a separate reconcile review, with the initial reconcile self-check exception and discretionary repeat calls defined in the `spec` skill's `references/effort.md`; `high`: code reviewer with re-review after fixes and an independent reconcile reviewer verification). The implementer writes, fixes and resolves the reconcile at every effort; the stage's reviewer role only verifies it. Effort never lowers the floor: gates, this workflow's exit checks and `required` policies hold at every effort, and the review envelope is recorded before `dev-integration` even at `low`. `[DELEGATE]` in `next` names the role and its contract when a stage prefers isolation; `spec-delegate` decides how it runs.
 
 ## Gate rules
 

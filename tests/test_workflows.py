@@ -13,7 +13,7 @@ import yaml
 
 WORKFLOWS = ("sdd-session-feature", "sdd-session-bugfix", "sdd-spec-feature", "sdd-spec-bugfix", "sdd-proposal")
 GATES = {"plan-intent", "plan-accept", "dev-integration", False}
-ROLES = ("challenger", "reconciler", "reviewer", "scout")
+ROLES = ("challenger", "reconcile-reviewer", "code-reviewer", "scout")
 AGENT_FILES = (".claude/agents/{role}.md", ".codex/agents/{role}.toml", ".agents/agents/{role}.md")
 
 

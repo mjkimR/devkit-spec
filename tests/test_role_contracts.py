@@ -10,7 +10,7 @@ import yaml
 
 BUNDLE = Path(__file__).resolve().parents[1] / "src/devkit_spec/bundle"
 WORKERS = ("development-worker", "planning-worker")
-ROLES = ("challenger", "reconciler", "reviewer", "scout", *WORKERS)
+ROLES = ("challenger", "reconcile-reviewer", "code-reviewer", "scout", *WORKERS)
 DELEGATE = BUNDLE / "skills/spec-delegate/SKILL.md"
 WORKER_RESULTS = BUNDLE / "skills/spec-delegate/references/worker.md"
 ORCHESTRATE = BUNDLE / "skills/spec-orchestrate/SKILL.md"
@@ -39,8 +39,8 @@ def test_a_contract_body_holds_only_the_role_prompt(role: str) -> None:
 
 
 def test_reviewer_and_reconciler_keep_the_skills_the_main_session_shares() -> None:
-    assert _contract("reviewer")[0]["skill"] == "spec-review"
-    assert _contract("reconciler")[0]["skill"] == "spec-sync"
+    assert _contract("code-reviewer")[0]["skill"] == "spec-review"
+    assert _contract("reconcile-reviewer")[0]["skill"] == "spec-sync"
 
 
 def test_only_scout_gains_a_shell() -> None:
@@ -88,7 +88,7 @@ def test_the_development_worker_result_is_self_contained() -> None:
     assert "run `devkit rules fix <unit>/spec.md`" in body
     assert "pytest's `tmp_path` or an ignored path inside the worktree" in body
     # activity-effort decides the nested roles; the reconciler only verifies.
-    assert "a separate `reconciler` nested subagent that verifies" in body
+    assert "a separate `reconcile-reviewer` nested subagent that verifies" in body
 
 
 def test_the_planning_worker_collects_questions_in_one_round() -> None:
@@ -105,15 +105,17 @@ def test_every_other_role_stays_read_only(role: str) -> None:
 
 
 def test_the_reconciler_verifies_and_never_drafts() -> None:
-    metadata, body = _contract("reconciler")
+    metadata, body = _contract("reconcile-reviewer")
     assert "Write" not in metadata["hosts"]["claude-code"]["tools"]
     assert "You do not draft documents" in body
     assert "kind `reconcile-check`" in body  # the caller records it at living-spec-draft, whose exit reads it
 
 
-def test_the_reviewer_returns_its_reconcile_check_apart_from_the_review() -> None:
-    _, body = _contract("reviewer")
-    assert "the fields of a `reconcile-check` envelope" in body and "never as a review round" in body
+def test_the_code_reviewer_leaves_reconcile_verification_to_its_own_role() -> None:
+    _, body = _contract("code-reviewer")
+    assert "separate `reconcile-reviewer` role" in body
+    assert "kind `reconcile-check`" not in body
+    assert "kind `review`" in body
 
 
 def test_spec_delegate_passes_only_the_payload_to_a_projected_role() -> None:

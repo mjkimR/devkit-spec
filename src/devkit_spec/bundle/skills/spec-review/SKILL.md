@@ -55,10 +55,10 @@ Use this skill when all implementation tasks in `tasks.md` are marked complete (
 ---
 
 ### Delegated execution (Reviewer role)
-- This skill may be executed by the `reviewer` role in an isolated context (its role contract, invoked through `spec-delegate`; `devkit workflow next` shows `[DELEGATE]` for this stage). The Developer running it directly is the default; both produce the same envelope.
+- This skill is executed by the `code-reviewer` role in an isolated context at medium and high (its role contract, invoked through `spec-delegate`; `devkit workflow next` shows `[DELEGATE]` for this stage). The first medium code review is mandatory regardless of change size. At low the Developer runs it directly; both produce the same envelope.
 - When delegated: inputs are the actual diff (`diff_scope`), the relevant contracts and the Developer's check results, not the implementer's narrative. The Reviewer MUST NOT modify source, tests, spec files or docs, and MUST NOT stage or commit; discovered requirements are returned as findings.
 - Every finding carries `evidence` (path:line) and a `failure_condition`. Zero findings is a valid PASS; do not manufacture defects. A review of a stale head is returned as `needs_input` and is not completion evidence.
-- After fixes, re-verify only the changed part rather than re-running the whole review.
+- After fixes, re-verify only the changed part rather than re-running the whole review. At medium the implementer verifies fixes and subsequent changes and decides whether to call the code-reviewer again, using the `spec` skill's `references/effort.md` criteria. Record verification evidence in `reverify`, identifying who checked later changes. High retains re-review after fixes.
 
 ### Optional feedback breakpoint
 
