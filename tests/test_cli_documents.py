@@ -375,4 +375,3 @@ def test_proposal_lines_and_records_carry_task_kind_and_effort_hints(workspace: 
     ) == (None, None, None)
     assert "planning_effort" not in records["CAP-CORE-a"] and "dev_effort" not in records["CAP-CORE-a"]
     assert _ids(workspace, "proposal", "--where", "planning_effort=low", "--where", "dev_effort=high") == ["PROP-a"]
-

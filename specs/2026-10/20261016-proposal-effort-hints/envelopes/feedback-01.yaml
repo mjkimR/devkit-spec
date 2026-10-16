@@ -1,0 +1,13 @@
+kind: feedback
+stage: collect-feedback
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-16T12:41:56.718154Z'
+status: completed
+summary: Completed Development feedback sweep for SPEC-proposal-effort-hints across diff main..HEAD; 0 new observations found.
+findings: []
+checks:
+  swept: PASS 0 new observations
+diff_scope:
+  base: main
+  head: 319164d806baa5b568606969e87bdf260223294d

@@ -43,9 +43,7 @@ def test_padr_slug_option(workspace: Path) -> None:
 
 
 def test_new_json(workspace: Path) -> None:
-    result = _proposal(
-        workspace, "new", "lean", "--planning-effort", "low", "--dev-effort", "high", "--format", "json"
-    )
+    result = _proposal(workspace, "new", "lean", "--planning-effort", "low", "--dev-effort", "high", "--format", "json")
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
     assert {

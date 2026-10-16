@@ -1,0 +1,14 @@
+kind: review
+stage: review-refine
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-16T12:41:33.898169Z'
+status: completed
+summary: Verified SPEC-proposal-effort-hints across [AC-01] through [AC-05] against diff_scope main..319164d806baa5b568606969e87bdf260223294d via isolated code-reviewer subagent; 297 targeted tests pass and devkit rules check --ci --base main passes with zero findings.
+findings: []
+checks:
+  tests: PASS uv run pytest tests/proposals/ tests/test_cli_documents.py tests/test_bundle_budgets.py src/devkit_spec/bundle/rules/spec_format/tests/test_rule.py (297 passed)
+  lint: PASS uv run devkit rules check --ci --base main (errors=0 warnings=0 infos=0)
+diff_scope:
+  base: main
+  head: 319164d806baa5b568606969e87bdf260223294d

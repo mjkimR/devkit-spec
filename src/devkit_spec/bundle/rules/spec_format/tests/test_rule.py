@@ -265,10 +265,17 @@ def test_proposal_effort_hints_are_validated(tmp_path: Path) -> None:
     }
     violations = check(RULE, tmp_path, files, fix=True)
     assert _found(violations) == [
-        ("docs/proposals/PROP-bad/proposal.md", 5, "frontmatter planning_effort 'extreme' is not one of low | medium | high"),
-        ("docs/proposals/PROP-bad/proposal.md", 6, "frontmatter field 'dev_effort' must be a string (low | medium | high)"),
+        (
+            "docs/proposals/PROP-bad/proposal.md",
+            5,
+            "frontmatter planning_effort 'extreme' is not one of low | medium | high",
+        ),
+        (
+            "docs/proposals/PROP-bad/proposal.md",
+            6,
+            "frontmatter field 'dev_effort' must be a string (low | medium | high)",
+        ),
         ("docs/proposals/PROP-single.md", 5, "frontmatter dev_effort '' is not one of low | medium | high"),
     ]
     assert not any(v.fixable for v in violations)
     assert violations[0].remediation == "Set planning_effort to one of low | medium | high, or remove the field"
-

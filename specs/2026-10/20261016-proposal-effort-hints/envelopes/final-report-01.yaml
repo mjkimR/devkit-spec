@@ -1,0 +1,15 @@
+kind: final-report
+stage: final-change-report
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-16T12:43:00.621270Z'
+status: completed
+summary: Implemented SPEC-proposal-effort-hints across proposal scaffolding, RULE-spec-format, handoff preflight/result, devkit spec list, bundle guidance, and Living Spec capabilities.
+findings: []
+checks:
+  tests: PASS uv run pytest (834 passed)
+  build: PASS uv run pyright (0 errors, 0 warnings)
+  lint: PASS uv run devkit rules check --ci --base main (errors=0 warnings=0 infos=0)
+diff_scope:
+  base: main
+  head: ''

@@ -2,7 +2,7 @@
 id: SPEC-proposal-effort-hints
 title: Separate Planning and Development effort hints on proposals
 summary: Adds separate Planning and Development effort hint fields to proposal frontmatter so Backlog and Planning preserve recommended activity-effort values that Host sessions and autohub submission screens pre-fill and let the user override.
-status: in-progress
+status: completed
 created: 2026-10-16
 related_capabilities:
   - CAP-DLV-proposal-incubation

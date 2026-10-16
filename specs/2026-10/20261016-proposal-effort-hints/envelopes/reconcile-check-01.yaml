@@ -1,0 +1,13 @@
+kind: reconcile-check
+stage: living-spec-draft
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-16T12:41:56.531808Z'
+status: completed
+summary: 'Self-check (implementer, medium effort initial reconcile-reviewer omitted under CAP-DLV-delivery-workflows rule 15): all 5 affected capabilities (CAP-DLV-proposal-incubation, CAP-DLV-delivery-workflows, CAP-DOCS-document-lookup, CAP-GOV-spec-rules, CAP-HARN-agent-guidance) and docs/proposals/README.md are identified in target-docs.md and reconcile.md, directly verified against git diff main..319164d806baa5b568606969e87bdf260223294d and RULE-reconcile-contract / RULE-document-reference with zero unresolved contract interpretation.'
+findings: []
+checks:
+  reconcile: PASS uv run devkit rules check --ci --base main (0 errors, 0 warnings)
+diff_scope:
+  base: main
+  head: 319164d806baa5b568606969e87bdf260223294d
