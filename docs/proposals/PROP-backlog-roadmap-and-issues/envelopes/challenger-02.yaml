@@ -1,0 +1,68 @@
+kind: challenger
+stage: spike
+workflow: sdd-proposal
+segment: 0
+created_at: '2026-10-16T08:04:24.436378Z'
+status: completed
+summary: 'Re-review after folding challenger-01: F1-F15 addressed (F2, F6, F14 partly, continued in N4, N1/N8, N7); 2 major and 8 minor new findings, led by issue re-draining (N1) and dropped-milestone members leaving next-work (N2).'
+findings:
+- issue: N1 (major) The issue drain re-drains issues already linked to a Unit, and an issue drained into feedback is never closed
+  evidence: PADR-roadmap-in-repository §4 (an open issue is a request not yet triaged); PADR-issue-link-only §4 Closing (open until the last linked Unit merges)
+  failure_condition: '#42 drained into PROP-a stays open and is drained again into a duplicate draft on the next Backlog run'
+  suggested_action: Drain only open issues no Unit links (base query plus branch check); say what draining into feedback does to the issue
+  resolution: open
+- issue: N2 (major) Drafts of a dropped milestone leave next-work silently
+  evidence: PADR-milestone-documents §4 Next work order and Checks (member warning for done milestones only)
+  failure_condition: 'MS-x dropped with three member drafts: none is recommended, reported or warned about'
+  suggested_action: Warn on unsettled members of dropped milestones, make dropping a Backlog step that re-points or rejects members, report them as Backlog actions
+  resolution: open
+- issue: N3 (minor) 'When no Unit is in progress' collides with the Shaping (Proposal Incubation) row now that every queued request is a draft
+  evidence: 'PADR-milestone-documents §4 Next work; spec-next SKILL.md §3 matrix (Incubation: draft or reviewing; Idle: no active specs)'
+  failure_condition: With five queued drafts, spec-next lands on Incubation for an arbitrary draft and never reaches the ordered recommendation
+  suggested_action: Define in progress (plan-/dev- branch, reviewing or accepted proposal, incomplete spec); queued drafts feed the idle next-work row
+  resolution: open
+- issue: N4 (minor) decomposed_from and supersedes are not carried on handoff, so the after-state link ends at handoff
+  evidence: target-docs.md §1 and §5; CAP-DLV-proposal-incubation §4.5; src/devkit_spec/documents/model.py PROVENANCE_FIELDS
+  failure_condition: Without GitHub, a spec from a decomposed draft has no field pointing at its origin
+  suggested_action: Carry both to spec.md as provenance fields, or correct the after-state
+  resolution: open
+- issue: N5 (minor) Milestone rank strictly precedes priority without being stated as a decision
+  evidence: PADR-milestone-documents §4 Next work
+  failure_condition: A critical draft without a milestone ranks below every low draft of an active milestone
+  suggested_action: Decide whether critical drafts rank first or Backlog must place critical work in an active milestone
+  resolution: open
+- issue: N6 (minor) 'Open Units' counts rejected proposals and may count the integrating Unit as its own sibling
+  evidence: PADR-issue-link-only §4 Closing; CAP-DLV-proposal-incubation rules 9 and 11
+  failure_condition: 'Sibling B rejected, A merges last and writes Refs; #42 stays open'
+  suggested_action: Exclude rejected proposals; count a slug once across base and branches
+  resolution: open
+- issue: N7 (minor) The review signal has no carrier
+  evidence: PADR-milestone-documents §4 Review; spec-next reads no ADRs
+  failure_condition: 2027-01-31 passes unnoticed
+  suggested_action: Carry it as a draft or feedback item created at handoff, or check it in the spec-next idle step
+  resolution: open
+- issue: N8 (minor) No rule recognizes autohub record issues in the drain
+  evidence: autohub work-plans-design.md GitHub Issue sync (record notice, no label)
+  failure_condition: Backlog drains autohub plan and item record issues into drafts or closes them
+  suggested_action: Name the recognition rule (the record notice or an agreed label) and skip matching issues
+  resolution: open
+- issue: N9 (minor) Three milestone warnings, not two, and two cannot settle when the user deliberately starts out of order
+  evidence: proposal.md §3 Checks; PADR-milestone-documents §4 depends_on and Checks
+  failure_condition: An acknowledged out-of-order activation repeats the warning on every hygiene run
+  suggested_action: List all warnings and how each settles
+  resolution: open
+- issue: 'N10 (minor) RULE-spec-format''s fix writes status: draft, outside the milestone vocabulary'
+  evidence: CAP-GOV-spec-rules §3.5 Fix
+  failure_condition: rules fix on a milestone without a status writes a value the same rule rejects
+  suggested_action: 'The fix writes status: planned and derives the MS ID for docs/roadmap/, or milestone status is not fixable'
+  resolution: open
+assumptions:
+- Native Claude Code challenger subagent, payload only; compared current files against challenger-01 findings
+unverified_areas:
+- refs --direction in on historical sources not run
+- autohub record-issue markers beyond the record notice
+checks: {}
+diff_scope:
+  base: 7d5500b
+  head: 696e7b7
+activity_effort: high
