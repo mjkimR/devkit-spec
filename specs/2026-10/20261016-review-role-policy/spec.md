@@ -2,7 +2,7 @@
 id: SPEC-review-role-policy
 title: Separate review roles and bound medium review repetition
 summary: Separates code and reconcile reviewers, preserves mandatory initial medium code review, and permits documented medium reconcile self-verification and discretionary repeat reviews.
-status: in-progress
+status: completed
 created: 2026-10-16
 related_capabilities:
   - CAP-DLV-delivery-workflows

@@ -1,0 +1,17 @@
+kind: final-report
+stage: final-change-report
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-16T10:21:26.041974Z'
+status: completed
+summary: Separated read-only reviewers; mandatory initial medium code review, conditional initial reconcile self-check and discretionary medium repeat calls; unchanged workflow structure and high obligations. Independent code and reconcile reviews passed; subsequent wording reductions self-verified.
+findings: []
+assumptions:
+- Required isolated worktree used; local changes prepared for review without push or merge.
+checks:
+  tests: PASS 795 tests
+  build: PASS uv build sdist and wheel
+  lint: PASS just lint-check, just check, just rules-check --staged
+diff_scope:
+  base: ffa18436b5743101c8ef1a30a1d6181e1aa81f20
+  head: 8de121d7f2402e129741f5a8585d59a038e18f91
