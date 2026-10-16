@@ -2,7 +2,7 @@
 id: PROP-planning-feedback-capture
 title: Feedback capture in Planning
 summary: 'Gives proposal Planning a place and a moment to record feedback: a global location outside the proposal bundle, capture at the end of each Planning run, and a sweep before plan-accept and before a rejection, so observations survive proposals that never reach Development.'
-status: draft                         # draft | reviewing | accepted | rejected
+status: reviewing
 created_at: 2026-10-16
 target_area: capabilities/harness/
 priority: medium                      # critical | high | medium | low
