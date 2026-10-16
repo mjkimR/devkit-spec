@@ -1,0 +1,19 @@
+kind: final-report
+stage: final-change-report
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-16T08:32:43.774318Z'
+status: completed
+summary: 'Planning effort safeguards: challenger required from medium in proposal Planning, effort proposed with plan-intent and the high criteria, effort record shown at plan-accept; strategy layer 01 changed first (workbench, uncommitted)'
+findings: []
+assumptions:
+- The workbench strategy-layer edits (01 §2.3, §3, §6.2, §9, §10) are left uncommitted for the user to commit
+- Workflow binding hashes cover the stage schema only, so no proposal needed a rebind
+checks:
+  tests: PASS 795 passed
+  build: PASS guidance-only change, devkit sync clean, workflow show sdd-proposal
+  lint: PASS ruff, pyright 0 errors, devkit rules check clean
+diff_scope:
+  base: 66b6f6db750b967d646df3286c9005eaa1f1d55c
+  head: 31593cf8661b3187ae517a9f5da75c74eb1c25ee
+activity_effort: medium
