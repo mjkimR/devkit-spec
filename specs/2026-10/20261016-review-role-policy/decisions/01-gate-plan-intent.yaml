@@ -1,0 +1,10 @@
+request: gate:plan-intent
+kind: approve
+action: accept
+workflow: sdd-spec-feature
+stage: intent
+note: 'Approved scope: separate read-only review roles; mandatory initial medium code
+  review; conditional initial medium reconcile delegation; discretionary medium repeat
+  delegation; preserve stages and effort.'
+by: user
+at: '2026-10-16T10:12:24.054039Z'
