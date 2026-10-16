@@ -20,3 +20,10 @@ Never inject the whole tree.
 | `reconcile-reviewer` | `spec.md`, `reconcile.md`, the deciding review envelope, the targeted and likely affected docs (`devkit spec refs <ID> --direction in`) | required | |
 | `development-worker` | The unit's `spec.md`, `plan.md`, `tasks.md` and the code starting points | required: the last accepted head; the worker returns its own head | The worktree's absolute path, the write scope inside it (the unit's directory, the tasks' `_Boundary:` paths, the Living Spec paths the reconcile targets), the checks to run, the `activity-effort`, a recovery request for an open problem |
 | `planning-worker` | The proposal bundle and the starting points | required: the last accepted head; the worker returns its own head | The worktree's absolute path, the proposal directory as write scope, the `activity-effort`, the user's rewritten answers to the recorded questions |
+
+
+Planning feedback remains inside the proposal directory, with no extra worker write root. Each Planning run records
+observations before its last work commit and returns fresh enabled sweep evidence plus its single worker record,
+including question rounds; validate the actual range against that procedure. A previous PASS is not later-run coverage.
+Stage-off has no sweep envelope, requested-only has policy-skip PASS and incomplete coverage names its gap. Development
+workers likewise capture observed feedback in their own spec before their last work commit.

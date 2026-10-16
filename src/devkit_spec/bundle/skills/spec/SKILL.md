@@ -55,3 +55,7 @@ When the user asks for an operational procedure that is not standard feature dev
 Read [completion](references/completion.md) when approaching review or completion; reuse its knowledge classification for every task. Before `dev-integration`, run the `collect-feedback` sweep the workflow names (`spec-feedback`; report it as skipped under `[STAGE_POLICY: collect-feedback state=off]`), then present the final change report in the [envelope](references/envelope.md) format (diff scope, checks, assumptions). After `dev-integration` authorization (the user's explicit OK under `ask`, or policy delegation under `auto`), run `spec-integrate` and report code-review completion and integration completion as separate facts. PR and worktree choices follow [git policy](references/git-policy.md). Commits are plain `git commit`; the commit gate runs the staged checks.
 
 The §1 retrospective reminder is optional; it is not a completion or merge gate.
+
+
+Planning returns follow [per-run feedback](../spec-feedback/references/sweep.md#planning-run-coverage).
+Before deleting a proposal without handoff, follow [feedback retirement](references/feedback-retirement.md).

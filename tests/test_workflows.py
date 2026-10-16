@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -158,3 +160,56 @@ def test_the_living_spec_stage_requires_the_reconcile_check(workflow: str) -> No
         "envelope-completed(reconcile-check)",
         "anchor-status-completed",
     ]
+
+
+@pytest.mark.parametrize("case", ["missing", "failed", "zero", "requested-only", "off"])
+def test_proposal_sweep_controls_plan_accept(synced: Path, tmp_path: Path, case: str) -> None:
+    root = tmp_path / "project"
+    shutil.copytree(synced, root)
+    unit = "docs/proposals/PROP-sweep"
+
+    def run(*args: str) -> subprocess.CompletedProcess[str]:
+        result = _devkit(*args, "-w", str(root))
+        assert result.returncode == 0, result.stdout + result.stderr
+        return result
+
+    run("workflow", "new", "sweep", "--workflow", "sdd-proposal")
+    run("workflow", "answer", "--unit", unit, "--request", "gate:plan-intent", "--action", "accept", "--by", "user")
+    anchor = root / unit / "proposal.md"
+    anchor.write_text(re.sub(r"(?m)^status:.*$", "status: reviewing", anchor.read_text(), count=1))
+    if case in {"off", "requested-only"}:
+        config = root / ".devkit/config.toml"
+        extra = (
+            '\n[workflow.stages]\ncollect-feedback = "off"\n'
+            if case == "off"
+            else '\n[tool.spec.feedback]\ncapture = "requested-only"\n'
+        )
+        with config.open("a") as stream:
+            stream.write(extra)
+    if case in {"failed", "zero", "requested-only"}:
+        check = {
+            "failed": "FAIL uncovered context",
+            "zero": "PASS recorded=0 duplicates=0",
+            "requested-only": "PASS skipped=capture.requested-only",
+        }[case]
+        run(
+            "workflow",
+            "envelope",
+            "new",
+            "--unit",
+            unit,
+            "--kind",
+            "feedback",
+            "--stage",
+            "collect-feedback",
+            "--summary",
+            "Sweep coverage",
+            "--check",
+            f"swept={check}",
+        )
+    report = json.loads(run("workflow", "next", "--unit", unit, "--format", "json").stdout)
+    assert report["stage"]["id"] == ("collect-feedback" if case in {"missing", "failed"} else "direction-handoff")
+    assert any(request["id"] == "gate:plan-accept" for request in report["requests"]) == (
+        case in {"zero", "requested-only", "off"}
+    )
+    assert (root / unit / "envelopes/feedback-01.yaml").exists() == (case in {"failed", "zero", "requested-only"})

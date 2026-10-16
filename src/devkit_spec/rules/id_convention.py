@@ -162,8 +162,17 @@ def _feedback(path: str) -> _Target:
     parts = path.split("/")
     name = _stem(path)
     slug, issue = "", ""
+    proposal = len(parts) == 5 and parts[:2] == ["docs", "proposals"] and parts[3] == "feedback"
     if len(parts) == 5 and parts[3] == "feedback":
-        _, issue = _dated(parts[1], parts[2])
+        if proposal:
+            if (
+                not parts[2].startswith("PROP-")
+                or not _SLUG_NAME.fullmatch(parts[2][5:])
+                or not _has_letter(parts[2][5:])
+            ):
+                issue = "proposal feedback must be inside a PROP-{slug} bundle"
+        else:
+            _, issue = _dated(parts[1], parts[2])
         if not issue:
             if _DATED_NAME.match(name) or not _SLUG_NAME.match(name) or not _has_letter(name):
                 issue = (
@@ -178,6 +187,7 @@ def _feedback(path: str) -> _Target:
         issue = (
             "Feedback must be stored at specs/{YYYY-MM}/{YYYYMMDD}-{slug}/feedback/{slug}.md"
             " or specs/{YYYY-MM}/feedback/{YYYYMMDD}-{slug}.md"
+            " or docs/proposals/PROP-{slug}/feedback/{slug}.md"
         )
     expected = "" if issue else f"FB-{slug}"
     return _Target(path, Kind.FEEDBACK, slug=slug, expected_id=expected, path_issue=issue)
@@ -252,6 +262,10 @@ def _targets(ctx: RuleContext) -> list[_Target]:
                 targets.append(_feedback(path))
         elif parts[-1] in _SPEC_FILES:
             targets.append(_spec_file(path, _SPEC_FILES[parts[-1]]))
+    for path in _markdown(ctx, "docs/proposals"):
+        parts = path.split("/")
+        if len(parts) >= 5 and parts[3] == "feedback" and not path.endswith("/README.md"):
+            targets.append(_feedback(path))
     registered = namespaces(ctx)
     for docs_root in docs_roots(registered):
         for directory, kind in _LIVING_DIRECTORIES.items():

@@ -25,6 +25,7 @@ of an ID, and neither are sequence numbers: they collide across parallel branche
 | ADR | `docs/decisions/{YYYY-MM}/{YYYYMMDD}-{slug}.md` | `ADR-{slug}` |
 | Spec bundle | `specs/{YYYY-MM}/{YYYYMMDD}-{slug}/spec.md`, `plan.md`, `tasks.md`, `reconcile.md` | `SPEC-{slug}`, `PLAN-{slug}`, `TASKS-{slug}`, `reconcile_id: REC-{slug}` |
 | Feedback in a bundle | `specs/{YYYY-MM}/{YYYYMMDD}-{slug}/feedback/{name}.md` | `FB-{name}` |
+| Proposal feedback | `docs/proposals/PROP-{slug}/feedback/{name}.md` | `FB-{name}` |
 | Month-level feedback | `specs/{YYYY-MM}/feedback/{YYYYMMDD}-{name}.md` | `FB-{name}` |
 
 `{slug}` and `{name}` are kebab-case and their first segment must contain a letter (`20261014-2024-budget` would

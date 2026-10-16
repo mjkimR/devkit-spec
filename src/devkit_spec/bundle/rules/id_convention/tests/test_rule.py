@@ -550,3 +550,28 @@ def test_dated_slugs_need_a_letter_in_their_first_segment(tmp_path: Path) -> Non
         v.file in ("docs/decisions/2026-10/20261014-budget-2024.md", "specs/2026-10/20261014-q4-plan/spec.md")
         for v in violations
     )
+
+
+def test_proposal_feedback_paths_identity_and_heading(tmp_path: Path) -> None:
+    base = "docs/proposals/PROP-inspect/feedback"
+
+    def fb(name: str, heading: str) -> str:
+        return f"---\nid: FB-{name}\nstatus: open\n---\n# {heading}\n"
+
+    write_files(
+        tmp_path,
+        {
+            f"{base}/valid.md": fb("valid", "[FB-valid] Valid"),
+            f"{base}/wrong.md": fb("other", "[FB-other] Wrong"),
+            f"{base}/20261016-dated.md": fb("dated", "[FB-dated] Dated"),
+            f"{base}/nested/deep.md": fb("deep", "[FB-deep] Deep"),
+        },
+    )
+    violations = check(RULE, tmp_path)
+    assert f"{base}/valid.md" not in {v.file for v in violations}
+    assert _has(violations, f"{base}/wrong.md", 'Frontmatter id is "FB-other"')
+    assert _has(violations, f"{base}/20261016-dated.md", "without a date")
+    assert _has(violations, f"{base}/nested/deep.md", "Feedback must be stored at")
+    check(RULE, tmp_path, fix=True)
+    fixed = (tmp_path / base / "wrong.md").read_text()
+    assert "id: FB-wrong" in fixed and "# [FB-wrong]" in fixed

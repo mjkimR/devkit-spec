@@ -1,7 +1,5 @@
 # Classification, Backlog, depth changes and close
 
-Read this to classify a request, run Backlog or inline Planning, raise a task's depth, or end Development without a merge.
-
 ## 1. Classify (Backlog)
 
 Decide in this order and propose the result; the user confirms `task-kind` and `planning-depth` at `plan-intent`, `activity-effort` when the activity starts.
@@ -44,3 +42,6 @@ Development never returns to Planning. Only a party that can talk to the user cl
 - A close commit is Backlog work: commit it to the base directly (no worktree or PR policy).
 - A new draft starts over: `plan-intent` is asked again in Backlog and Planning runs anew.
 - A rejected proposal (status only, the user's reason in the commit message) is cleaned up by a later hygiene pass: a rejection ADR outside the proposal directory, referencing the proposal and the rejection commit, and the proposal deleted in the same commit; `devkit rules check -p hygiene` lists each one waiting (`SPEC_PROPOSAL_REJECTED_PENDING`). Questions still open are closed in the rejection commit with an `answer` envelope (`choice: null`, the rejection as the decision), else they hold the Planning branch's merge; the same closing answer ends a Planning returned to Backlog for decomposition.
+
+
+Before deleting any proposal, follow [feedback retirement](feedback-retirement.md).

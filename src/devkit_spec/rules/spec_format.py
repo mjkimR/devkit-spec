@@ -11,7 +11,7 @@ not it declares a well-formed ID:
 - a missing or blank ``id``, ``title`` or ``status`` (fixable), or one that is not a string.
 
 The fix prepends a block to a file without one (``id`` the ID the path derives, ``title`` the first ``# `` heading
-without a leading ``[ID]``, else the file stem, ``status: draft`` and ``created_at`` today) and fills the missing
+without a leading ``[ID]``, else the file stem, ``status: draft`` (``open`` for proposal feedback) and ``created_at`` today) and fills the missing
 fields of an existing block with the same values, adding ``created_at`` when neither ``created_at``, ``created`` nor
 ``date`` is set. The path derives the ID (``_derived_id``) of a capability or story (the file stem), of a single-file
 proposal ``PROP-<slug>.md`` or a PADR ``PROP-<slug>/decisions/PADR-<name>.md`` (the stem), of a bundle's
@@ -98,6 +98,8 @@ def _derived_id(path: str) -> str | None:
         return None
     if len(parts) == 2:
         return {PROPOSAL_FILE: bundle, TARGET_DOCS: f"{bundle}-target"}.get(parts[1])
+    if len(parts) == 3 and parts[1] == "feedback":
+        return f"FB-{stem}"
     if len(parts) == 3 and parts[1] == "decisions" and stem.startswith("PADR-"):
         return stem
     return None
@@ -268,6 +270,7 @@ def _field_line(text: str, name: str) -> int:
 def _fixed(text: str, stem: str, document_id: str | None, today: str) -> str | None:
     """``text`` with its missing required fields filled in (``id`` only when ``document_id`` is set, ``title``
     defaulting to ``stem``); ``None`` when its frontmatter cannot be fixed."""
+    default_status = "open" if document_id and document_id.startswith("FB-") else DEFAULT_STATUS
     try:
         block = locate(text)
     except FrontmatterError:
@@ -275,7 +278,7 @@ def _fixed(text: str, stem: str, document_id: str | None, today: str) -> str | N
     if block is None:
         start = 1 if text.startswith(BOM) else 0
         newline = "\r\n" if text.split("\n", 1)[0].endswith("\r") else "\n"
-        values = {"id": document_id, "title": _h1_title(text[start:]) or stem, "status": DEFAULT_STATUS}
+        values = {"id": document_id, "title": _h1_title(text[start:]) or stem, "status": default_status}
         values = {name: value for name, value in values.items() if value is not None} | {"created_at": today}
         header = "".join(_line(name, value) + newline for name, value in values.items())
         return f"{text[:start]}---{newline}{header}---{newline}{newline}{text[start:]}"
@@ -284,7 +287,7 @@ def _fixed(text: str, stem: str, document_id: str | None, today: str) -> str | N
         data = load_header(header)
     except FrontmatterError:
         return None
-    defaults = {"id": document_id, "title": _h1_title(text[block.end :]) or stem, "status": DEFAULT_STATUS}
+    defaults = {"id": document_id, "title": _h1_title(text[block.end :]) or stem, "status": default_status}
     missing = {name: value for name, value in defaults.items() if value is not None and _blank(data.get(name))}
     if not missing:
         return None

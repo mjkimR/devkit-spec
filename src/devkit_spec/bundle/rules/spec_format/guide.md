@@ -34,14 +34,14 @@ non-blank strings; their values are checked by the other spec rules (`RULE-id-co
 
 - **Autofix**: `devkit rules fix` fills what is missing and leaves every present value alone:
   - a file without a block gets one: `id` the ID its path derives, `title` the first `# ` heading (a leading `[ID]`
-    dropped), else the file stem, `status: draft` and `created_at` today;
+    dropped), else the file stem, `status: draft` (or `open` for proposal feedback) and `created_at` today;
   - a block missing `id`, `title` or `status` (or setting it to an empty or null value) gets the same values for the
     missing fields, plus `created_at` when none of `created_at`, `created` or `date` is set.
 
   The path derives the ID of a capability or story (`CAP-<AREA>-<slug>`, `US-<slug>`: the file stem), a single-file
   proposal `docs/proposals/PROP-<slug>.md` (`PROP-<slug>`), a bundle's `PROP-<slug>/proposal.md` (`PROP-<slug>`) and
   `PROP-<slug>/target-docs.md` (`PROP-<slug>-target`), and a PADR `PROP-<slug>/decisions/PADR-<name>.md`
-  (`PADR-<name>`). Any other file under `docs/proposals/` derives no ID: its missing `id` is reported without a fix
+  (`PADR-<name>`), or direct proposal `feedback/<name>.md` (`FB-<name>`). Any other file under `docs/proposals/` derives no ID: its missing `id` is reported without a fix
   (the fix still fills the other fields), and is set by hand.
 
   It never touches a malformed block, a field of the wrong type or a file that is not valid UTF-8. Review the

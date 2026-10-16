@@ -66,3 +66,10 @@ nothing. A comment or a rerun request alone resolves nothing.
   with a resolution that names the problem, or send a new worker the recovery request, which commits its fix with
   that resolution only once it actually solved it. A problem that needs the scope changed goes to the user and a close
   (the `spec` skill's `references/classification.md`).
+
+
+Planning feedback remains inside the proposal directory, with no extra worker write root. Each Planning run records
+observations before its last work commit and returns fresh enabled sweep evidence plus its single worker record,
+including question rounds; validate the actual range against that procedure. A previous PASS is not later-run coverage.
+Stage-off has no sweep envelope, requested-only has policy-skip PASS and incomplete coverage names its gap. Development
+workers likewise capture observed feedback in their own spec before their last work commit.

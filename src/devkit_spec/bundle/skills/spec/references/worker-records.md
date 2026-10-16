@@ -21,6 +21,10 @@ devkit workflow envelope worker --unit <dir> --stage <stage> --summary "<what th
 - **Emergency commit**: a run that stops on a problem commits its unfinished work with the envelope, so the next actor sees the state. This commit alone may use `git commit --no-verify` when the commit gate refuses the unfinished files; name every check it skipped in the problem (`--tried "commit gate rules-check refused: RULE-x in spec.md"`). It is safe because the problem blocks the unit until a resolution, and the fixing commit passes the gate as usual. Every other commit keeps the gate.
 - A problem is only what breaks the agreed goal, scope or contract, or what cannot be solved at all; a choice you can decide is not one, and waiting for answers is not one either.
 
+Before the last work commit, Planning/Development capture observed feedback inside their proposal/spec, even on
+questions or problems. Planning returns also follow [per-run sweep coverage](../../spec-feedback/references/sweep.md#planning-run-coverage):
+fresh evidence before this worker record, policy skips or explicit gaps; rejection starts no new sweep agent.
+
 ## 2. Answers
 
 devkit shows every unanswered question as `[PENDING_QUESTION: <file> id=<q> ...]` and as a request `[REQUEST: id=question:worker-NN.<q> kind=choose ... answer=envelope]`, and holds the gate of the stage the run was in and of every later stage (`[GATE: ... held=yes]`), and the handoff, until all are answered. Gates passed before (such as `plan-intent`) stay passed, so `devkit workflow next` keeps naming the current stage. `devkit workflow answer` refuses those requests (`DECISION_INVALID`).

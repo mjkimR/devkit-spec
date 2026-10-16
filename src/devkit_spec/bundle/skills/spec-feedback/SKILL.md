@@ -56,9 +56,10 @@ Do not record: ordinary task defects (fix them), rejected non-goals, or ideas wi
 
 1. **Finish the current step first.** Do not leave the task mid-step to write feedback. Exception: for `question`, write at least the one-line decision right after you make it so the chosen interpretation is not lost.
 2. **Locate the destination** (paths and IDs are checked by `RULE-id-convention`):
-   - Spec Unit work (`spec` and `proposal` depth): `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/feedback/<name>.md`, in the spec bundle you are working in (no date prefix on the file).
+   - Proposal Planning: `docs/proposals/PROP-<slug>/feedback/<name>.md`, inside this proposal's write boundary.
+   - Spec Unit work (`spec` depth or Development after proposal handoff): `specs/<YYYY-MM>/<YYYYMMDD>-<slug>/feedback/<name>.md`, in the spec bundle you are working in (no date prefix on the file).
    - Work without a spec bundle (`session` depth, investigation or review): `specs/<YYYY-MM>/feedback/<YYYYMMDD>-<name>.md`, current month, today's date.
-   - Create the `feedback/` directory if it does not exist. Never write under `.devkit/` or `docs/`.
+   - Create the `feedback/` directory if it does not exist. Never write under `.devkit/` or elsewhere under `docs/`; only the exact proposal feedback location above is allowed.
    - `<name>` is kebab-case and not used by another feedback file (`devkit spec resolve FB-<name>` finds none).
 3. **Write one file from the [feedback template](references/template.md).** Fill the frontmatter completely; set `id: FB-<name>` (no date) and the H1 `# [FB-<name>] <title>` (`devkit rules fix <file>` aligns both with the path). Keep the body to the section for your `kind` plus **Evidence** (quoted instruction text or a command-output excerpt). Use the configured detail level; brief and standard records should take about one minute. Detailed records prioritize useful evidence over that budget.
    - `target` is the most important field: the asset path or command a maintainer should open.
@@ -74,17 +75,7 @@ Do not record: ordinary task defects (fix them), rejected non-goals, or ideas wi
 
 ## 3. Category reference
 
-| category | Meaning |
-| :--- | :--- |
-| `instruction-conflict` | Instructions conflict with each other, or with repository reality |
-| `tool-error` | CLI or skill command failed, or an advisory gave wrong guidance |
-| `spec-ambiguity` | spec/plan/tasks wording left the decision open |
-| `context-overflow` | Required reading was too large; something was skipped or summarized |
-| `missing-capability` | A needed command, field, template or rule does not exist |
-| `docs-mismatch` | Guide or capability document differs from actual behavior |
-| `redundant-step` | A step that does not contribute to the result; duplicate reads or checks |
-| `token-cost` | Text read every session but not used |
-| `other` | None of the above; state the nature in one line at the top of the body |
+Use the [category table](references/categories.md) when assigning the observation category.
 
 ---
 
@@ -101,3 +92,8 @@ For a single observation, one line:
 ## 5. Sweep (stage or user request)
 
 For a workflow stage sweep (`collect-feedback`, or the `report-session` stage of a `session` task) or an explicit user-requested session sweep, read the [sweep procedure](references/sweep.md). Requested sweeps override autonomous capture and coverage limits and ignore the stage switch (`[workflow.stages] collect-feedback = "off"`) and write no envelope. Deduplication covers the full open backlog: `devkit spec list feedback --status open --all-namespaces -n 0`.
+
+
+Before each Planning/Development run's last work commit, capture observed feedback in its proposal/spec, including
+questions or problems. Planning returns follow [run coverage](references/sweep.md#planning-run-coverage). Handoff
+carries open files to the spec. Deletion without handoff follows the `spec` skill's `references/feedback-retirement.md`.

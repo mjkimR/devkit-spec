@@ -178,3 +178,19 @@ def test_search_follows_the_namespace(monorepo: Path, monkeypatch: pytest.Monkey
     }
     result = _spec(monorepo, "search", "search", "--namespace", "nope")
     assert result.exit_code == 2 and "(ARGUMENT_INVALID)" in result.stderr
+
+
+def test_rejected_proposal_feedback_is_discoverable_with_namespace(workspace: Path, write: Write) -> None:
+    write(".devkit/config.toml", CONFIG)
+    anchor = "docs/proposals/PROP-review/proposal.md"
+    feedback = "docs/proposals/PROP-review/feedback/observed.md"
+    write(anchor, _doc("PROP-review", "namespace: api\n").replace("active", "rejected"))
+    write(feedback, _doc("FB-observed", "title: Observation\n").replace("active", "open") + "`PROP-review`\n")
+    result = _spec(workspace, "list", "feedback", "--namespace", "api", "--format", "json")
+    assert result.exit_code == 0, result.output
+    assert _ids(result) == ["FB-observed"]
+    assert _ids(_spec(workspace, "list", "feedback", "--namespace", "web", "--format", "json")) == []
+    index = DocumentIndex.load(workspace)
+    assert index.resolve("FB-observed").path == feedback
+    assert not index.is_historical(index.resolve("FB-observed"))
+    assert list(index.incoming("PROP-review")) == ["FB-observed"]

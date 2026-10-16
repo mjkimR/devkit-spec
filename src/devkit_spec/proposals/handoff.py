@@ -11,7 +11,8 @@ path it would create), then:
 2. copies ``target-docs.md`` into the spec bundle;
 3. promotes each ``decisions/PADR-<slug>.md`` to ``docs/decisions/<YYYY-MM>/<YYYYMMDD>-<slug>.md`` as an accepted
    ``ADR-<slug>`` (its frontmatter, ``summary`` included, is kept);
-4. moves ``materials/`` to ``docs/materials/<YYYY-MM>/<YYYYMMDD>-<slug>/`` when it holds a file other than
+4. moves open proposal ``feedback/*.md`` into the spec feedback directory; settled feedback follows generic extras.
+   Moves ``materials/`` to ``docs/materials/<YYYY-MM>/<YYYYMMDD>-<slug>/`` when it holds a file other than
    operating-system junk (``JUNK_FILES``), together with every other file of the bundle that steps 1 to 3 do not
    carry (``notes.md``, a non-PADR file in ``decisions/``; junk aside), at its path relative to the bundle. Symbolic
    links are moved as links, never followed. The proposal unit's devkit workflow records (decision records and
@@ -79,6 +80,7 @@ from devkit_spec.proposals.binding import (
     spec_workflow,
 )
 from devkit_spec.proposals.body import CarriedProposal, carry_proposal_body
+from devkit_spec.proposals.feedback import plan_open_feedback
 from devkit_spec.proposals.rewrite import (
     ID,
     RelocationPlan,
@@ -292,6 +294,7 @@ def handoff_proposal(root: Path, slug: str, *, today: date | None = None) -> Han
     target_docs_text: str | None = None
     decisions: list[_Decision] = []
     extras: list[tuple[Path, Path]] = []
+    feedback: list[tuple[Path, Path]] = []
     records: list[Path] = []
     gates: list[Decision] = []
     if is_bundle:
@@ -302,12 +305,15 @@ def handoff_proposal(root: Path, slug: str, *, today: date | None = None) -> Han
         records = _unit_records(bundle)
         gates = _proposal_gates(bundle, text_value(meta.get("workflow")))
         preserved = root / "docs" / MATERIALS / month / f"{stamp}-{slug}"
-        extras = _plan_extras(root, bundle, decisions, records, preserved, move_materials)
+        feedback = plan_open_feedback(root, bundle, target_dir)
+        extras = _plan_extras(
+            root, bundle, decisions, records + [source for source, _ in feedback], preserved, move_materials
+        )
         if move_materials or extras:
             materials_target = preserved
             targets.append(materials_target)
     _check_targets(root, index, targets, decisions)
-    for destination in [*targets, *(destination for _, destination in extras)]:
+    for destination in [*targets, *(destination for _, destination in extras + feedback)]:
         _require_inside(root, destination)
 
     title = text_value(meta.get("title")) or slug
@@ -359,7 +365,7 @@ def handoff_proposal(root: Path, slug: str, *, today: date | None = None) -> Han
         if materials_target is not None and move_materials:
             make_dirs(materials_target.parent, written)
             move_path(materials_dir, materials_target, written, moved, leftovers)
-        for source, destination in extras:
+        for source, destination in feedback + extras:
             _require_inside(root, destination)  # the moved materials/ may hold a symbolic link
             make_dirs(destination.parent, written)
             move_path(source, destination, written, moved, leftovers)
@@ -389,7 +395,7 @@ def handoff_proposal(root: Path, slug: str, *, today: date | None = None) -> Han
         if materials_target is not None and move_materials:
             plan.prefixes[str(materials_dir)] = str(materials_target)
             plan.moved[str(materials_target)] = str(materials_dir)
-        for source, destination in extras:
+        for source, destination in feedback + extras:
             plan.exact[str(source)] = str(destination)
             plan.moved_files[str(destination)] = str(source)
     else:

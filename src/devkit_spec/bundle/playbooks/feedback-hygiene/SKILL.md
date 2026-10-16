@@ -11,7 +11,7 @@ aliases:
 
 # Feedback hygiene
 
-Feedback files recorded by the `spec-feedback` skill (`specs/**/feedback/*.md`, kind `feedback`) stay
+Feedback files recorded by the `spec-feedback` skill (spec-local, proposal-local or month-level paths, kind `feedback`) stay
 `status: open` through completion and integration. This playbook is the only path that changes their status:
 `spec-feedback` records, it never promotes. Run it in a hygiene session the user asks for, typically when open or
 critical items have accumulated.
@@ -93,7 +93,10 @@ resume command. List them for the user with the two ways on, resume or discard, 
 The same run lists each rejected proposal still in the base (`SPEC_PROPOSAL_REJECTED_PENDING`). Its cleanup is
 Host work, done here once the user agrees: find the rejection commit and the user's reason
 (`git log -1 --format='%H %B' -S'status: rejected' -- <proposal.md>`), write a rejection ADR under `docs/decisions/`
-that references the proposal and that commit, and delete the proposal in the same commit. Nothing is rewritten from
+that references the proposal and that commit. Before deleting, follow the
+[feedback retirement procedure](../../skills/spec/references/feedback-retirement.md): preserve open observations,
+retire historical references with Git context, update relative links and validate current references. Keep the proposal
+on collision, invalid input or an unresolved live dependency. Put preservation, the ADR and deletion in the same commit. Nothing is rewritten from
 the reason; quote it.
 
 ## Completion conditions

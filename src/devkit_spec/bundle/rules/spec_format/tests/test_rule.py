@@ -236,3 +236,19 @@ def test_fix_leaves_an_underivable_id_missing(tmp_path: Path) -> None:
     assert (tmp_path / "docs/proposals/draft/proposal.md").read_text() == (
         f"---\ntitle: Draft\nstatus: draft\ncreated_at: {TODAY}\n---\n\n# Draft\n"
     )
+
+
+def test_fix_derives_proposal_feedback_identity(tmp_path: Path) -> None:
+    name = "docs/proposals/PROP-review/feedback/observed.md"
+    write_files(tmp_path, {name: "---\ntitle: Observed\nstatus: open\n---\n# Observation\n"})
+    check(RULE, tmp_path, fix=True)
+    assert "id: FB-observed\n" in (tmp_path / name).read_text()
+    assert not _found(check(RULE, tmp_path))
+
+
+def test_new_proposal_feedback_defaults_to_open(tmp_path: Path) -> None:
+    name = "docs/proposals/PROP-review/feedback/observed.md"
+    write_files(tmp_path, {name: "# Observation\n"})
+    check(RULE, tmp_path, fix=True)
+    fixed = (tmp_path / name).read_text()
+    assert "id: FB-observed" in fixed and "status: open" in fixed

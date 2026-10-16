@@ -40,6 +40,16 @@ stages:
     isolation: preferred
     returns:
       - { to: intent-proposal, when: the goal itself is unclear }
+  - id: collect-feedback
+    name: Collect feedback
+    human_gate: false
+    entry: [anchor-exists]
+    exit: [envelope-check-pass(feedback swept)]
+    artifacts: [feedback/*.md, envelopes/feedback-NN.yaml]
+    skills: [spec-feedback]
+    role: developer
+    isolation: none
+    returns: []
   - id: direction-handoff
     name: Plan accept
     human_gate: plan-accept
@@ -90,7 +100,7 @@ The frontmatter is the only stage definition. Read it with `devkit workflow show
 | proposal `status` | stage | who changes it |
 | --- | --- | --- |
 | `draft` | `intent-proposal` | whoever adds the draft, in any activity; `plan-intent` is the user's confirmation of the draft in Backlog |
-| `reviewing` | `spike`, `direction-handoff` | the executor that starts Planning, on the `plan-<slug>` branch |
+| `reviewing` | `spike`, `collect-feedback`, `direction-handoff` | the executor that starts Planning, on the `plan-<slug>` branch |
 | `accepted` | `plan-accept` passed | after the user's acceptance (Host locally, autohub in `cloud-pr`) |
 | `rejected` | Planning ends | the Host or autohub that received the rejection, status only |
 
@@ -103,9 +113,25 @@ The frontmatter is the only stage definition. Read it with `devkit workflow show
 - `plan-intent` and `plan-accept` are the only decisions before handoff and are always a person's; their only accepted policy is `ask` (`gates.<gate>.policies`). Everything after handoff belongs to the bound workflow, which carries both records under their own names.
 - **Questions are collected in one round.** The review continues past the first question; only the parts that depend on an answer stay open. A question carries a recommended option when one is clear, else several options with one recommended. The questions go into the run's `worker` envelope (`questions`, status `needs_input`); the gates from that run's stage on (here `plan-accept`) and the Planning branch's merge wait until an `answer` envelope answers each (`[PENDING_QUESTION]`); `plan-intent`, passed before, stays passed. Answers are rewritten to one choice and one decision sentence per question, never the raw conversation, recorded first as an `answer` envelope naming that `worker` envelope (the `spec` skill's `references/worker-records.md`), and an answer that leaves something ambiguous is asked again rather than guessed.
 - **`plan-accept` is the acceptance of the direction** and also the approval to merge the Planning branch. Ask and record it only for a proposal in review (`status: reviewing`): never for a `draft` (Planning has not started) or a `rejected` one (its Planning has ended). Record it on the proposal's `plan-<slug>` branch, in the Planning's own checkout, never on the base. The acceptance request shows the proposal's change summary, the list of decisions made in this Planning, and the effort record: the `activity-effort` of each Planning run (its `worker` envelope) and the support-role envelopes present (`challenger`, `scout`, or none, from `devkit workflow envelope check --unit <dir>`). When a run's effort required a `challenger` that left no envelope, the request names the gap; the user may send the proposal back to `spike`. Under `ask` (the only value) the gate passes with `devkit workflow answer --unit <dir> --request gate:plan-accept --action accept --by user`, written only after the user's explicit acceptance, together with `status: accepted` in the same commit.
-- **Rejection changes the status only.** The executor that received it sets `status: rejected` and puts the user's reason, unrewritten, in the commit message (and in the final merge commit when commits are squashed), then merges per policy. Questions still open from the last run are closed in the same commit with an `answer` envelope giving each `choice: null` and the rejection as its decision, so they do not hold the merge. No worker runs, no ADR is written and the proposal is not deleted at that point; a later hygiene pass by the Host writes the rejection ADR outside the proposal directory, referencing the proposal and the rejection commit, and deletes the proposal in the same commit. A `rejected` proposal is never resumed, accepted or started: never answer its `plan-accept`, the attach check refuses to continue its branches, and `devkit rules check -p hygiene` lists it (`SPEC_PROPOSAL_REJECTED_PENDING`) until the cleanup. `devkit workflow next` keeps showing `direction-handoff` with its `frontmatter(proposal.md status reviewing|accepted)` exit unmet (`status=rejected`): that is the ended Planning, never an instruction to set the status back to `reviewing`.
+- **Rejection changes the status only.** The executor that received it sets `status: rejected` and puts the user's reason, unrewritten, in the commit message (and in the final merge commit when commits are squashed), then merges per policy. Questions still open from the last run are closed in the same commit with an `answer` envelope giving each `choice: null` and the rejection as its decision, so they do not hold the merge. No worker runs, no ADR is written and the proposal is not deleted at that point; a later hygiene pass by the Host writes the rejection ADR outside the proposal directory, referencing the proposal and the rejection commit, and deletes the proposal in the same commit. A `rejected` proposal is never resumed, accepted or started: never answer its `plan-accept`, the attach check refuses to continue its branches, and `devkit rules check -p hygiene` lists it (`SPEC_PROPOSAL_REJECTED_PENDING`) until the cleanup. `devkit workflow next` may show unmet `collect-feedback` or `direction-handoff` checks for `status=rejected`: Planning has ended; never start another sweep or set it back to `reviewing`.
 - Scout is an optional support role; Challenger is optional only at `low` effort. Zero findings is a valid spike result.
 
 ## Project policy execution
 
 Read `devkit spec policy` before Planning: stage switches come from `[workflow.stages]`, and whether a `direct`-mode Planning branch runs in a separate worktree from `[tool.spec] worktree`; `local-orchestrated` always uses one, `cloud-pr` uses the runner's checkout. `plan-intent` and `plan-accept` always need the user and `exception` always needs resolution. Explicit user authority, required worktree and PR policy, external protections and action permissions remain applicable.
+
+
+## Planning feedback
+
+Each Planning run records concrete observations under its own proposal's `feedback/` before its last work commit
+when `capture=observed`, including runs ending with questions or a problem. Before every return to the user, run
+the enabled `collect-feedback` sweep for this run and committed accumulated records, then write the single
+`worker` envelope. Each run writes new sweep evidence; an older PASS is not coverage of a later run. A gap is
+recorded as FAIL and remains visible. Stage-off skips only sweep/evidence, not observed capture; requested-only writes
+policy-skip PASS without observations. Explicit requested sweeps retain their no-envelope override.
+
+Rejection uses the last run's recorded coverage or declared skip/gap, starts no worker or Cloud Agent, and claims no
+fresh sweep of a later conversation. Before any run there are no run observations. Keep rejected/decomposition-return
+feedback with its proposal; before deleting it, the Host follows the `spec` skill's
+`references/feedback-retirement.md`. At handoff open files move into the spec feedback directory, settled files
+follow preserved materials, and Planning envelopes are dropped. Development supplies its own sweep.
