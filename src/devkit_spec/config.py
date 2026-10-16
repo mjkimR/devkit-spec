@@ -230,16 +230,19 @@ def read_spec_config(root: Path) -> SpecConfig:
 
 
 def check_approvals(approvals: dict[str, str]) -> None:
-    """Refuse ``[workflow.approvals]`` entries the spec workflows do not accept: a key for a ``FIXED_GATES`` gate
-    (always a person's decision) and ``dev-integration = "off"`` (it would skip the integration stage).
+    """Refuse ``[workflow.approvals]`` entries the spec workflows do not accept: a ``FIXED_GATES`` gate set to anything
+    but ``ask`` (always a person's decision; an explicit ``ask`` is its default) and ``dev-integration = "off"`` (it
+    would skip the integration stage). ``exception`` is a stage, not a gate, so no key concerns it.
 
-    devkit's engine takes any gate name with ``ask``, ``auto`` or ``off``; this is devkit-spec's narrower policy.
+    The workflow definitions declare the same rule (``gates.<gate>.policies``), which devkit enforces wherever it
+    evaluates a unit (``WORKFLOW_GATE_POLICY``); this reports it before any unit is evaluated.
     """
-    fixed = sorted(gate for gate in approvals if gate in FIXED_GATES)
+    fixed = sorted(gate for gate, policy in approvals.items() if gate in FIXED_GATES and policy != "ask")
     if fixed:
         raise SpecConfigError(
-            f"config workflow.approvals: {', '.join(fixed)} is always decided by a person and takes no policy key",
-            fix=f"Remove {', '.join(fixed)} from [workflow.approvals] in .devkit/config.toml",
+            f'config workflow.approvals: {", ".join(fixed)} is always decided by a person; only "ask" (its default)'
+            " is accepted",
+            fix=f'Remove {", ".join(fixed)} from [workflow.approvals] in .devkit/config.toml, or set it to "ask"',
         )
     integration = approvals.get(INTEGRATION_GATE, "ask")
     if integration not in INTEGRATION_POLICIES:

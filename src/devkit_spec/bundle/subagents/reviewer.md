@@ -26,7 +26,7 @@ hosts:
 
 ## Purpose
 
-Execute the `spec-review` procedure in an isolated context against the actual diff, acceptance criteria and check results, so the implementer's self-assessment does not bias the review. This is not a new review contract: it produces the same review fields as the Developer running `spec-review` directly. At `activity-effort` `medium` of a spec unit you also check the reconcile result after it is written (missing targets, contract agreement); reviewing the code alone does not cover it. For a `session` task (no unit) your returned message is the whole result: nothing is written as an envelope.
+Execute the `spec-review` procedure in an isolated context against the actual diff, acceptance criteria and check results, so the implementer's self-assessment does not bias the review. This is not a new review contract: it produces the same review fields as the Developer running `spec-review` directly. At `activity-effort` `medium` of a spec unit you also check the reconcile result after it is written (missing targets, contract agreement); reviewing the code alone does not cover it. Return that check as its own result, the fields of a `reconcile-check` envelope (status, summary, findings), separate from the code review: the caller records it at `living-spec-draft`, never as a review round. For a `session` task (no unit) your returned message is the whole result: nothing is written as an envelope.
 
 ## Input
 

@@ -55,7 +55,7 @@ def test_configured(workspace: Path, write: Write) -> None:
 
 @pytest.mark.parametrize(
     "approvals",
-    ['plan-intent = "auto"', 'plan-accept = "ask"', 'dev-integration = "off"'],
+    ['plan-intent = "auto"', 'plan-accept = "off"', 'dev-integration = "off"'],
 )
 def test_a_person_decides_plan_gates_and_integration_is_never_skipped(
     workspace: Path, write: Write, approvals: str
@@ -63,6 +63,13 @@ def test_a_person_decides_plan_gates_and_integration_is_never_skipped(
     write(".devkit/config.toml", f"[workflow.approvals]\n{approvals}\n")
     result = _policy(workspace)
     assert result.exit_code == 2 and "SPEC_CONFIG_INVALID" in result.stderr
+
+
+@pytest.mark.parametrize("approvals", ['plan-intent = "ask"', 'plan-accept = "ask"', 'exception = "auto"'])
+def test_an_explicit_ask_and_a_key_for_no_gate_are_accepted(workspace: Path, write: Write, approvals: str) -> None:
+    # ask is the fixed gates' default; exception is a stage, not a gate, so its key concerns no gate.
+    write(".devkit/config.toml", f"[workflow.approvals]\n{approvals}\n")
+    assert _policy(workspace).exit_code == 0
 
 
 @pytest.mark.parametrize(

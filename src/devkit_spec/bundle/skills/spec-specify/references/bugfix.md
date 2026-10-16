@@ -4,7 +4,7 @@ Read when the bundle is bound to workflow `sdd-spec-bugfix` (a defect whose fix 
 
 ## Step 1: Characterize the defect (stage `characterize`)
 
-Write `spec.md` with these sections (the bound workflow `sdd-spec-bugfix` is the only record that it is a bugfix; there is no `kind` field). Do not write a feature-style user story.
+Write `spec.md` with these sections (the bound workflow `sdd-spec-bugfix` is the only record that it is a bugfix; there is no `kind` field). Do not write a feature-style user story: `devkit spec new` and the proposal handoff give a bugfix `spec.md` a `Defect Characterization` section with the first four items below to fill in.
 
 - **Current behavior**: the trigger conditions, environment and the observed wrong result, with evidence (log, failing command, test name).
 - **Expected behavior and its basis**: the result the existing contract requires, citing the capability, story, ADR or test that defines it by ID. If the agreed expected behavior cannot be kept (it turns out to be disputed, or a design decision rather than a defect), stop and report it as a problem: a worker records it and ends, and the Host decides recovery or a close.

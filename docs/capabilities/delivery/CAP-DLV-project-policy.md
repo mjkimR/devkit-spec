@@ -52,9 +52,11 @@ policy with one command, `devkit spec policy`, before routing, gate and Git deci
    `delete_branch = true`, no `setup`).
 4. **Gate order and fixed gates**: the spec workflows' gates `plan-intent`, `plan-accept`, `dev-integration` come
    first, then any other gate the project configures, in sorted order. `plan-intent` and `plan-accept` are always the
-   user's decision (`source=fixed`): a `[workflow.approvals]` key for either is `SPEC_CONFIG_INVALID`, and so is
-   `dev-integration = "off"` (it would skip the integration stage); `dev-integration` takes `ask` or `auto`, and
-   `auto` applies at every `activity-effort`.
+   user's decision (`source=fixed`): a `[workflow.approvals]` value other than `ask` (their default) for either is
+   `SPEC_CONFIG_INVALID`, and so is `dev-integration = "off"` (it would skip the integration stage); `dev-integration`
+   takes `ask` or `auto`, and `auto` applies at every `activity-effort`. The workflow definitions declare the same rule
+   (`gates.<gate>.policies`), so devkit refuses it too wherever it evaluates a unit (`WORKFLOW_GATE_POLICY`).
+   `exception` is a stage, not a gate: no key concerns it.
 5. **Strict table**: `[tool.spec]` MUST be a table with only the keys `worktree`, `depth_escalation`, `namespaces`,
    `scope` and `feedback`; anything else is `SPEC_CONFIG_INVALID`, raised by every command that reads the table.
    `worktree` is `"auto"` or `"required"`, `depth_escalation` `"auto"` or `"ask"`; a boolean is `SPEC_CONFIG_INVALID`, with no mapping (devkit rejects a boolean `pull_request` the
@@ -124,7 +126,7 @@ are the level strings, `setup` is `null` when unset).
 # .devkit/config.toml
 [workflow.approvals]
 dev-integration = "ask"     # one approval per integration unit (PR); "auto" after review, checks and reconcile
-# plan-intent and plan-accept take no key: they are always the user's
+# plan-intent and plan-accept accept only "ask" (their default): they are always the user's
 
 [workflow.stages]
 collect-feedback = "off"    # switch a stage off by id

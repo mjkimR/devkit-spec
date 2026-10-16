@@ -375,7 +375,7 @@ size: M                               # S | M | L | XL
 
 ## 4. Lifecycle & Retirement Criteria
 <!--
-- Preliminary decisions: devkit spec proposal padr {slug} "<title>" records a PADR in decisions/.
+- Preliminary decisions: devkit spec proposal padr {slug} "<title>" --summary "<what it decides>" records a PADR in decisions/.
 - Research: collect benchmarks and references in materials/.
 - On acceptance (plan-accept): record gate:plan-accept, set status: accepted and merge the Planning branch; Development
   starts with devkit spec proposal handoff {slug}.

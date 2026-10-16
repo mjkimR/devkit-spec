@@ -148,3 +148,13 @@ def test_plan_accept_is_asked_only_for_a_proposal_in_review() -> None:
     stage = next(s for s in _definition("sdd-proposal")["stages"] if s["id"] == "direction-handoff")  # type: ignore[union-attr]
     assert stage["human_gate"] == "plan-accept"
     assert stage["exit"] == ["frontmatter(proposal.md status reviewing|accepted)"]
+
+
+@pytest.mark.parametrize("workflow", ["sdd-spec-feature", "sdd-spec-bugfix"])
+def test_the_living_spec_stage_requires_the_reconcile_check(workflow: str) -> None:
+    stage = next(s for s in _definition(workflow)["stages"] if s["id"] == "living-spec-draft")  # type: ignore[union-attr]
+    assert stage["exit"] == [
+        "frontmatter(reconcile.md status resolved)",
+        "envelope-completed(reconcile-check)",
+        "anchor-status-completed",
+    ]

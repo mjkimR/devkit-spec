@@ -37,7 +37,7 @@ It changes no gate, policy or authority. `GATE_POLICY` and `GIT_POLICY` apply as
 ## 4. Keeping track
 
 - Keep one line per unit in the conversation: slug, activity, worktree, stage (`devkit workflow next --unit <dir>`), worker state.
-- After context loss, `devkit worktree status`, `devkit spec scope query` and `devkit workflow next --unit <dir>` per unit rebuild the picture: `[BLOCKED]` names each problem without a resolution (or a malformed `worker` envelope), `[PENDING_QUESTION]` each unanswered question; `next` still names the current stage, where the recovery runs. A range you cannot account for is validated again from the branch's merge base.
+- After context loss, `devkit worktree status`, `devkit spec scope query` and `devkit workflow next --unit <dir>` per unit rebuild the picture: `[BLOCKED]` names each problem without a resolution (or a malformed `worker` envelope), `[PENDING_QUESTION]` each unanswered question; `next` still names the current stage, where the recovery runs, except for a malformed `worker` envelope without a readable stage, which holds every gate until the file is fixed. A range you cannot account for is validated again from the branch's merge base.
 - Report each unit's completion, commit and integration as separate facts, as in `direct`.
 
 ## 5. Returning to direct mode

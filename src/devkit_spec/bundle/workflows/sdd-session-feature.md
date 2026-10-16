@@ -113,13 +113,13 @@ A session completes without document artifacts. It creates no spec Unit, no enve
 
 ## Mode
 
-A session runs in `direct` or through the `cloud-pr` general PR path (a Work Plan Item a Cloud Agent turns into a PR) only, never in `local-orchestrated`: a one-shot worker cannot read a conversation, and a worktree plus a worker cost more than the work. A Host in `local-orchestrated` handles a session-depth task itself in `direct`. With a PR the work runs on `dev-<slug>`; without one on the current branch.
+A session runs in `direct` or through the `cloud-pr` general PR path (a Work Plan Item a Cloud Agent turns into a PR) only, never in `local-orchestrated`: a one-shot worker cannot read a conversation, and a worktree plus a worker cost more than the work. A Host in `local-orchestrated` handles a session-depth task itself in `direct`. With a PR the work runs on `dev-<slug>`; without one on the current branch, except that on the base branch under `dev-integration = "ask"` the work runs on `dev-<slug>` (`devkit worktree start dev-<slug> --no-worktree`) or the user's OK is obtained before the commit, so nothing reaches the base before the approval (01 §6.1, 03 §3).
 
 ## Gate rules
 
 - `merge` and `exception` are the shared stages of the delivery workflows. A session has no `reconcile.md`, so it uses `commit-session` instead of `integrate` and does not run `spec-integrate` or `spec-sync`.
 - `devkit workflow next` is not used: there is no unit to evaluate, so the executor follows the stages itself (`devkit workflow show sdd-session-feature`).
-- **Commit before approval**: plain `git commit` once the review is done and before `dev-integration`, so the approval (the user's OK, or a PR's ready state) is given on committed work CI has checked; a PR is pushed and opened at this stage. devkit's commit gate runs the staged checks, and repository CI runs the cumulative check (`lint-ci-clean`, locally `devkit rules check --ci --base <ref>`). If integrating the base needed conflict resolution, re-run the checks for what it changed.
+- **Commit before approval**: plain `git commit` once the review is done and before `dev-integration`, so the approval (the user's OK, or a PR's ready state) is given on committed work CI has checked; a PR is pushed and opened at this stage. On a task branch (`dev-<slug>`) the commit stays off the base until the `merge` stage. Committing on the base branch itself would integrate before the approval: under `dev-integration = "ask"` work there only after the user's OK (then the order is approval, commit, push), or start `dev-<slug>` instead; under `auto` the completion conditions are the authority and the commit may follow them. devkit's commit gate runs the staged checks, and repository CI runs the cumulative check (`lint-ci-clean`, locally `devkit rules check --ci --base <ref>`). If integrating the base needed conflict resolution, re-run the checks for what it changed.
 
 ## Project policy execution
 

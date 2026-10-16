@@ -36,7 +36,7 @@ Read `.devkit/managed/spec/AGENTS.md` (the spec constitution; you have no shell 
 
 ## Return
 
-The fields of a devkit envelope of kind `reconciler`, as YAML with findings as a list; do not write envelope files: `status` (`completed` with no findings is a pass), `summary` (verified targets, or the confirmed no-impact), `findings` for every omission or mismatch (`issue`, `evidence`, `failure_condition`, `suggested_action`), `assumptions`, `unverified_areas`.
+The fields of a devkit envelope of kind `reconcile-check` (the caller records it at `living-spec-draft`), as YAML with findings as a list; do not write envelope files: `status` (`completed` with no findings is a pass), `summary` (verified targets, or the confirmed no-impact), `findings` for every omission or mismatch (`issue`, `evidence`, `failure_condition`, `suggested_action`), `assumptions`, `unverified_areas`.
 
 ## Write boundaries
 

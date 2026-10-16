@@ -13,8 +13,12 @@ time, backed by the diff.
   explicit target.
 - **Diff evidence**: in a snapshot run (`devkit rules check --staged`, which the commit gate runs, and `--ci` on a
   pull request), a well-formed `resolved` record that the diff changes must have each `modified` target changed or
-  deleted by that diff. `--ci` judges the whole branch against its merge base, so a target changed in an earlier
-  commit of the branch counts there. A record whose frontmatter is unchanged from the base (only its body was edited,
+  deleted on the branch. `--ci` judges the whole branch against its merge base. At commit time the staged diff is
+  read together with the branch's earlier commits since its merge base with the branch it integrates into: the
+  `devkitBase` a `devkit worktree start --no-worktree` recorded, else the base checkout's branch, else `origin/HEAD`.
+  So a target an earlier commit of the branch changed (an ADR the proposal handoff promoted, a Living Spec page
+  committed at an earlier stage boundary) counts. When no such base is found (work committed straight on the base
+  branch), the staged diff alone is the evidence. A record whose frontmatter is unchanged from the base (only its body was edited,
   such as a rewritten link) claims nothing new and is not re-checked. A plain `devkit rules check` has no diff and
   checks the form only.
 
@@ -35,15 +39,15 @@ Every violation is reported at line 1:
   <value>`.
 - A waiver whose `rationale` has fewer than 20 non-whitespace characters, since a waiver says why the file needs no
   change: `targets[<n>] waiver of <file> needs a rationale of at least 20 non-whitespace characters, has <count>`.
-- In a snapshot run, a `modified` target the diff does not change: `target <file> is resolved as modified but absent
-  from the <staged|ci> diff`.
+- In a snapshot run, a `modified` target the branch does not change: `target <file> is resolved as modified but
+  absent from the staged diff or the branch's earlier commits` (commit time) or `... absent from the ci diff`.
 
 ## 3. Remediation
 
 Not fixable. Give `reconcile.md` a `reconcile_id`, `status` `pending` or `resolved` and `targets` as a list of
 `{file, resolution: modified|waived, rationale}` (`targets: []` when nothing in the Living Spec is affected), with a
-rationale of at least 20 non-whitespace characters for each waiver. For a missing diff evidence, commit the Living
-Spec edits together with the record that resolves them, or correct the target's resolution.
+rationale of at least 20 non-whitespace characters for each waiver. For a missing diff evidence, change the Living
+Spec file on the branch (with the record or in an earlier commit), or correct the target's resolution.
 
 ## 4. Configuration
 

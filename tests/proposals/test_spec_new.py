@@ -246,3 +246,19 @@ def test_a_slug_fits_its_activity_branches() -> None:
     assert new_slug("a" * 59, error=SpecSlugError) == "a" * 59  # plan-<slug> and dev-<slug> fit 64 characters
     with pytest.raises(SpecSlugError, match="at most 59"):
         new_slug("a" * 60, error=SpecSlugError)
+
+
+def test_a_bugfix_spec_is_characterized_not_told_as_a_story() -> None:
+    from devkit_spec.proposals.specs import spec_files
+
+    bugfix = spec_files("x", "Fix x", "2026-10-16", origin="o\n", bugfix=True)["spec.md"]
+    feature = spec_files("x", "Add x", "2026-10-16", origin="o\n")["spec.md"]
+    assert "## 2. Defect Characterization" in bugfix and "User Stories" not in bugfix
+    for section in (
+        "Current behavior",
+        "Expected behavior and its basis",
+        "Behavior to preserve",
+        "Reproduction conditions",
+    ):
+        assert f"**{section}**" in bugfix
+    assert "## 2. User Stories" in feature and "Defect Characterization" not in feature

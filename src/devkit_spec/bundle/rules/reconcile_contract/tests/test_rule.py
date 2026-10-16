@@ -143,7 +143,12 @@ def test_a_resolved_record_needs_its_modified_targets_in_the_diff(tmp_path: Path
             ),
         },
     )
-    assert _staged(tmp_path) == [(RECORD, "target docs/b.md is resolved as modified but absent from the staged diff")]
+    assert _staged(tmp_path) == [
+        (
+            RECORD,
+            "target docs/b.md is resolved as modified but absent from the staged diff or the branch's earlier commits",
+        )
+    ]
 
 
 def test_a_pending_record_and_a_body_only_edit_need_no_evidence(tmp_path: Path) -> None:
@@ -156,3 +161,36 @@ def test_a_pending_record_and_a_body_only_edit_need_no_evidence(tmp_path: Path) 
     _git(tmp_path, "commit", "-q", "-m", "resolved")
     write_files(tmp_path, {RECORD: _targets_record(targets) + "Body note.\n"})
     assert _staged(tmp_path) == []
+
+
+def test_a_target_an_earlier_commit_of_the_branch_changed_counts_at_commit_time(tmp_path: Path) -> None:
+    _repo(tmp_path)
+    write_files(tmp_path, {"docs/a.md": "a\n", "docs/b.md": "b\n"})
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "base")
+    _git(tmp_path, "switch", "-q", "-c", "dev-x")
+    _git(tmp_path, "config", "branch.dev-x.devkitBase", "main")  # what `devkit worktree start --no-worktree` records
+    write_files(tmp_path, {"docs/a.md": "a promoted by the handoff\n"})
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "handoff")
+    targets = "  - {file: docs/a.md, resolution: modified}\n  - {file: docs/b.md, resolution: modified}\n"
+    write_files(tmp_path, {SPEC: _spec(), RECORD: _targets_record(targets)})
+    # docs/a.md changed in the branch's earlier commit; docs/b.md never did.
+    assert _staged(tmp_path) == [
+        (
+            RECORD,
+            "target docs/b.md is resolved as modified but absent from the staged diff or the branch's earlier commits",
+        )
+    ]
+
+
+def test_without_an_integration_base_the_staged_diff_alone_is_the_evidence(tmp_path: Path) -> None:
+    _repo(tmp_path)
+    write_files(tmp_path, {"docs/a.md": "a\n"})
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "base")
+    write_files(tmp_path, {"docs/a.md": "a changed\n"})
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "on main itself")
+    write_files(tmp_path, {SPEC: _spec(), RECORD: _targets_record("  - {file: docs/a.md, resolution: modified}\n")})
+    assert len(_staged(tmp_path)) == 1  # no other branch to integrate into: an earlier commit on main is not evidence

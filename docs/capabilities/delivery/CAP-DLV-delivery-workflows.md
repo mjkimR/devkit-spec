@@ -65,11 +65,12 @@ sequence.
    stage belongs to no activity. Numbered gate names are not used.
 5. **Approval is never inferred**: `plan-intent` and `plan-accept` pass only with a decision recorded by
    `devkit workflow answer --unit <dir> --request gate:<gate> --action accept|decline --by user`, written only after
-   the user's explicit answer; they take no policy key. The record names the authority and carries no conversation:
+   the user's explicit answer; their only accepted policy is `ask`. The record names the authority and carries no conversation:
    no quotes, paraphrase or dates of it; a decline note states the reason as a decision. `dev-integration` passes
    only with `--given dev-integration`, passed to each `devkit workflow next` after the user's explicit OK and never
    recorded, or with the PR ready state a runner binds (`ADR-integration-approval-asserted`); under `auto` it passes by
-   policy (`source=policy`) and the executor MUST report the delegation as the authority, never as a human approval.
+   policy (`[GATE_PASSED: dev-integration ... source=policy]`, JSON `passed_gates`) and the executor MUST report the
+   delegation as the authority, never as a human approval.
    None grants new commit, merge, publication or deletion authority. `devkit workflow return --unit <dir> --to
    <stage>` voids the approvals of that stage and later ones, and the envelopes recorded for them before the return.
 6. **`plan-intent` opens every task**: goal, scope, verification (for a bugfix, the expected behavior), `task-kind`
@@ -112,7 +113,9 @@ sequence.
 15. **`activity-effort` sets the review, never the floor**: Development of a spec unit reviews at `low` by the author
     (stated as self-review in the envelope), at `medium` with one `reviewer` pass plus reverification of fixes (the
     reviewer also checks the reconcile result), at `high` with a re-review after fixes and a separate `reconciler`
-    verification. The implementer always writes the Living Spec reflection and resolves `reconcile.md`. A session
+    verification. The implementer always writes the Living Spec reflection and resolves `reconcile.md`; the
+    verification at every effort is a `reconcile-check` envelope the `living-spec-draft` exit reads, so its findings
+    are fixed in the reconcile and never reopen `review-refine`. A session
     reviews at the same levels but its reviewer returns a message and nothing is written. Gates, exit checks and
     `required` policies hold at every effort.
 16. **Only the workers write to Git**: a read-only role never stages or commits (`x-git-actions: [read]`). The two
@@ -161,7 +164,7 @@ Every workflow also has `exception`. Stage details of the spec-bundle workflows:
 | `fix-verify` (bugfix) | `envelope-check-pass(red reproduced)` | `tasks-all-checked`, `envelope-check-pass(green resolved)`, `envelope-check-pass(green preserved)`, `lint-clean` | developer / none | |
 | `build-verify` | `tasks-exists` | `tasks-all-checked`, `lint-clean` | developer / none | |
 | `review-refine` | `tasks-all-checked` | `envelope-review-passed` | reviewer / preferred | `spec-review`, `spec-delegate` |
-| `living-spec-draft` | `envelope-review-passed` | `frontmatter(reconcile.md status resolved)`, `anchor-status-completed` | reconciler / preferred | `spec-sync`, `spec-delegate` |
+| `living-spec-draft` | `envelope-review-passed` | `frontmatter(reconcile.md status resolved)`, `envelope-completed(reconcile-check)`, `anchor-status-completed` | reconciler / preferred | `spec-sync`, `spec-delegate` |
 | `collect-feedback` | `frontmatter(reconcile.md status resolved)` | `envelope-check-pass(feedback swept)` | developer / none | `spec-feedback` |
 | `final-change-report` | `envelope-check-pass(feedback swept)` | `envelope-check-pass(final-report tests)`, `envelope-check-pass(final-report build)`, `envelope-check-pass(final-report lint)` | developer / none | `spec` |
 | `integration-approval` | the three final-report checks | none | developer / none | `spec` |
@@ -188,8 +191,9 @@ writes into the proposal's `materials/`. The `report-session` stage of a session
   stage's return path; where a runner binds `gate:dev-integration` to PR state, the PR ready state answers it. Every
   definition with that gate declares `gates: {dev-integration: {answer: given}}`, so `next` ends its `[REQUEST]` with
   `answer=given`.
-- `dev-integration = "auto"`: the gate passes by policy; `next` prints `[GATE: dev-integration policy=auto ...
-  source=policy]`.
+- `dev-integration = "auto"`: the gate passes by policy; its stage never stays current, so `next` lists it as
+  `[GATE_PASSED: dev-integration stage=integration-approval policy=auto source=policy]` (JSON `passed_gates`), the basis
+  every report cites.
 - `--given <gate>` asserts a gate for one run (a runner's binding).
 - The workflow definitions fix the policies each gate accepts (`gates.<gate>.policies`): `plan-intent` and
   `plan-accept` take only `ask`, `dev-integration` takes `ask` or `auto`. A configured policy outside them stops every
@@ -233,7 +237,8 @@ Envelopes are devkit envelope files under a unit's `envelopes/`, written with
 | `green` | `envelopes/green-NN.yaml` (`checks.resolved`, `checks.preserved`) | the implementer |
 | `feedback` | `envelopes/feedback-NN.yaml` (`checks.swept`) | the implementer |
 | `final-report` | `envelopes/final-report-NN.yaml` (`checks.tests`, `build`, `lint`) | the implementer |
-| `challenger`, `reconciler`, `scout` | role returns | the caller, from the role's fields |
+| `challenger`, `scout` | role returns | the caller, from the role's fields |
+| `reconcile-check` | the reconcile verification at `living-spec-draft`, read by its exit (`envelope-completed(reconcile-check)`) | the implementer: its self-check at `low`, the reviewer's returned check at `medium`, the reconciler's at `high` |
 | `worker` | one run's result, exactly one per run: the applied `activity-effort`, the run's `questions` (status `needs_input`) and its `problem` (`cause`, `attempts`, `recovery`; `failed` requires it) | the run itself: a worker, the Host in `direct`, or the Host for a range it blocks |
 | `answer` | the rewritten answers to a run's questions (`answers_to: worker-NN.yaml`), one decision per question | the run that processes them, first, in a commit of its own |
 | `resolution` | the fix of a run's problem (`resolves: worker-NN.yaml`, `summary`) | whoever actually fixed it, with the fix |
@@ -261,8 +266,8 @@ role but the two workers, `[read, commit]`).
 | Role | Skill | Model profile | Writes | Envelope kind |
 | --- | --- | --- | --- | --- |
 | `challenger` | none: the procedure is in the contract | `high-reasoning` | nothing | `challenger` |
-| `reconciler` | `spec-sync` | `light-medium` | nothing: it verifies the implementer's reconcile result at `high` | `reconciler` |
-| `reviewer` | `spec-review` | `general-high` | nothing | `review`, `reverify`, or a message for a session |
+| `reconciler` | `spec-sync` | `light-medium` | nothing: it verifies the implementer's reconcile result at `high` | `reconcile-check` |
+| `reviewer` | `spec-review` | `general-high` | nothing | `review`, `reverify`, `reconcile-check` at `medium`, or a message for a session |
 | `scout` | none: the procedure is in the contract | `light-medium` | nothing, or the proposal's `materials/` on request | `scout` |
 | `planning-worker` | none: the procedure is in the contract | `general-high` | the proposal directory in its `plan-` worktree, committed | `worker` (its own) |
 | `development-worker` | none: the procedure is in the contract | `general-high` | the unit's write scope in its `dev-` worktree, committed at every stage boundary | `worker` (its own) and the stage envelopes |
@@ -303,7 +308,7 @@ prompt.
 | `devkit workflow bind --unit <dir> --workflow <id>` | Bind an unbound unit, or rebind after `WORKFLOW_DRIFT`. |
 | `devkit workflow validate` | Validate definitions; `SHARED_STAGE_MISMATCH` across definitions. |
 | `devkit workflow list` | List units of every layout. |
-| `devkit workflow envelope new --unit <dir> --kind worker\|answer\|resolution ...` | A run's record (`--questions-file`, `--problem`, `--tried`, `--recovery`, `--effort`), its answers (`--answers-to`, `--answers-file`) or a fix (`--resolves`). |
+| `devkit workflow envelope new --unit <dir> --kind worker\|answer\|resolution ...` | A run's record (`--stage` and `--effort` always; `--questions-file`, `--problem`, `--tried`, `--recovery`), its answers (`--answers-to`, `--answers-file`) or a fix (`--resolves`). |
 | `devkit workflow envelope check --unit <dir> [--format json]` | Malformed envelopes and the hold: `[BLOCKED]`, `[PENDING_QUESTION]`; `blocked`, `problems`, `pending_questions` in JSON. |
 | `devkit worktree start <branch> [--no-worktree \| --existing-branch <branch> --unit <dir>]` | Start `plan-<slug>` or `dev-<slug>` in a worktree or the current checkout, or continue an existing branch after devkit-spec's attach check. |
 | `devkit worktree stale` | Activity branches idle beyond `[worktree] stale_after`; also warned by `devkit rules check -p hygiene`. |

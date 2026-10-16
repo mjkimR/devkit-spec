@@ -336,6 +336,7 @@ def handoff_proposal(root: Path, slug: str, *, today: date | None = None) -> Han
         namespace=namespace,
         summary=summary,
         target_docs_ref=target_docs_ref,
+        bugfix=bugfix,
     )
     if bugfix:
         # sdd-spec-bugfix writes plan.md and tasks.md in its plan-tasks stage; skeletons would have to match the

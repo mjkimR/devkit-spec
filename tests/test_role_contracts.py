@@ -108,6 +108,12 @@ def test_the_reconciler_verifies_and_never_drafts() -> None:
     metadata, body = _contract("reconciler")
     assert "Write" not in metadata["hosts"]["claude-code"]["tools"]
     assert "You do not draft documents" in body
+    assert "kind `reconcile-check`" in body  # the caller records it at living-spec-draft, whose exit reads it
+
+
+def test_the_reviewer_returns_its_reconcile_check_apart_from_the_review() -> None:
+    _, body = _contract("reviewer")
+    assert "the fields of a `reconcile-check` envelope" in body and "never as a review round" in body
 
 
 def test_spec_delegate_passes_only_the_payload_to_a_projected_role() -> None:
@@ -143,7 +149,8 @@ def test_the_host_validates_the_committed_range_and_blocks_a_failure() -> None:
     assert "validate the cumulative range again from the same last accepted head" in text
     assert "the base checkout's status and HEAD are as recorded" in text
     assert "except the records you wrote under `<unit>/envelopes/` since `<accepted>`" in text
-    assert "`validation`" not in text and "--kind worker --stage <stage> --problem" in text
+    assert "`validation`" not in text
+    assert "--kind worker --stage <stage> --effort <activity-effort> --problem" in text
     assert "Never pass a blocked unit's current HEAD as the base" in text
     assert "`build-verify`, or `fix-verify` in `sdd-spec-bugfix`" in text
     assert "A unit is blocked while any problem, a worker's or yours, has no resolution that names it" in text

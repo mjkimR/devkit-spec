@@ -67,7 +67,7 @@ stages:
     name: Living Spec draft
     human_gate: false
     entry: [envelope-review-passed]
-    exit: [frontmatter(reconcile.md status resolved), anchor-status-completed]
+    exit: [frontmatter(reconcile.md status resolved), envelope-completed(reconcile-check), anchor-status-completed]
     artifacts: [docs draft, reconcile.md]
     skills: [spec-sync, spec-delegate]
     role: reconciler
@@ -180,4 +180,4 @@ An external runner dispatches stages from this schema, binds `gate:dev-integrati
 
 ## Project policy execution
 
-Read `devkit spec policy` before integration decisions: approvals come from `[workflow.approvals]` (only `dev-integration` takes a key, `ask` or `auto`), stage switches from `[workflow.stages]` (for example `collect-feedback = "off"`), PR and branch policy from `[worktree]`, and whether a `direct`-mode activity runs in a separate worktree from `[tool.spec] worktree`. `dev-integration = "ask"` holds the gate for the user's OK unless already authorized; `auto` delegates that decision only after the required review, reconciliation and checks pass, and `next` shows it as `[GATE: dev-integration policy=auto ... source=policy]`, never as a human approval. `plan-intent` always needs the user and `exception` always needs resolution. Explicit user authority, required worktree and PR policy, external protections and action permissions remain applicable.
+Read `devkit spec policy` before integration decisions: approvals come from `[workflow.approvals]` (only `dev-integration` takes a key, `ask` or `auto`), stage switches from `[workflow.stages]` (for example `collect-feedback = "off"`), PR and branch policy from `[worktree]`, and whether a `direct`-mode activity runs in a separate worktree from `[tool.spec] worktree`. `dev-integration = "ask"` holds the gate for the user's OK unless already authorized; `auto` delegates that decision only after the required review, reconciliation and checks pass, and `next` lists it as `[GATE_PASSED: dev-integration stage=integration-approval policy=auto source=policy]`, the basis the integration report cites, never as a human approval. `plan-intent` always needs the user and `exception` always needs resolution. Explicit user authority, required worktree and PR policy, external protections and action permissions remain applicable.

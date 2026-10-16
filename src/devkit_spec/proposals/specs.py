@@ -84,6 +84,22 @@ def _boundary_list(items: list[str]) -> str:
     return "".join(f"- `{item}`\n" for item in items)
 
 
+_STORY_SECTION = """## 2. User Stories
+
+- **US-1**: As a developer/agent, I want to implement {title} so that system capabilities are extended.
+
+"""
+# A defect is characterized, not told as a story (spec-specify references/bugfix.md, stage characterize).
+_BUGFIX_SECTIONS = """## 2. Defect Characterization
+
+- **Current behavior**: <trigger, environment and the observed wrong result, with evidence>
+- **Expected behavior and its basis**: <the result the existing contract requires, citing its capability, story, ADR or test>
+- **Behavior to preserve**: <call paths, input boundaries and contracts that must keep working, with their tests>
+- **Reproduction conditions**: <the command, data and environment that reproduce the defect>
+
+"""
+
+
 def spec_files(
     slug: str,
     title: str,
@@ -95,10 +111,12 @@ def spec_files(
     namespace: str | None = None,
     summary: str | None = None,
     target_docs_ref: str = "",
+    bugfix: bool = False,
 ) -> dict[str, str]:
     """``spec.md``, ``plan.md`` and ``tasks.md`` of a spec bundle, each marked as a skeleton.
 
-    ``origin`` opens the problem statement; ``carried`` fills the sections from a proposal body; ``meta`` is the
+    ``bugfix`` gives ``spec.md`` the characterization sections of a defect (current, expected and preserved
+    behavior, reproduction conditions) instead of a feature-style user story. ``origin`` opens the problem statement; ``carried`` fills the sections from a proposal body; ``meta`` is the
     proposal frontmatter (``milestone``, ``target_area``, ``boundaries``); ``namespace`` and ``summary`` become
     ``spec.md``'s ``namespace`` and ``summary`` (none written when ``None``).
     """
@@ -130,11 +148,7 @@ related_stories: []
 
 ## 1. Problem Statement & Motivation
 
-{problem}## 2. User Stories
-
-- **US-1**: As a developer/agent, I want to implement {title} so that system capabilities are extended.
-
-## 3. Non-Goals
+{problem}{_BUGFIX_SECTIONS if bugfix else _STORY_SECTION.format(title=title)}## 3. Non-Goals
 
 {non_goals}## 4. Acceptance Criteria & Behavioral Contracts
 
@@ -380,6 +394,7 @@ def create_spec(
         origin="<Describe the problem, who has it and why it matters now.>\n",
         namespace=namespace,
         summary=summary,
+        bugfix=spec_only(binding),
     )
     if spec_only(binding):
         # sdd-spec-bugfix writes plan.md and tasks.md in its plan-tasks stage; a skeleton tasks.md would have to match the

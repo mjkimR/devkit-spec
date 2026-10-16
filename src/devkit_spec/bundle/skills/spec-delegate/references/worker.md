@@ -41,7 +41,7 @@ From the last accepted head to the worker's *final HEAD* (`<returned>`: the `fin
 - **Block**: the violation is a problem your validation run found. Record it as that run's own `worker` envelope at
   the unit's current stage (`devkit workflow next --unit <dir>` names it; `build-verify`, or `fix-verify` in
   `sdd-spec-bugfix`, while building): `devkit workflow envelope new --unit <dir> --kind worker --stage <stage>
-  --problem "<the committed range breaks its boundary or checks>" --recovery "<what must change>" --findings-file -
+  --effort <activity-effort> --problem "<the committed range breaks its boundary or checks>" --recovery "<what must change>" --findings-file -
   --base <accepted> --head <returned>`, one finding per violation (path or check, cause), and commit it before
   anything else, so the worktree stays clean. Keep the commits: never reset or amend; a pull request stays open and
   blocked (changes requested or a failing required check). A blocked unit goes to no review and no integration: devkit
