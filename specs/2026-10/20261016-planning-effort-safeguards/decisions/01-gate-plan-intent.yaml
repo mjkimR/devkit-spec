@@ -1,0 +1,10 @@
+request: gate:plan-intent
+kind: approve
+action: accept
+workflow: sdd-spec-feature
+stage: intent
+note: goal, scope (strategy layer 01 first, then B, C, D in the bundle and the Living
+  Spec), verification (just ci, workflow show, reviewer) and Development effort medium
+  confirmed; task-kind feature, planning-depth spec
+by: user
+at: '2026-10-16T08:17:15.552518Z'
