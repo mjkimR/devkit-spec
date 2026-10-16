@@ -1,0 +1,13 @@
+kind: feedback
+stage: collect-feedback
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-16T08:31:57.512452Z'
+status: completed
+summary: 'Session swept under capture=observed, coverage=repo-and-upstream: 4 observations recorded (bundle budget waiver, findings severity key, workflow hash scope, cross-branch draft reference); Planning-procedure observations are carried by PROP-planning-feedback-capture'
+findings: []
+checks:
+  swept: PASS 4 recorded
+diff_scope:
+  base: ''
+  head: 2dde391854b722e8130e2288198609a169e0090e
