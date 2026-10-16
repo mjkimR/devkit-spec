@@ -2,7 +2,7 @@
 id: SPEC-planning-effort-safeguards
 title: Planning effort safeguards
 summary: 'Makes the choice of Planning effort visible and hard to skip: the Host proposes Planning effort with a proposal''s plan-intent, proposal Planning at medium always runs one challenger, and the plan-accept request shows the applied effort and the support roles that ran.'
-status: in-progress
+status: completed
 created: 2026-10-16
 related_capabilities:
   - CAP-DLV-delivery-workflows

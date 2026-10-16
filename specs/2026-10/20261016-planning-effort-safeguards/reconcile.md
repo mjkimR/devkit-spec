@@ -1,7 +1,7 @@
 ---
 reconcile_id: REC-planning-effort-safeguards
 feature: SPEC-planning-effort-safeguards
-status: pending
+status: resolved
 targets:
   - file: docs/capabilities/delivery/CAP-DLV-delivery-workflows.md
     resolution: modified

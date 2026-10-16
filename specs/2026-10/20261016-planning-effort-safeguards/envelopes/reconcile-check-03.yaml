@@ -1,0 +1,17 @@
+kind: reconcile-check
+stage: living-spec-draft
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-16T08:31:35.215979Z'
+status: completed
+summary: The open finding of reconcile-check-02 is resolved; CAP-DLV §4.2 and §4.6 agree and reconcile.md names the right sections; no new finding
+findings: []
+assumptions:
+- Native Claude Code reviewer subagent, scope limited to the open finding
+checks:
+  rules_check: PASS
+  diff_whitespace: PASS
+diff_scope:
+  base: 684dedd
+  head: 4f95fbe
+activity_effort: medium
