@@ -19,7 +19,7 @@ boundaries:
     - src/devkit_spec/bundle/rules/
 task_kind: feature                    # feature | bugfix: the spec follows sdd-spec-<task_kind>
 workflow: sdd-proposal
-workflow_hash: sha256:79420190142b779136c39c7edcfd2aac42abf8c250f21bfffc46f8172777e1f9
+workflow_hash: sha256:90918c632715461d07f99f683b8381bdbe6381ad6689a7575a72c002c18c1399
 ---
 
 # [PROP-terminology-authoring-guidance] Terminology authoring guidance and a glossary that agents read
