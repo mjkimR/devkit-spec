@@ -1,0 +1,9 @@
+request: gate:plan-intent
+kind: approve
+action: accept
+workflow: sdd-proposal
+stage: intent-proposal
+note: 'draft confirmed with the recommended direction: repository-owned roadmap, milestone
+  documents ordered by depends_on, issue link only'
+by: user
+at: '2026-10-16T07:37:42.467909Z'
