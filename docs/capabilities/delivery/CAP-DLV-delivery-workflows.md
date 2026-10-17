@@ -1,7 +1,7 @@
 ---
 id: CAP-DLV-delivery-workflows
 title: Delivery Workflows
-summary: "Five spec delivery workflows define stages, gates, checks and envelopes, including Planning feedback sweeps before user returns, per-run capture and separate code and reconcile verification."
+summary: "Five spec delivery workflows define stages, gates, checks and envelopes, including Planning feedback sweeps before user returns, per-run capture, separate code and reconcile verification, and the SDD integration readiness provider."
 area: delivery
 status: active
 created_at: 2026-10-13
@@ -11,6 +11,7 @@ stories:
 entrypoints:
   - src/devkit_spec/bundle/workflows/
   - src/devkit_spec/bundle/subagents/
+  - src/devkit_spec/integration.py
 ---
 
 # [CAP-DLV-delivery-workflows] Delivery Workflows
@@ -18,8 +19,9 @@ entrypoints:
 ## 1. Summary
 
 The `spec` bundle ships one devkit workflow definition per combination of `planning-depth` and `task-kind`
-(`kind = "workflow"` assets in `src/devkit_spec/bundle/workflows/`) and six host-neutral role contracts
-(`kind = "subagent"` assets in `src/devkit_spec/bundle/subagents/`), all in the `core` preset. devkit's workflow engine
+(`kind = "workflow"` assets in `src/devkit_spec/bundle/workflows/`), six host-neutral role contracts
+(`kind = "subagent"` assets in `src/devkit_spec/bundle/subagents/`), all in the `core` preset, and the
+`devkit.integration.readiness` provider `spec` (`src/devkit_spec/integration.py`). devkit's workflow engine
 evaluates the definitions ([Workflow Engine](https://github.com/mjkimR/devkit/blob/main/docs/workflow/overview.md));
 `devkit sync` projects the roles into each agent host's subagent directory
 ([Agent Projections](https://github.com/mjkimR/devkit/blob/main/docs/distribution/agent-projections.md)). The
@@ -30,7 +32,8 @@ sequence.
 
 - **In-Scope**: the five definitions (layout, anchor, stages, gates, entry and exit checks, returns, declared checks),
   the gate semantics of `plan-intent`, `plan-accept`, `dev-integration` and the `exception` stage, the envelope kinds
-  the stages require, the `activity-effort` rules of review and reconcile, and the six role contracts.
+  the stages require, the `activity-effort` rules of review and reconcile, the six role contracts, and the
+  `devkit.integration.readiness` provider (`devkit_spec.integration.check`) for Unit and `session` tasks.
 - **Out-of-Scope**:
   - Evaluating a definition, recording answers and envelopes, binding units: devkit's `devkit workflow` commands.
   - Creating and binding a spec bundle: `CAP-DLV-spec-bundles`.
@@ -340,4 +343,17 @@ prompt.
 | `devkit workflow envelope worker\|answer\|resolution --unit <dir> ...` | A run's record (`--stage` and `--effort` always; `--questions-file`, `--problem`, `--tried`, `--recovery`), its answers (`--answers-to`, `--answers-file`) or a fix (`--resolves`). |
 | `devkit workflow envelope check --unit <dir> [--format json]` | Malformed envelopes and the hold: `[BLOCKED]`, `[PENDING_QUESTION]`; `blocked`, `problems`, `pending_questions` in JSON. |
 | `devkit worktree start <branch> [--no-worktree \| --existing-branch <branch> --unit <dir>]` | Start `plan-<slug>` or `dev-<slug>` in a worktree or the current checkout, or continue an existing branch after devkit-spec's attach check. |
+| `devkit worktree finish <branch> [--merge [--local-only]]` | Fast-forward the base (skipping `fetch`/`push` when `--local-only`), remove the worktree, delete the branch when `delete_branch=yes`, and run the post-finish extension. |
 | `devkit worktree stale` | Activity branches idle beyond `[worktree] stale_after`; also warned by `devkit rules check -p hygiene`. |
+
+### 4.8 SDD Integration Readiness Provider (`src/devkit_spec/integration.py`)
+
+Registered under the `devkit.integration.readiness` entry point as `spec` and selected by `[integration] provider = "spec"` (`ADR-integration-approval-asserted`, `SPEC-hook-driven-integration-cleanup`). `check(context: IntegrationContext) -> Readiness` evaluates the committed `context.finish.source_sha` against `context.finish.target_sha` inside an isolated temporary workspace materialized from Git (populating `.devkit/managed/` only when files match the committed `.devkit/installation.json` SHA-256 digests), so uncommitted worktree or base edits never influence readiness:
+
+1. **Policy and configuration**: validates `[tool.spec]` (`read_spec_config`) and `[workflow.approvals]` (`check_approvals`, requiring `dev-integration == "ask"` for the approval-bound `IntegrationService` path) in both the base checkout and the materialized `source_sha` snapshot.
+2. **Unit tasks (`task.kind == "unit"`)**: verifies branch-to-unit correspondence through `attach_check(base, branch, unit, source_sha)` and `task.id` agreement (`<slug>`, `SPEC-<slug>` or `PROP-<slug>`), then evaluates the unit in `Workspace(..., ancestor=...)`:
+   - `dev-<slug>` (`sdd-spec-feature` or `sdd-spec-bugfix`): evaluated with `given=("dev-integration",)`; requires `current_stage == "integrate"`, zero unmet checks across earlier stages (`specify`/`characterize`, `build-verify` or `reproduce`/`fix-verify`, `review-refine`, `living-spec-draft`, `collect-feedback` when enabled, `final-change-report`, `integration-approval`), no envelope hold (`blocked` or `pending_questions`), `spec.md` `status: completed`, `reconcile.md` `status: resolved`, and (when handed off from a proposal) carried `gate:plan-accept` accepted.
+   - `plan-<slug>` (`sdd-proposal`): requires `proposal.md` `status: accepted`, `gate:plan-intent` and `gate:plan-accept` accepted, `collect-feedback` satisfied when enabled, `complete == True` (`current_stage is None`), and no envelope hold.
+3. **Session tasks (`task.kind == "session"`)**: requires a `dev-<slug>` branch with no spec unit for `<slug>`, verifies that no spec or proposal unit touched between `merge_base(target_sha, source_sha)` and `source_sha` is held or incomplete (`spec.md` must be `completed`, `proposal.md` must be `accepted`), and validates structured JSON declarations in `task.claims_json` (`task_kind` in `feature|bugfix`, `effort` in `low|medium|high`, `review`, `tests`, `lint` passed, plus `reproduced: true` and `resolved: true` for `bugfix`).
+4. **Cumulative CI governance rules**: runs `run_project_rules(workspace, snapshot=ci_snapshot, phase=Phase.LINTER)` on the `merge_base..source_sha` snapshot (`mode="ci"`) and requires zero load/evaluation errors and zero blocking violations (`CI_RULES=pass`).
+5. **Deterministic evidence**: returns `Readiness(source_sha, target_sha, evidence=..., reasons=...)` whose coded `Evidence` tuple (`TASK_KIND`, `WORKFLOW`, `UNIT`, `SOURCE_SHA`, `TARGET_SHA`, `STAGE_STATUS`, `HOLD_STATUS`, `SESSION_CLAIMS`, `CI_RULES`) is 100% deterministic from committed Git state, satisfying `IntegrationService`'s pre-merge equality recheck.

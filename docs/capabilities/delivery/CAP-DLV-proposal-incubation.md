@@ -313,8 +313,8 @@ A handoff deletes the proposal in the worktree it runs in; merging that branch r
 base checkout but leaves their directories. `devkit spec proposal prune [<slug>]` removes `docs/proposals/PROP-<slug>/` (every `PROP-*` directory without a slug) when it
 holds no file at any depth (a symbolic link counts as a file; devkit's `remove_empty_tree`). A directory holding any
 file is kept, and one that cannot be listed fails the prune before anything is removed. devkit-spec's
-`devkit.post_finish` extension prunes the finished slug after a successful `devkit worktree finish`
-(`ADR-cleanup-after-worktree-finish`); the command remains for other checkouts and a failed extension.
+`devkit.post_finish` extension (`devkit_spec.cleanup.after_finish`) prunes the finished slug after a successful `devkit worktree finish`
+(`ADR-cleanup-after-worktree-finish`) and, on the approval-bound `IntegrationService` path (`SPEC-hook-driven-integration-cleanup`), plans and executes the exact `CleanupTarget(kind="proposal-prune", identity="docs/proposals/PROP-<slug>", revision=<source_sha>)` target, emitting `SPEC_POST_FINISH_CLEANUP` notices; the command remains for other checkouts and a failed extension (`integration_resume` retries a partial post-finish run).
 
 ### 4.9 Commands and Options
 

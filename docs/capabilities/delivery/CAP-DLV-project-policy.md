@@ -18,12 +18,13 @@ entrypoints:
 ## 1. Summary
 
 A project decides how delivery runs: which approval gates wait for a person, which stages are switched off, whether
-worktrees and pull requests are used when a task needs them or always, and how repository-first feedback is recorded. Policy
+worktrees and pull requests are used when a task needs them or always, which integration readiness provider
+`devkit.integration` calls, and how repository-first feedback is recorded. Policy
 devkit already models stays in devkit's tables
-(`[workflow.approvals]`, `[workflow.stages]`, `[worktree]`); devkit-spec adds only what is specific to spec-driven
+(`[workflow.approvals]`, `[workflow.stages]`, `[worktree]`, `[integration]`); devkit-spec adds only what is specific to spec-driven
 development, under the `[tool.spec]` extension table that devkit passes through unread. Agents read the effective
 policy with one command, `devkit spec policy`, before routing, gate and Git decisions. Rationale:
-`ADR-policy-in-the-tool-spec-table`; the Git policy levels: `ADR-worktree-and-pull-request-levels`, refined by `ADR-branch-guards-and-close-discard`.
+`ADR-policy-in-the-tool-spec-table`; the Git policy levels: `ADR-worktree-and-pull-request-levels`, refined by `ADR-branch-guards-and-close-discard`; integration readiness and scoped cleanup: `SPEC-hook-driven-integration-cleanup`.
 
 ## 2. Scope & Boundary
 
@@ -34,7 +35,7 @@ policy with one command, `devkit spec policy`, before routing, gate and Git deci
   - The meaning of `[[tool.spec.namespaces]]`: `CAP-DOCS-namespaces`.
   - The meaning of `[tool.spec.scope]`: `CAP-COLL-work-scope-registry`. This capability owns their validation only.
   - How gates and stage switches act on a workflow: `CAP-DLV-delivery-workflows` and devkit's workflow engine.
-  - Executing worktree and integration steps (`CAP-HARN-agent-guidance`): devkit's `devkit worktree` and the `spec`
+  - Executing worktree and integration steps (`CAP-HARN-agent-guidance`): devkit's `devkit worktree`, `devkit.integration` (`[integration] provider = "spec"`), and the `spec`
     skill's worktree procedure.
 - **Non-Goals**:
   - **Scope Excluded**: writing policy. The command only reads; the project edits `.devkit/config.toml`.
@@ -46,10 +47,10 @@ policy with one command, `devkit spec policy`, before routing, gate and Git deci
 1. **Read through the command**: agents MUST read policy through `devkit spec policy`, never by parsing
    `.devkit/config.toml`; a policy command error stops policy-dependent work.
 2. **devkit tables first**: a policy devkit models (approvals, stage switches, pull requests, branch cleanup, worktree
-   setup) MUST live in devkit's table; `[tool.spec]` holds only keys devkit has no table for.
+   setup, integration readiness provider) MUST live in devkit's table; `[tool.spec]` holds only keys devkit has no table for.
 3. **Defaults**: a gate the project does not set is `ask` with `source=default` (devkit's default for every gate);
    `[tool.spec] worktree` and `depth_escalation` default to `"auto"`; `[worktree]` values are devkit's defaults (`pull_request = "auto"`,
-   `delete_branch = true`, no `setup`).
+   `delete_branch = true`, no `setup`); `[integration] provider = "spec"` selects `devkit_spec.integration` for `IntegrationService`.
 4. **Gate order and fixed gates**: the spec workflows' gates `plan-intent`, `plan-accept`, `dev-integration` come
    first, then any other gate the project configures, in sorted order. `plan-intent` and `plan-accept` are always the
    user's decision (`source=fixed`): a `[workflow.approvals]` value other than `ask` (their default) for either is
@@ -68,7 +69,7 @@ policy with one command, `devkit spec policy`, before routing, gate and Git deci
    in the checkout, or the user asks; otherwise the current checkout, on the activity branch started with
    `devkit worktree start <branch> --no-worktree`.
    `pull_request = "required"` integrates every task, `session` depth included, through a pull request (`devkit worktree
-   finish --merge` is refused); `"auto"` uses one when the task needs platform review or CI, the base branch refuses
+   finish --merge` and `IntegrationService.prepare` are refused with `WORKTREE_PR_POLICY`); `"auto"` uses one when the task needs platform review or CI, the base branch refuses
    direct pushes, or the user asks, otherwise a local merge. The integration path does not choose the worktree: a task integrating
    through a pull request may run on its branch in the current checkout. Each `auto` choice and its reason are reported in the final change report's
    assumptions; an explicit user request naming the checkout or the integration path overrides the policy for that
@@ -135,6 +136,9 @@ collect-feedback = "off"    # switch a stage off by id
 pull_request = "required"   # always integrate through pull requests (default "auto": as the task needs)
 delete_branch = true        # delete the merged branch
 setup = "uv sync"           # run in each new worktree
+
+[integration]
+provider = "spec"           # devkit.integration.readiness entry point for approval-bound local integration
 
 [tool.spec]
 worktree = "required"       # direct mode: spec and proposal activities always run in a worktree (default "auto")

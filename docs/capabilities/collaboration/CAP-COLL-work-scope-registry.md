@@ -10,6 +10,7 @@ stories:
 entrypoints:
   - src/devkit_spec/scope/
   - src/devkit_spec/cli/scope.py
+  - src/devkit_spec/cleanup.py
 ---
 
 # [CAP-COLL-work-scope-registry] Work Scope Comparison and Shared Registry
@@ -26,7 +27,8 @@ integrated. It never grants or blocks a write, and it is not exclusive ownership
 
 - **In-Scope**: building scope sets from proposals, spec bundles and Git; pairwise comparison; the local file registry
   (records, owner tokens, locking, deadlines, sweep) and its event journal; the `compare`, `register`, `query`,
-  `update`, `release` and `sweep` commands; the registration a handoff performs.
+  `update`, `release` and `sweep` commands; the registration a handoff performs; the dual-mode `devkit.post_finish`
+  extension (`devkit_spec.cleanup.after_finish`, classic callable and `ScopedCleanup`).
 - **Out-of-Scope**:
   - The entrypoint path contract and `_Boundary` parsing: `CAP-TRACE-code-entrypoints`.
   - `[tool.spec.scope]` validation: `CAP-DLV-project-policy`. Document namespaces: `CAP-DOCS-namespaces` (independent
@@ -60,15 +62,15 @@ integrated. It never grants or blocks a write, and it is not exclusive ownership
    see a partial record.
 8. **The journal is diagnostic**: it is never an input to an overlap, stale or stage verdict, and a failed append
    never changes an operation's result or exit code (only a `SPEC_SCOPE_JOURNAL_UNAVAILABLE` warning).
-9. **Cleanup after finish**: devkit-spec's `devkit.post_finish` extension (`devkit_spec.cleanup.after_finish`) runs in the
-   base after `devkit worktree finish` succeeds and removes the records whose worktree is the finished one, at the
-   revision it read (`sweep --apply` restricted to those tasks); other stale records stay for an explicit sweep.
+9. **Cleanup after finish**: devkit-spec's `devkit.post_finish` extension (`devkit_spec.cleanup.after_finish`) implements both the classic callable contract for `devkit worktree finish` and `devkit.integration.ScopedCleanup` (`integration_local_only = True`, `integration_plan`, `integration_validate`, `integration_run`) for `IntegrationService`. It runs in the
+   base after the worktree finish succeeds and removes the records whose worktree is the finished one, at the
+   revision it read (`sweep --apply` restricted to those tasks; or `release` for a `--no-worktree` base checkout task); other stale records stay for an explicit sweep. On the `ScopedCleanup` path, `integration_plan` binds each scope record as `CleanupTarget(kind="scope-record", identity=<task_id>, revision="<mode>:<namespace>:<revision>")` (`mode` in `worktree|base`) and `CleanupTarget(kind="proposal-prune", identity="docs/proposals/PROP-<slug>", revision=<source_sha>)`, `integration_validate` rejects any revision, namespace or mode drift (`INTEGRATION_REQUEST_STALE`) while permitting already-removed records during `integration_resume`, and `integration_run` emits `SPEC_POST_FINISH_CLEANUP` notices (`CleanupResult(done=..., notices=...)`).
    Neither of its cleanups stops the other. A proposal prune that fails (a directory that cannot be listed or
    removed) is a `SPEC_PROPOSAL_CLEANUP_FAILED` warning whose fix is `devkit spec proposal prune <slug>`, and the
    record removal still runs. When the record removal fails (a malformed `[tool.spec]`, a registry timeout), its
    error (`SPEC_CONFIG_INVALID`, `SPEC_SCOPE_TIMEOUT`, ...) is returned beside the prune notices, devkit reports it as
-   a warning with its own code, and its fix ends with `devkit spec scope sweep --apply`. Nothing is released before
-   the finish, so a refused finish leaves the task registered. Rationale: `ADR-cleanup-after-worktree-finish`.
+   a warning with its own code, and its fix ends with `devkit spec scope sweep --apply` (or `integration_resume` on a partial `IntegrationService` run). Nothing is released before
+   the finish, so a refused finish leaves the task registered. Rationale: `ADR-cleanup-after-worktree-finish`, `SPEC-hook-driven-integration-cleanup`.
 10. **Absolute shared path**: a configured `shared_path` MUST be absolute (a relative path would resolve to a
     different directory in each worktree).
 
@@ -259,7 +261,7 @@ devkit's `workflow next` and `worktree finish` know nothing of devkit-spec, so t
 - `spec-tasks` after writing `tasks.md`, and `spec-sync` after writing `reconcile.md`, run
   `devkit spec scope update --spec <dir>` in a registered worktree; `SPEC_SCOPE_TOKEN_MISSING` means the worktree
   takes no part and the step is skipped.
-- After `devkit worktree finish` succeeds, its post-finish extension removes the record of the removed worktree (item 9).
+- After `devkit worktree finish` or `integration_integrate` succeeds, its post-finish extension removes the record of the removed worktree (item 9).
   `devkit spec scope sweep --apply` removes other stale records; `devkit spec scope release -w <worktree>` withdraws
   an abandoned task.
 
@@ -298,6 +300,7 @@ A malformed table is `SPEC_CONFIG_INVALID` (`CAP-DLV-project-policy`).
 | `SPEC_SCOPE_JOURNAL_UNAVAILABLE` | `WARNING` | `ScopeJournalWarning` | The journal could not be written. |
 | `SPEC_SCOPE_JOURNAL_LINE_INVALID` | `WARNING` | `ScopeJournalLineWarning` | `query --history` skipped lines that are not JSON events. |
 | `SPEC_SCOPE_REGISTER_FAILED` | `WARNING` | `ScopeRegisterFailedWarning` | A handoff in a task worktree could not register its bundle. |
+| `SPEC_POST_FINISH_CLEANUP` | `NOTICE` | `PostFinishCleanupNotice` | `ScopedCleanup.integration_run` removed an empty proposal directory or a finished worktree's scope record during approval-bound local integration. |
 
 devkit's own errors pass through: `ARGUMENT_INVALID` (4.4), `GIT_FAILED`, `SPEC_PROPOSAL_NOT_FOUND` (compare),
 `SPEC_CONFIG_INVALID`.

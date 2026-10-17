@@ -145,7 +145,7 @@ Living Spec and `specs/` holds feature specs.
 | `spec-tasks` | Write `tasks.md` with `_Boundary:` and `_Requirements:`. | `list spec`, `scope update` |
 | `spec-review` | Verify the change against the spec, the diff and the checks before completion. | |
 | `spec-sync` | Reconcile the change into the Living Spec and resolve `reconcile.md`. | `list`, `refs`, `search`, `proposal new`, `scope update` |
-| `spec-integrate` | Integrate after `dev-integration`: conflicts, re-verification, reconcile confirmation, cumulative check, cleanup. | `policy`, `scope sweep`, `proposal prune` |
+| `spec-integrate` | Integrate after `dev-integration`: conflicts, re-verification, reconcile confirmation, cumulative check, approval-bound local merge (`integration_prepare`, `integration_integrate`, `integration_status`, `integration_resume`) or CLI fallback (`devkit worktree finish --merge --local-only`), cleanup. | `policy`, `scope sweep`, `proposal prune` |
 | `spec-delegate` | Delegate to a role contract as the `activity-effort` asks, record its envelope, validate a worker's committed range and handle its questions and problems. | |
 | `spec-orchestrate` | User-invoked `local-orchestrated` mode per activity: one-shot Planning and Development workers in their own worktrees, the Host keeping preparation, validation, questions, problems and integration; a plain instruction returns to `direct`. | `new`, `scope register`, `scope query`, `scope update` |
 | `spec-rule` | Author or tune a project rule for `devkit rules` in the project's own bundle. | |
@@ -153,8 +153,8 @@ Living Spec and `specs/` holds feature specs.
 | `spec-entrypoints` | Derive capability and story entrypoints from spec bundles, review and apply them. | `entrypoints derive`, `list capability` |
 
 Skill references, each read at the moment it names: `spec/references/completion.md` (completion classification,
-policy, reconcile record, checks and commits), `spec/references/envelope.md` (delegation input and return envelope,
-final change report), `spec/references/git-policy.md` (worktree, pull request and branch cleanup levels), `spec/references/worktree.md` (task worktree start, work, integrate and finish, leftovers),
+policy, `mcp-elicitation` confirmation authority for `integration_integrate`, reconcile record, checks and commits), `spec/references/envelope.md` (delegation input and return envelope,
+final change report), `spec/references/git-policy.md` (worktree, pull request and branch cleanup levels), `spec/references/worktree.md` (task worktree start, work, approval-bound `integration_integrate` and `devkit worktree finish --local-only`, leftovers),
 `spec/references/playbooks.md` (Tier 2 operational playbook routing),
 `spec-next/references/post-handoff.md` (follow-up of `[REWRITTEN]` and `[UNRESOLVED_LINK]` lines),
 `spec-next/references/workflow-signals.md` (`devkit workflow next` lines and advisories),

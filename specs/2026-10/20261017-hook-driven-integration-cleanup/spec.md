@@ -2,7 +2,7 @@
 id: SPEC-hook-driven-integration-cleanup
 title: Approval-driven integration and worktree cleanup
 summary: Provide the devkit-spec SDD readiness provider, scoped post-finish cleanup contract, and agent guidance for devkit's approval-bound local integration and worktree cleanup.
-status: in-progress
+status: completed
 created: 2026-10-17
 related_capabilities:
   - CAP-DLV-delivery-workflows
