@@ -1,0 +1,16 @@
+kind: reconcile-check
+stage: living-spec-draft
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-17T05:26:02.948543Z'
+status: completed
+summary: 'Self-checked Living Spec reconciliation at medium effort under CAP-DLV-delivery-workflows rule 15: all five affected capabilities (CAP-DLV-delivery-workflows, CAP-DLV-project-policy, CAP-DLV-proposal-incubation, CAP-COLL-work-scope-registry, CAP-HARN-agent-guidance) and entrypoints (src/devkit_spec/integration.py, src/devkit_spec/cleanup.py) are updated and directly match the diff, SPEC_POST_FINISH_CLEANUP is documented, and all three deferred follow-up feedback items (FB-auto-integration-dispatch, FB-pr-remote-and-squash-integration, FB-multi-host-integration-ergonomics) are tracked and referenced in reconcile.md.'
+findings: []
+assumptions:
+- Initial reconcile-reviewer pass omitted under medium effort rule 15 because all affected capability contracts and entrypoints are explicitly enumerated in spec.md and reconcile.md, direct agreement with the committed diff is verified by devkit rules check --staged and test_documented_codes.py, and no unresolved contract interpretation remains.
+checks:
+  lint: PASS devkit rules check --staged (0 errors, 0 warnings)
+  codes: PASS uv run pytest tests/test_documented_codes.py (1 passed)
+diff_scope:
+  base: fdbc2296e25228d30dbd489bde982d33f0adaa51
+  head: 9504c3237afafb581922cf4d4a525a0b4f4a753c
