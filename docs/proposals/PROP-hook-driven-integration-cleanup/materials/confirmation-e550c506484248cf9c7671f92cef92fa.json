@@ -1,0 +1,25 @@
+{
+  "request_id": "confirmation-e550c506484248cf9c7671f92cef92fa",
+  "scope": {
+    "mode": "dry-run",
+    "repository": "/tmp/devkit-codex-integration-spike.lGHXLf",
+    "source_branch": "dev-demo",
+    "source_head": "simulated-head",
+    "target_branch": "main",
+    "merge_method": "ff-only",
+    "cleanup": [
+      "dev-demo branch",
+      "demo worktree"
+    ],
+    "push": false
+  },
+  "status": "cancelled",
+  "authority": "none",
+  "ui_action": "accept",
+  "steps": {
+    "merge": "not-run",
+    "branch_delete": "not-run",
+    "worktree_remove": "not-run"
+  },
+  "mutations_executed": false
+}

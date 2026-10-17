@@ -1,0 +1,7 @@
+request: gate:plan-accept
+kind: approve
+action: accept
+workflow: sdd-proposal
+stage: direction-handoff
+by: user
+at: '2026-10-17T01:54:57.730679Z'
