@@ -1,0 +1,8 @@
+request: gate:plan-intent
+kind: approve
+action: accept
+workflow: sdd-spec-feature
+stage: intent
+note: PROP-hook-driven-integration-cleanup
+by: user
+at: '2026-10-17T03:51:40.591361Z'

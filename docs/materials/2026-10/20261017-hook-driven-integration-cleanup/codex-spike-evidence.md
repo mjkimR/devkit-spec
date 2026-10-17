@@ -1,6 +1,6 @@
 # Codex native integration confirmation spike
 
-Purpose: retain evidence for `PROP-hook-driven-integration-cleanup` and distinguish observed UI/hook behavior from
+Purpose: retain evidence for `SPEC-hook-driven-integration-cleanup` and distinguish observed UI/hook behavior from
 unverified execution behavior. Collected 2026-10-17 from a separate interactive Codex CLI session and local artifacts.
 
 ## Environment and setup
