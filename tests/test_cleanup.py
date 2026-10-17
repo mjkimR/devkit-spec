@@ -187,10 +187,10 @@ def test_scoped_cleanup_plans_validates_and_runs_exact_targets(tmp_path: Path) -
     assert "[SCOPE: SPEC-b " in _scope(other, "register", "--spec", "specs/2026-10/20261002-b")
 
     targets = integration_plan(context)
-    assert targets == (
-        CleanupTarget(KIND_PROPOSAL, "docs/proposals/PROP-s", context.finish.source_sha),
-        CleanupTarget(KIND_SCOPE, "SPEC-s", "1"),
-    )
+    assert len(targets) == 2
+    assert targets[0] == CleanupTarget(KIND_PROPOSAL, "docs/proposals/PROP-s", context.finish.source_sha)
+    assert targets[1].kind == KIND_SCOPE and targets[1].identity == "SPEC-s"
+    assert targets[1].revision.startswith("worktree:") and targets[1].revision.endswith(":1")
     integration_validate(context, targets)
 
     git(repo, "worktree", "remove", "--force", str(finished))
@@ -213,6 +213,18 @@ def test_scoped_cleanup_refuses_stale_scope_record_revision(tmp_path: Path) -> N
     assert "[SCOPE: SPEC-s " in _scope(finished, "register", "--spec", SPEC)
     context = _context(repo, finished)
     targets = integration_plan(context)
+
+    # Namespace drift in [tool.spec.scope] is also rejected as StaleRequestError.
+    drifted = (
+        targets[0],
+        CleanupTarget(KIND_SCOPE, "SPEC-s", "worktree:other-namespace:1"),
+    )
+    try:
+        integration_validate(context, drifted)
+    except StaleRequestError:
+        pass
+    else:
+        raise AssertionError("expected StaleRequestError when scope namespace changed")
 
     # Bump the scope record's revision in the worktree after planning.
     write(finished, f"{SPEC}/tasks.md", "- [ ] t\n  - _Boundary: src/a/\n  - _Boundary: src/b/\n")
@@ -270,10 +282,10 @@ def test_scoped_cleanup_base_checkout_releases_own_record_and_rejects_bad_target
     assert "[SCOPE: SPEC-s " in _scope(repo, "register", "--spec", SPEC)
     context = _context(repo, repo)
     targets = integration_plan(context)
-    assert targets == (
-        CleanupTarget(KIND_PROPOSAL, "docs/proposals/PROP-s", context.finish.source_sha),
-        CleanupTarget(KIND_SCOPE, "SPEC-s", "1"),
-    )
+    assert len(targets) == 2
+    assert targets[0] == CleanupTarget(KIND_PROPOSAL, "docs/proposals/PROP-s", context.finish.source_sha)
+    assert targets[1].kind == KIND_SCOPE and targets[1].identity == "SPEC-s"
+    assert targets[1].revision.startswith("base:") and targets[1].revision.endswith(":1")
     outcome = integration_run(context, _finish_result(context), targets)
     assert outcome.done is True
     assert [n.message for n in outcome.notices] == ["released the scope record of SPEC-s"]

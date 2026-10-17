@@ -348,6 +348,10 @@ def _check_session_task(
             data, err = _read_frontmatter(unit_dir / "spec.md")
             if err or data.get("status") != "completed":
                 reasons.append(f"touched spec unit {unit_rel} is not completed")
+        elif PROPOSAL_UNIT.fullmatch(unit_rel):
+            data, err = _read_frontmatter(unit_dir / "proposal.md")
+            if err or data.get("status") != "accepted":
+                reasons.append(f"touched proposal unit {unit_rel} is not accepted")
 
     try:
         claims = json.loads(context.task.claims_json)

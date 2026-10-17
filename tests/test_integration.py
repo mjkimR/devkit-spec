@@ -530,6 +530,18 @@ def test_session_readiness_verifies_claims_and_refuses_invalid_claims_or_plan_br
     r_plan = check(IntegrationContext(plan_branch, valid_bugfix))
     assert any("dev-<slug>" in reason for reason in r_plan.reasons)
 
+    # Touching an unaccepted proposal unit on a session branch is also refused.
+    write(
+        wt,
+        "docs/proposals/PROP-other/proposal.md",
+        "---\nid: PROP-other\ntitle: Other\nsummary: Draft.\nstatus: draft\ncreated: 2026-10-17\nupdated: 2026-10-17\n---\n\n# [PROP-other] Other\n\n## 1. Summary\nDraft.\n",
+    )
+    git(wt, "add", "-A")
+    git(wt, "commit", "-q", "-m", "touch draft proposal")
+    plan_touched_prop = plan_finish(locate(repo), "dev-quick")
+    r_prop = check(IntegrationContext(plan_touched_prop, valid_bugfix))
+    assert any("touched proposal unit docs/proposals/PROP-other is not accepted" in reason for reason in r_prop.reasons)
+
 
 def test_integration_service_end_to_end_approval_cleanup_non_approval_and_no_network(
     tmp_path: Path, synced_template: Path, monkeypatch: pytest.MonkeyPatch

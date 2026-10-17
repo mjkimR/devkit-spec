@@ -127,24 +127,36 @@ def _sweep(base: Path, worktree: Path) -> list[str | AdvisoryError]:
     return [f"removed the scope record of {task}" for task in removed] + notices
 
 
+def _scope_mode(base: Path, worktree: Path) -> str:
+    return "base" if worktree.resolve() == base.resolve() else "worktree"
+
+
 def _parse_targets(
     context: IntegrationContext, targets: tuple[CleanupTarget, ...]
-) -> tuple[tuple[CleanupTarget, ...], dict[str, int]]:
+) -> tuple[tuple[CleanupTarget, ...], dict[str, tuple[str, str, int]]]:
     slug = _prune_slug(slug_of(context.finish.branch))
     expected_prune = (
         (CleanupTarget(KIND_PROPOSAL, f"docs/proposals/PROP-{slug}", context.finish.source_sha),) if slug else ()
     )
     prune_targets: list[CleanupTarget] = []
-    scope_targets: dict[str, int] = {}
+    scope_targets: dict[str, tuple[str, str, int]] = {}
     for target in targets:
         if target.kind == KIND_PROPOSAL:
             prune_targets.append(target)
         elif target.kind == KIND_SCOPE:
-            if target.identity in scope_targets or not target.revision.isdigit() or int(target.revision) < 1:
+            parts = target.revision.split(":", 2)
+            if (
+                target.identity in scope_targets
+                or len(parts) != 3
+                or parts[0] not in {"worktree", "base"}
+                or not parts[1]
+                or not parts[2].isdigit()
+                or int(parts[2]) < 1
+            ):
                 raise CleanupContractError(
-                    "scope-record cleanup target requires a unique task id and positive revision"
+                    "scope-record cleanup target requires a unique task id and '<mode>:<namespace>:<revision>' revision"
                 )
-            scope_targets[target.identity] = int(target.revision)
+            scope_targets[target.identity] = (parts[0], parts[1], int(parts[2]))
         else:
             raise CleanupContractError(f"unknown spec cleanup target kind: {target.kind}")
     if tuple(prune_targets) != expected_prune:
@@ -163,13 +175,28 @@ def _is_post_git(base: Path, context: IntegrationContext) -> bool:
     return plan.worktree_identity is None or not Path(plan.path).exists()
 
 
+def _verify_scope_targets(
+    session: Session,
+    base: Path,
+    worktree: Path,
+    expected: Mapping[str, tuple[str, str, int]],
+) -> dict[str, int]:
+    mode = _scope_mode(base, worktree)
+    namespace = session.location.namespace
+    for exp_mode, exp_ns, _ in expected.values():
+        if exp_mode != mode or exp_ns != namespace:
+            raise StaleRequestError("the finished worktree's scope namespace or mode changed since preparation")
+    current = _worktree_records(session, base, worktree)
+    if any(task_id not in expected or expected[task_id][2] != rev for task_id, rev in current.items()):
+        raise StaleRequestError("the finished worktree's scope record changed since the request was prepared")
+    return current
+
+
 def _run_scoped_sweep(
-    base: Path, worktree: Path, expected: Mapping[str, int]
+    base: Path, worktree: Path, expected: Mapping[str, tuple[str, str, int]]
 ) -> tuple[bool, list[str | AdvisoryError]]:
     session = open_session(base)
-    current = _worktree_records(session, base, worktree)
-    if any(task_id not in expected or expected[task_id] != rev for task_id, rev in current.items()):
-        raise StaleRequestError("the finished worktree's scope record changed since the request was prepared")
+    current = _verify_scope_targets(session, base, worktree, expected)
     if not expected or not current:
         return True, []
     if worktree.resolve() == base.resolve():
@@ -178,7 +205,7 @@ def _run_scoped_sweep(
         done = [f"released the scope record of {released.task}"] if released.task and not released.already else []
         return True, [*done, *released.notices]
     namespace = session.location.namespace
-    remaining = {task_id: expected[task_id] for task_id in current}
+    remaining = {task_id: expected[task_id][2] for task_id in current}
     results = session.registry.sweep(namespace, True, remaining, session.deadline, only=set(remaining))
     if any(result.reason == "stale-revision" for result in results):
         raise StaleRequestError("the finished worktree's scope record changed since the request was prepared")
@@ -214,10 +241,13 @@ class _Cleanup:
         slug = _prune_slug(slug_of(context.finish.branch))
         if slug:
             targets.append(CleanupTarget(KIND_PROPOSAL, f"docs/proposals/PROP-{slug}", context.finish.source_sha))
+        worktree = Path(context.finish.path)
         session = open_session(base)
-        records = _worktree_records(session, base, Path(context.finish.path))
+        mode = _scope_mode(base, worktree)
+        namespace = session.location.namespace
+        records = _worktree_records(session, base, worktree)
         for task_id, revision in sorted(records.items()):
-            targets.append(CleanupTarget(KIND_SCOPE, task_id, str(revision)))
+            targets.append(CleanupTarget(KIND_SCOPE, task_id, f"{mode}:{namespace}:{revision}"))
         return tuple(targets)
 
     def integration_validate(self, context: IntegrationContext, targets: tuple[CleanupTarget, ...]) -> None:
@@ -229,16 +259,17 @@ class _Cleanup:
             return
         _, expected_scope = _parse_targets(context, targets)
         post_git = _is_post_git(base, context)
+        worktree = Path(context.finish.path)
         try:
             session = open_session(base)
-            current = _worktree_records(session, base, Path(context.finish.path))
+            current = _verify_scope_targets(session, base, worktree, expected_scope)
+        except StaleRequestError:
+            raise
         except AdvisoryError:
             if post_git:
                 return  # defer transient post-git registry errors to integration_run so proposal pruning still runs
             raise
-        if any(task_id not in expected_scope or expected_scope[task_id] != rev for task_id, rev in current.items()):
-            raise StaleRequestError("the finished worktree's scope record changed since the request was prepared")
-        if not post_git and current != expected_scope:
+        if not post_git and len(current) != len(expected_scope):
             raise StaleRequestError("the approved scope record is missing; prepare a new request")
 
     def integration_run(
