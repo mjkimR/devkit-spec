@@ -7,16 +7,67 @@ from pathlib import Path
 from click.testing import CliRunner
 from devkit.advisory import Level
 from devkit.cli import cli as devkit_cli
+from devkit.integration import (
+    CleanupContractError,
+    CleanupTarget,
+    IntegrationContext,
+    StaleRequestError,
+    Task,
+)
+from devkit.worktree import FinishPlan, FinishResult
 from scope.support import SPEC, git, make_repo, write
 
-from devkit_spec.cleanup import after_finish
+from devkit_spec.cleanup import (
+    KIND_PROPOSAL,
+    KIND_SCOPE,
+    after_finish,
+    integration_local_only,
+    integration_plan,
+    integration_run,
+    integration_validate,
+)
 from devkit_spec.config import ScopeConfig
-from devkit_spec.errors import ProposalCleanupWarning, ScopeTimeoutError, SpecConfigError
+from devkit_spec.errors import (
+    PostFinishCleanupNotice,
+    ProposalCleanupWarning,
+    ScopeTimeoutError,
+    SpecConfigError,
+)
 from devkit_spec.scope import Deadline, FlockLocker, locate
 
 
 def _scope(root: Path, *args: str) -> str:
     return CliRunner().invoke(devkit_cli, ["spec", "scope", *args, "-w", str(root)]).stdout
+
+
+def _context(repo: Path, worktree: Path, *, branch: str = "dev-s") -> IntegrationContext:
+    head = git(repo, "rev-parse", "HEAD")
+    plan = FinishPlan(
+        base=str(repo),
+        common_dir=str(repo / ".git"),
+        common_identity=(0, 0),
+        branch=branch,
+        source_sha=head,
+        target_branch="main",
+        target_sha=head,
+        path=str(worktree),
+        worktree_identity=None if worktree == repo else (1, 1),
+        source_upstream="",
+        markers=("true", "main", ""),
+        delete_branch=True,
+    )
+    return IntegrationContext(finish=plan, task=Task(kind="unit", id="SPEC-s", unit=SPEC))
+
+
+def _finish_result(context: IntegrationContext) -> FinishResult:
+    plan = context.finish
+    return FinishResult(
+        branch=plan.branch,
+        path=Path(plan.path),
+        merged=True,
+        removed=plan.worktree_identity is not None,
+        branch_deleted=plan.delete_branch,
+    )
 
 
 def test_a_project_without_the_spec_bundle_is_left_alone(tmp_path: Path) -> None:
@@ -113,3 +164,124 @@ def test_a_failed_prune_is_a_warning_and_the_sweep_still_runs(tmp_path: Path) ->
     assert str(warning.fix).endswith("then run devkit spec proposal prune s")
     assert swept == "removed the scope record of SPEC-s"
     assert locked.is_dir(), "nothing was removed"
+
+
+def test_scoped_cleanup_plans_validates_and_runs_exact_targets(tmp_path: Path) -> None:
+    assert integration_local_only is True and after_finish.integration_local_only is True
+    repo = make_repo(tmp_path / "repo")
+    finished, other = tmp_path / "wt-s", tmp_path / "wt-b"
+    git(repo, "worktree", "add", "-q", "-b", "dev-s", str(finished))
+    git(repo, "worktree", "add", "-q", "-b", "dev-b", str(other))
+    context = _context(repo, finished)
+
+    # Without .devkit/managed/spec, scoped cleanup declares no targets and is a no-op.
+    assert integration_plan(context) == ()
+    integration_validate(context, ())
+    assert integration_run(context, _finish_result(context), ()).done is True
+
+    (repo / ".devkit/managed/spec").mkdir(parents=True)
+    (repo / "docs/proposals/PROP-s/decisions").mkdir(parents=True)
+    write(other, "specs/2026-10/20261002-b/spec.md", "---\nid: SPEC-b\n---\n")
+    write(other, "specs/2026-10/20261002-b/tasks.md", "- [ ] t\n  - _Boundary: src/a/\n")
+    assert "[SCOPE: SPEC-s " in _scope(finished, "register", "--spec", SPEC)
+    assert "[SCOPE: SPEC-b " in _scope(other, "register", "--spec", "specs/2026-10/20261002-b")
+
+    targets = integration_plan(context)
+    assert targets == (
+        CleanupTarget(KIND_PROPOSAL, "docs/proposals/PROP-s", context.finish.source_sha),
+        CleanupTarget(KIND_SCOPE, "SPEC-s", "1"),
+    )
+    integration_validate(context, targets)
+
+    git(repo, "worktree", "remove", "--force", str(finished))
+    git(repo, "worktree", "remove", "--force", str(other))
+    outcome = integration_run(context, _finish_result(context), targets)
+    assert outcome.done is True
+    assert [notice.message for notice in outcome.notices] == [
+        "removed empty proposal directory docs/proposals/PROP-s",
+        "removed the scope record of SPEC-s",
+    ]
+    assert all(isinstance(notice, PostFinishCleanupNotice) for notice in outcome.notices)
+    assert "[SWEEP: SPEC-b verdict=stale" in _scope(repo, "sweep")
+
+
+def test_scoped_cleanup_refuses_stale_scope_record_revision(tmp_path: Path) -> None:
+    repo = make_repo(tmp_path / "repo")
+    (repo / ".devkit/managed/spec").mkdir(parents=True)
+    finished = tmp_path / "wt-s"
+    git(repo, "worktree", "add", "-q", "-b", "dev-s", str(finished))
+    assert "[SCOPE: SPEC-s " in _scope(finished, "register", "--spec", SPEC)
+    context = _context(repo, finished)
+    targets = integration_plan(context)
+
+    # Bump the scope record's revision in the worktree after planning.
+    write(finished, f"{SPEC}/tasks.md", "- [ ] t\n  - _Boundary: src/a/\n  - _Boundary: src/b/\n")
+    assert "[SCOPE_ACK: status=applied revision=2" in _scope(finished, "update", "--spec", SPEC)
+
+    try:
+        integration_validate(context, targets)
+    except StaleRequestError:
+        pass
+    else:
+        raise AssertionError("expected StaleRequestError when scope revision changed")
+
+    git(repo, "worktree", "remove", "--force", str(finished))
+    try:
+        integration_run(context, _finish_result(context), targets)
+    except StaleRequestError:
+        pass
+    else:
+        raise AssertionError("expected StaleRequestError when running with stale scope revision")
+    assert "[SWEEP: SPEC-s verdict=stale" in _scope(repo, "sweep")
+
+
+def test_scoped_cleanup_partial_failure_and_idempotent_resume(tmp_path: Path) -> None:
+    repo = make_repo(tmp_path / "repo")
+    (repo / ".devkit/managed/spec").mkdir(parents=True)
+    locked = repo / "docs/proposals/PROP-s/decisions/locked"
+    locked.mkdir(parents=True)
+    finished = tmp_path / "wt-s"
+    git(repo, "worktree", "add", "-q", "-b", "dev-s", str(finished))
+    assert "[SCOPE: SPEC-s " in _scope(finished, "register", "--spec", SPEC)
+    context = _context(repo, finished)
+    targets = integration_plan(context)
+    git(repo, "worktree", "remove", "--force", str(finished))
+
+    locked.chmod(0)
+    try:
+        first = integration_run(context, _finish_result(context), targets)
+    finally:
+        locked.chmod(0o755)
+    assert first.done is False
+    assert any(isinstance(n, ProposalCleanupWarning) for n in first.notices)
+    assert any(n.message == "removed the scope record of SPEC-s" for n in first.notices)
+
+    # Once the permission issue is fixed, validation and re-execution complete idempotently.
+    integration_validate(context, targets)
+    second = integration_run(context, _finish_result(context), targets)
+    assert second.done is True
+    assert [n.message for n in second.notices] == ["removed empty proposal directory docs/proposals/PROP-s"]
+    assert not (repo / "docs/proposals/PROP-s").exists()
+
+
+def test_scoped_cleanup_base_checkout_releases_own_record_and_rejects_bad_targets(tmp_path: Path) -> None:
+    repo = make_repo(tmp_path / "repo")
+    (repo / ".devkit/managed/spec").mkdir(parents=True)
+    assert "[SCOPE: SPEC-s " in _scope(repo, "register", "--spec", SPEC)
+    context = _context(repo, repo)
+    targets = integration_plan(context)
+    assert targets == (
+        CleanupTarget(KIND_PROPOSAL, "docs/proposals/PROP-s", context.finish.source_sha),
+        CleanupTarget(KIND_SCOPE, "SPEC-s", "1"),
+    )
+    outcome = integration_run(context, _finish_result(context), targets)
+    assert outcome.done is True
+    assert [n.message for n in outcome.notices] == ["released the scope record of SPEC-s"]
+    assert "SPEC-s" not in _scope(repo, "query")
+
+    try:
+        integration_validate(context, (*targets, CleanupTarget("unknown-kind", "x", "1")))
+    except CleanupContractError:
+        pass
+    else:
+        raise AssertionError("expected CleanupContractError for unknown target kind")

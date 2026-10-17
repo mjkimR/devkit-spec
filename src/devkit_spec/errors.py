@@ -240,6 +240,14 @@ class ListStatusUnknownNotice(SpecError):
     fix = "Pass a status the documents of the selected kinds carry (devkit spec list shows them)"
 
 
+class PostFinishCleanupNotice(SpecError):
+    """``devkit.post_finish``: a proposal directory was pruned or a finished worktree's scope record removed
+    during scoped local integration (``NOTICE``)."""
+
+    code = "SPEC_POST_FINISH_CLEANUP"
+    level = Level.NOTICE
+
+
 class SpecSlugError(SpecError):
     """A spec slug keeps no letter or digit after normalization (``INPUT_ERROR``)."""
 

@@ -21,6 +21,9 @@ authoring = "skill-authoring"
 [worktree]
 pull_request = "auto"
 
+[integration]
+provider = "spec"
+
 [rules.settings.RULE-cli-contract]
 # Records of rejected, past or planned commands: decisions weigh alternatives, proposals and specs describe commands
 # not built yet, materials are free-form.

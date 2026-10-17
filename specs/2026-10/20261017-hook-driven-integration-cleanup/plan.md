@@ -42,14 +42,18 @@ from devkit.integration import (
 )
 from devkit.worktree import FinishResult
 
+
 # 1. Readiness Provider (src/devkit_spec/integration.py)
 def check(context: IntegrationContext) -> Readiness:
     """Verify SDD completion readiness at context.finish.source_sha against target_sha."""
 
+
 # 2. Scoped Post-Finish Cleanup on after_finish (src/devkit_spec/cleanup.py)
-# CleanupTarget(kind="proposal-dir", identity="docs/proposals/PROP-<slug>", revision="empty-tree-v1")
-# CleanupTarget(kind="scope-record", identity="<task_id>", revision="<namespace>:<revision>|base:<namespace>:<revision>")
+# CleanupTarget(kind="proposal-prune", identity="docs/proposals/PROP-<slug>", revision="empty-tree-v1")
+# CleanupTarget(kind="scope-record", identity="<task_id>", revision="worktree:<namespace>:<revision>|base:<namespace>:<revision>")
 after_finish.integration_local_only = True
+
+
 def integration_plan(context: IntegrationContext) -> tuple[CleanupTarget, ...]: ...
 def integration_validate(context: IntegrationContext, targets: tuple[CleanupTarget, ...]) -> None: ...
 def integration_run(
@@ -71,22 +75,22 @@ def integration_run(
    - Require `dev-<slug>` branch (`plan-<slug>` is for proposal units only).
    - Verify no spec or proposal unit changed between `merge_base` and `source_sha` is incomplete or held.
    - Parse `context.task.claims_json` and verify structured session completion declarations: `task_kind` in `{"feature", "bugfix"}`, `effort` in `{"low", "medium", "high"}`, `review` (`"passed"` or `True`), `tests` (`"passed"` or `True`), `lint` (`"passed"` or `True`), and when `task_kind == "bugfix"`, `reproduced` is `True` and `resolved` is `True`.
-4. **Cumulative `Phase.CI` Governance Rules**:
-   - Run `run_project_rules(materialized_root, snapshot=ci_snapshot, phase=Phase.CI)` on the committed `source_sha` vs `merge_base(target_sha, source_sha)` snapshot and require zero load/evaluation errors and zero blocking violations (`lint-ci-clean`).
+4. **Cumulative `Phase.LINTER` (`mode="ci"`) Governance Rules**:
+   - Run `run_project_rules(materialized_root, snapshot=ci_snapshot, phase=Phase.LINTER)` on the committed `source_sha` vs `merge_base(target_sha, source_sha)` snapshot (`mode="ci"`) and require zero load/evaluation errors and zero blocking violations (`lint-ci-clean`).
 
 ### Scoped Cleanup Rules (`src/devkit_spec/cleanup.py`)
 1. **Non-spec repository**: When `(base / ".devkit/managed/spec").is_dir()` is false, `integration_plan` returns `()`, `integration_validate` is a no-op, and `integration_run` returns `CleanupResult(done=True, notices=())`.
 2. **Target planning (`integration_plan`)**:
-   - **Proposal remnant target**: If `docs/proposals/PROP-<slug>` exists in `base` (and is either already empty or deleted by `source_sha`), include `CleanupTarget(kind="proposal-dir", identity=f"docs/proposals/PROP-{slug}", revision="empty-tree")`.
+   - **Proposal remnant target**: If `docs/proposals/PROP-<slug>` exists in `base` (and is either already empty or deleted by `source_sha`), include `CleanupTarget(kind="proposal-prune", identity=f"docs/proposals/PROP-{slug}", revision="empty-tree-v1")`.
    - **Scope record target(s)**: Open the scope registry session at `base`. For a `--no-worktree` task (`Path(context.finish.path).resolve() == base.resolve()`), if the base checkout holds its own registered record (`own(session)`), include `CleanupTarget(kind="scope-record", identity=record.task_id, revision=f"base:{namespace}:{record.revision}")`. For a linked worktree, query `session.registry.query(namespace, session.deadline)` and include `CleanupTarget(kind="scope-record", identity=record.task_id, revision=f"worktree:{namespace}:{record.revision}")` for each record whose resolved `worktree` equals `Path(context.finish.path).resolve()`.
 3. **Target validation (`integration_validate`)**:
    - Verify no target has an unknown `kind`.
-   - For `"proposal-dir"`, verify `identity == f"docs/proposals/PROP-{slug}"` and, if the directory still exists in `base`, it is not a symlink escaping the workspace.
+   - For `"proposal-prune"`, verify `identity == f"docs/proposals/PROP-{slug}"` and, if the directory still exists in `base`, it is not a symlink escaping the workspace.
    - For `"scope-record"`, read current records for the finished worktree (or base token). If an approved record still exists, its `revision` and `namespace` must match the approved `CleanupTarget.revision` (otherwise raise `StaleRequestError`); if it is already absent, allow it so `integration_resume` succeeds after partial completion. If an unapproved record now exists for the finished worktree, raise `StaleRequestError`.
 4. **Target execution (`integration_run`)**:
    - Process only the approved `targets` tuple in order.
-   - For `"proposal-dir"`, run `prune_proposals(base, slug)` and emit `PostFinishNotice` for removed directories, or `ProposalCleanupWarning` with `done=False` on `OSError`.
-   - For `"scope-record"`, remove only the approved `task_id` at its approved revision (via `release` for `"base:..."` or `registry.sweep(namespace, True, {task_id: rev}, deadline, only={task_id})` for `"worktree:..."`), converting string notices to `PostFinishNotice(line, "extension: spec")` and returning `done=False` if any approved record failed to remove or timed out.
+   - For `"proposal-prune"`, run `prune_proposals(base, slug)` and emit `PostFinishCleanupNotice` for removed directories, or `ProposalCleanupWarning` with `done=False` on `OSError`.
+   - For `"scope-record"`, remove only the approved `task_id` at its approved revision (via `release` for `"base:..."` or `registry.sweep(namespace, True, {task_id: rev}, deadline, only={task_id})` for `"worktree:..."`), converting string notices to `PostFinishCleanupNotice(line)` and returning `done=False` if any approved record failed to remove or timed out.
 
 ## 4. Error Handling & Edge Cases
 - **Unmet readiness vs provider crash**: Expected policy/config/workflow/rule problems on the branch are returned as `Readiness(source_sha, target_sha, evidence=..., reasons=...)` so `IntegrationService` raises `INTEGRATION_NOT_READY` with every reason preserved, rather than masking them as an unexpected exception.
