@@ -1,0 +1,26 @@
+kind: reverify
+stage: review-refine
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-17T05:17:31.547983Z'
+status: completed
+review: review-01.yaml
+summary: 'Resolved both review-01 findings: bound scope-record cleanup target revisions to ''<mode>:<namespace>:<revision>'' with namespace/mode drift checks in cleanup.py, and added touched proposal unit acceptance check in _check_session_task in integration.py. Re-verified by implementer at medium effort ( localized fix inside existing module boundaries, no public contract or schema change).'
+findings:
+- issue: Scoped cleanup scope-record target revision omits the checkout mode and namespace prefix ('worktree:<namespace>:<revision>' or 'base:<namespace>:<revision>') required by AC-04 and plan.md.
+  evidence: src/devkit_spec/cleanup.py:220
+  failure_condition: When integration_plan(context) runs for a worktree or base checkout with a registered scope record, CleanupTarget(kind='scope-record', ...) is emitted with revision='<revision>' instead of 'worktree:<namespace>:<revision>' or 'base:<namespace>:<revision>', violating AC-04 and plan.md and missing namespace drift detection.
+  suggested_action: Emit CleanupTarget(KIND_SCOPE, task_id, f'{mode}:{namespace}:{revision}') in integration_plan, validate the mode and namespace in _parse_targets, integration_validate, and _run_scoped_sweep, and update tests/test_cleanup.py.
+  resolution: resolved
+- issue: Session task readiness (_check_session_task) checks touched spec units for completion status but ignores touched proposal units.
+  evidence: src/devkit_spec/integration.py:347
+  failure_condition: 'When devkit_spec.integration.check(context) is called with Task(kind=''session'', ...) on a dev-<slug> branch that modifies an incomplete proposal unit (e.g. docs/proposals/PROP-<other>/proposal.md with status: draft), _check_session_task only checks SPEC_UNIT and returns reasons == (), violating AC-03 and plan.md.'
+  suggested_action: In _check_session_task, also verify touched PROPOSAL_UNIT directories (requiring proposal.md frontmatter status == 'accepted') and add a regression assertion in tests/test_integration.py.
+  resolution: resolved
+checks:
+  tests: PASS uv run pytest tests/test_cleanup.py tests/test_integration.py (16 passed)
+  build: PASS ruff check + pyright (0 errors)
+  lint: PASS devkit rules check --staged
+diff_scope:
+  base: 92302c733f5595284996dd932d23f8c7bb018ef2
+  head: a16f45aa66f2c404a06908a2c99ff4682622b6ec
