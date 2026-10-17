@@ -1,0 +1,10 @@
+kind: feedback
+stage: collect-feedback
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-17T05:26:22.174996Z'
+status: completed
+summary: 'Covered full Development session and git diff (coverage=repo-and-upstream, detail=detailed): 3 observations recorded in specs/2026-10/20261017-hook-driven-integration-cleanup/feedback/ (FB-auto-integration-dispatch, FB-pr-remote-and-squash-integration, FB-multi-host-integration-ergonomics), 0 duplicates.'
+findings: []
+checks:
+  swept: PASS recorded=3 duplicates=0
