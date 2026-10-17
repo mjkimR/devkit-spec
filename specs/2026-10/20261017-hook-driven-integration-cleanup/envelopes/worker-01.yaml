@@ -1,0 +1,13 @@
+kind: worker
+stage: final-change-report
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-17T05:27:40.831126Z'
+status: completed
+summary: Completed Development run for SPEC-hook-driven-integration-cleanup at medium effort up to final-change-report.
+findings: []
+checks: {}
+diff_scope:
+  base: ''
+  head: 0d77e10cab08af57c14effacd1f70f5fe4252851
+activity_effort: medium

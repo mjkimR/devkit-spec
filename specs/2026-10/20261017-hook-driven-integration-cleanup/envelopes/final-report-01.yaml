@@ -1,0 +1,17 @@
+kind: final-report
+stage: final-change-report
+workflow: sdd-spec-feature
+segment: 0
+created_at: '2026-10-17T05:27:40.615656Z'
+status: completed
+summary: Implemented SDD integration readiness provider (devkit_spec.integration), dual-mode scoped post-finish cleanup (devkit_spec.cleanup.after_finish with ScopedCleanup), repository configuration ([integration] provider = 'spec'), spec-integrate and spec worktree/completion guidance, Living Spec capability reconciliation, and deferred follow-up feedback handoff (FB-auto-integration-dispatch, FB-pr-remote-and-squash-integration, FB-multi-host-integration-ergonomics). All 845 pytest tests, ruff, pyright, and cumulative CI rules pass.
+findings: []
+assumptions:
+- Development activity-effort set to medium by explicit user choice at Development start; local merge path (pull_request=auto, no PR) selected for local worktree delivery.
+checks:
+  tests: PASS just test (845 passed in 45.48s)
+  build: PASS just lint-check && just check (ruff + pyright 0 errors)
+  lint: PASS devkit rules check --ci --base main (0 errors, 0 warnings)
+diff_scope:
+  base: fdbc2296e25228d30dbd489bde982d33f0adaa51
+  head: 0d77e10cab08af57c14effacd1f70f5fe4252851
